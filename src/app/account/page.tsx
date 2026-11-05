@@ -1,0 +1,7 @@
+'use client';
+import {useState} from 'react';
+import Link from 'next/link';
+export default function AccountPage(){const [email,setEmail]=useState(''),[password,setPassword]=useState(''),[mode,setMode]=useState<'login'|'register'>('login'),[status,setStatus]=useState('');
+ async function submit(){setStatus('Please wait…');try{const r=await fetch('/api/auth/'+mode,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({email,password})});const data=await r.json();if(!r.ok)throw Error(data.error||'Unable to sign in');window.location.assign('/')}catch(e){setStatus(e instanceof Error?e.message:'Authentication failed')}}
+ return <main style={{maxWidth:470,margin:'8vh auto',padding:30}}><Link href="/">← Forge Studio</Link><h1>{mode==='login'?'Sign in':'Create an account'}</h1><p>Sign in to manage published sites, assets, leads and intelligence jobs.</p><label>Email<input type="email" autoComplete="email" value={email} onChange={e=>setEmail(e.target.value)}/></label><label>Password<input type="password" autoComplete={mode==='login'?'current-password':'new-password'} value={password} onChange={e=>setPassword(e.target.value)}/></label><button onClick={submit}>{mode==='login'?'Sign in':'Register'}</button><p role="status">{status}</p><button onClick={()=>setMode(mode==='login'?'register':'login')}>{mode==='login'?'Need an account? Register':'Have an account? Sign in'}</button><p>Registration requires the server owner to enable it explicitly.</p></main>
+}
