@@ -1,3 +1,4 @@
 import {initializeDatabase} from './db';
 import {initializePublishing} from './publishing';
-export async function migrate(){await initializeDatabase();await initializePublishing()}
+import {initializeLeads} from './leads';
+export async function migrate(){await initializeDatabase();await initializePublishing();await initializeLeads()}
