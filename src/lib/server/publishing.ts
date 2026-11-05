@@ -1,0 +1,2 @@
+import {database} from './db';
+export async function initializePublishing(){const sql=database();await sql`CREATE TABLE IF NOT EXISTS forge_publications (slug TEXT PRIMARY KEY, project_id UUID NOT NULL REFERENCES forge_projects(id) ON DELETE CASCADE, owner_id UUID NOT NULL REFERENCES forge_users(id) ON DELETE CASCADE, html TEXT NOT NULL, version INTEGER NOT NULL DEFAULT 1, published_at TIMESTAMPTZ NOT NULL DEFAULT now())`;await sql`CREATE INDEX IF NOT EXISTS forge_publications_owner_idx ON forge_publications(owner_id)`}
