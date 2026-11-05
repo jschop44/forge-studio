@@ -3,6 +3,7 @@ import {SiteSchema} from '../../../lib/schema';
 export const runtime='nodejs';
 const limits=new Map<string,{count:number;reset:number}>();
 export async function POST(req:NextRequest){
+ if(process.env.ENABLE_AI_GENERATION!=='true')return NextResponse.json({error:'AI generation is disabled until access controls and usage limits are configured.'},{status:503});
  const key=process.env.OPENAI_API_KEY;
  if(!key)return NextResponse.json({error:'AI generation is not configured. Set OPENAI_API_KEY on the server.'},{status:503});
  const ip=req.headers.get('x-forwarded-for')?.split(',')[0]?.trim()||'unknown';const now=Date.now();
