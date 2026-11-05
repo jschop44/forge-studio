@@ -17,3 +17,5 @@ Set ENABLE_ECOSYSTEM_INTEGRATION=true and FORGE_INTEGRATION_SECRET to a distinct
 The 3D Experience Lab can preview local GLB models and load stored private assets while authenticated. Exported HTML is a static fallback without the live WebGL scene. Public asset delivery and full cinematic export remain future work.
 
 Lead capture has a basic in-memory rate limiter, not a distributed anti-abuse solution. Public rollout requires privacy disclosures, retention policies and stronger abuse protection. This project has not passed verified production acceptance tests.
+
+LeadFlow supports optional automatic forwarding of *verified audited prospects* only when its backend has FORGE_AUTO_SYNC_CONSENT=true and a valid FORGE_AUTO_SYNC_TENANT_ID configured by the tenant owner. It uses stable prospect event IDs to prevent duplicates. Do not enable without explicit business-data-sharing consent.
