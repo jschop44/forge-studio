@@ -14,7 +14,7 @@ export default function Experiences(){
  function updateScene(patch:Partial<Experience['scene']>){setCurrent(p=>p?{...p,scene:{...p.scene,...patch}}:p)}
  function updateHero(patch:Partial<Experience['hero']>){setCurrent(p=>p?{...p,hero:{...p.hero,...patch}}:p)}
  function create(category:Experience['category']){setCurrent(makeExperience(category,category==='luxury-brand'?'fashion':category==='business'?'services':'technology'))}
- function save(){if(!current)return;saveExperience(current);setItems(loadExperiences())}
+ function save(){if(!current)return;if(current.scene.modelUrl?.startsWith('blob:')){window.alert('Local GLB preview files cannot be saved. Use a hosted HTTPS model URL for a persistent experience.');return}saveExperience(current);setItems(loadExperiences())}
  function loadModel(file:File){if(file.size>12000000||!file.name.toLowerCase().endsWith('.glb')){window.alert('Select a GLB model under 12 MB');return}const url=URL.createObjectURL(file);updateScene({modelUrl:url})}
  function remove(){if(!current)return;deleteExperience(current.id);const all=loadExperiences();setItems(all);setCurrent(all[0]||makeExperience('cinematic-product'))}
  if(!loaded||!current)return <main style={{padding:40}}>Loading experiences…</main>;
