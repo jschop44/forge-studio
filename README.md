@@ -37,3 +37,11 @@ Do not expose private API keys in client components. Add auth, ownership checks,
 - AI endpoint: disabled by default (`ENABLE_AI_GENERATION=false`).
 
 **Important:** This source has not passed a verified production build or security audit. Do not expose experimental endpoints to customers.
+
+## Experience Lab
+Open /experiences to create a cinematic 3D product scene, luxury brand presentation or business website concept. Edit materials, particle effects, colors, rotation, industry and copy. Experiences save in browser localStorage and can be exported as static HTML.
+
+Important: the exported HTML is a **static fallback** and does not contain the interactive WebGL scene. Interactive scenes currently work only in the running React application. Real 3D product asset uploads, glTF rendering, scroll timelines, AI scene generation, multi-page site publishing, lead forms and accessibility/performance verification are not complete.
+
+## Agent orchestration
+Modular task planning lives in src/lib/agents. It is an execution plan, not a background worker. No automated cross-app polling, learning or publication is active.
