@@ -1,0 +1,2 @@
+import {database} from './db';
+export async function initializeFeedback(){const sql=database();await sql`CREATE TABLE IF NOT EXISTS forge_feedback(id UUID PRIMARY KEY,owner_id UUID NOT NULL REFERENCES forge_users(id) ON DELETE CASCADE,category TEXT NOT NULL,action TEXT NOT NULL,outcome TEXT NOT NULL,notes TEXT,created_at TIMESTAMPTZ NOT NULL DEFAULT now())`;await sql`CREATE INDEX IF NOT EXISTS forge_feedback_owner_category ON forge_feedback(owner_id,category,created_at DESC)`;}
