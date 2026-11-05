@@ -1,0 +1,2 @@
+import {database} from './db';
+export async function initializeAssets(){const sql=database();await sql`CREATE TABLE IF NOT EXISTS forge_assets(id UUID PRIMARY KEY,owner_id UUID NOT NULL REFERENCES forge_users(id) ON DELETE CASCADE,project_id UUID REFERENCES forge_projects(id) ON DELETE SET NULL,name TEXT NOT NULL,mime_type TEXT NOT NULL,bytes BYTEA NOT NULL,created_at TIMESTAMPTZ NOT NULL DEFAULT now())`;await sql`CREATE INDEX IF NOT EXISTS forge_assets_owner_idx ON forge_assets(owner_id,created_at DESC)`;}
