@@ -15,13 +15,14 @@ export default function Experiences(){
  function updateHero(patch:Partial<Experience['hero']>){setCurrent(p=>p?{...p,hero:{...p.hero,...patch}}:p)}
  function create(category:Experience['category']){setCurrent(makeExperience(category,category==='luxury-brand'?'fashion':category==='business'?'services':'technology'))}
  function save(){if(!current)return;saveExperience(current);setItems(loadExperiences())}
+ function loadModel(file:File){if(file.size>12000000||!file.name.toLowerCase().endsWith('.glb')){window.alert('Select a GLB model under 12 MB');return}const url=URL.createObjectURL(file);updateScene({modelUrl:url})}
  function remove(){if(!current)return;deleteExperience(current.id);const all=loadExperiences();setItems(all);setCurrent(all[0]||makeExperience('cinematic-product'))}
  if(!loaded||!current)return <main style={{padding:40}}>Loading experiences…</main>;
  return <div className="experience-app"><div className="experience-top"><Link href="/">← Forge Studio</Link><strong>EXPERIENCE LAB</strong><div><button onClick={()=>downloadText("forge-experience.html",renderExperienceHtml(current),"text/html")}>Export HTML</button> <button onClick={save}>Save experience</button></div></div>
  <div className="experience-grid"><aside className="experience-panel"><p className="eyebrow">GENERATE</p><div className="experience-actions"><button onClick={()=>create('cinematic-product')}>3D product</button><button onClick={()=>create('luxury-brand')}>Luxury brand</button><button onClick={()=>create('business')}>Business</button></div>
  <label>Experience name<input value={current.name} onChange={e=>update({name:e.target.value})}/></label>
  <label>Industry<select value={current.industry} onChange={e=>update({industry:e.target.value as Experience['industry']})}>{['automotive','fashion','jewelry','hospitality','real-estate','technology','services','other'].map(x=><option key={x}>{x}</option>)}</select></label>
- <p className="eyebrow">3D ART DIRECTION</p><label>Product model URL (GLB or glTF)<input type="url" placeholder="https://example.com/model.glb" value={current.scene.modelUrl||""} onChange={e=>updateScene({modelUrl:e.target.value||undefined})}/></label>
+ <p className="eyebrow">3D ART DIRECTION</p><label>Preview a local GLB file<input type="file" accept=".glb,model/gltf-binary" onChange={e=>{const file=e.target.files?.[0];if(file)loadModel(file)}}/></label><label>Product model URL (GLB or glTF)<input type="url" placeholder="https://example.com/model.glb" value={current.scene.modelUrl||""} onChange={e=>updateScene({modelUrl:e.target.value||undefined})}/></label>
  <label>3D object<select value={current.scene.object} onChange={e=>updateScene({object:e.target.value as Experience['scene']['object']})}>{['knot','sphere','box','torus'].map(x=><option key={x}>{x}</option>)}</select></label>
  <label>Metalness <input type="range" min="0" max="1" step="0.05" value={current.scene.metalness} onChange={e=>updateScene({metalness:Number(e.target.value)})}/></label>
  <label>Roughness <input type="range" min="0" max="1" step="0.05" value={current.scene.roughness} onChange={e=>updateScene({roughness:Number(e.target.value)})}/></label>
