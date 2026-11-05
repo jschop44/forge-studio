@@ -1,0 +1,4 @@
+import {NextRequest,NextResponse} from 'next/server';
+import {database} from '../../../lib/server/db';
+export const runtime='nodejs';
+export async function GET(_req:NextRequest,{params}:{params:Promise<{slug:string}>}){const {slug}=await params;if(!/^[a-z0-9-]{1,120}$/.test(slug))return new NextResponse('Not found',{status:404});try{const sql=database();const rows=await sql`SELECT html FROM forge_publications WHERE slug=${slug} LIMIT 1`;if(!rows.length)return new NextResponse('Not found',{status:404});return new NextResponse(String(rows[0].html),{headers:{'Content-Type':'text/html; charset=utf-8','Content-Security-Policy':"default-src 'none'; style-src 'unsafe-inline'; img-src https: data:; base-uri 'none'; form-action 'none'; frame-ancestors 'none'",'X-Content-Type-Options':'nosniff','Cache-Control':'public,max-age=60'}})}catch{return new NextResponse('Site unavailable',{status:503})}}
