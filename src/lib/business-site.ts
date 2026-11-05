@@ -1,0 +1,20 @@
+import {z} from 'zod';
+import {escapeHtml} from './export';
+const BriefSchema=z.object({businessName:z.string().trim().min(2).max(100),industry:z.string().trim().min(2).max(80),description:z.string().trim().min(15).max(1800),services:z.array(z.string().trim().min(2).max(100)).max(12),contactEmail:z.string().email().max(254).optional(),accent:z.string().regex(/^#[0-9a-fA-F]{6}$/).default('#b7a182')});
+export type BusinessBrief=z.infer<typeof BriefSchema>;
+export type GeneratedPage={slug:string;title:string;html:string};
+export function generateBusinessWebsite(input:unknown):{name:string;pages:GeneratedPage[]}{
+ const b=BriefSchema.parse(input),s=escapeHtml;
+ const brand=s(b.businessName),desc=s(b.description),industry=s(b.industry),accent=b.accent;
+ const nav='<nav><a href="index.html">'+brand+'</a><div><a href="services.html">Services</a><a href="about.html">About</a><a href="contact.html">Contact</a></div></nav>';
+ const css='*{box-sizing:border-box}body{margin:0;background:#111319;color:#f8f7f3;font-family:system-ui,sans-serif}a{color:inherit}nav{display:flex;justify-content:space-between;align-items:center;padding:25px 7%;border-bottom:1px solid #ffffff22}nav div{display:flex;gap:25px}main{max-width:1100px;margin:auto;padding:100px 7%;min-height:72vh}h1{font-size:clamp(3rem,7vw,6rem);line-height:1.05;letter-spacing:-.06em}h2{font-size:clamp(2rem,4vw,3.5rem)}p{line-height:1.8;color:#d0d0d0;max-width:700px}.eyebrow{color:'+accent+';letter-spacing:.2em;font-size:12px;text-transform:uppercase}.button{display:inline-block;padding:17px 28px;background:'+accent+';color:#151515;text-decoration:none;border-radius:30px;margin-top:25px}.cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:18px;margin-top:40px}.card{padding:30px;border:1px solid #ffffff33;border-radius:12px}footer{padding:40px 7%;border-top:1px solid #ffffff22;color:#aaa}@media(max-width:650px){nav{align-items:flex-start;gap:20px;flex-direction:column}nav div{flex-wrap:wrap}main{padding:65px 7%}}';
+ const wrap=(title:string,body:string)=>'<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>'+s(title)+' | '+brand+'</title><meta name="description" content="'+s(b.description.slice(0,155))+'"><meta property="og:title" content="'+s(title)+' | '+brand+'"><meta property="og:description" content="'+s(b.description.slice(0,155))+'"><style>'+css+'</style></head><body>'+nav+'<main>'+body+'</main><footer>'+brand+' · '+new Date().getFullYear()+'</footer></body></html>';
+ const cards=b.services.map(service=>'<article class="card"><h2>'+s(service)+'</h2><p>Learn how our team can help with '+s(service.toLowerCase())+'.</p></article>').join('');
+ const email=b.contactEmail?'<p>Email us: <a href="mailto:'+s(b.contactEmail)+'">'+s(b.contactEmail)+'</a></p>':'<p>Contact details are not configured yet. Add your business email before publishing.</p>';
+ return {name:b.businessName,pages:[
+ {slug:'index',title:'Home',html:wrap('Home','<p class="eyebrow">'+industry+'</p><h1>'+brand+'</h1><p>'+desc+'</p><a class="button" href="contact.html">Get in touch</a><div class="cards">'+cards+'</div>')},
+ {slug:'services',title:'Services',html:wrap('Services','<p class="eyebrow">What we do</p><h1>Our services</h1><div class="cards">'+cards+'</div>')},
+ {slug:'about',title:'About',html:wrap('About','<p class="eyebrow">Our story</p><h1>About '+brand+'</h1><p>'+desc+'</p>')},
+ {slug:'contact',title:'Contact',html:wrap('Contact','<p class="eyebrow">Start a conversation</p><h1>Contact us</h1>'+email)}
+ ]};
+}
