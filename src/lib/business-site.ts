@@ -15,8 +15,8 @@ export function generateBusinessWebsite(input:unknown):{name:string;pages:Genera
  const cards=b.services.map(service=>'<article class="card"><h2>'+s(service)+'</h2><p>Learn how our team can help with '+s(service.toLowerCase())+'.</p></article>').join('');
  const email=b.contactEmail?'<p>Email us: <a href="mailto:'+s(b.contactEmail)+'">'+s(b.contactEmail)+'</a></p>':'<p>Contact details are not configured yet. Add your business email before publishing.</p>';
  return {name:b.businessName,pages:[
- {slug:'index',title:'Home',html:wrap('Home','<p class="eyebrow">'+industry+'</p><h1>'+brand+'</h1><p>'+desc+'</p><a class="button" href="contact.html">Get in touch</a><div class="cards">'+cards+'</div>')},
- {slug:'services',title:'Services',html:wrap('Services','<p class="eyebrow">What we do</p><h1>Our services</h1><div class="cards">'+cards+'</div>')},
+ {slug:'index',title:'Home',html:wrap('Home','<p class="eyebrow">'+industry+'</p><h1>'+brand+'</h1><p>'+desc+'</p><a class="button" href="contact.html">Get in touch</a>'+visual(photos[0],b.industry+' photography')+'<div class="cards">'+cards+'</div>')},
+ {slug:'services',title:'Services',html:wrap('Services','<p class="eyebrow">What we do</p><h1>Our services</h1>'+visual(photos[1],b.industry+' services')+'<div class="cards">'+cards+'</div>')},
  {slug:'about',title:'About',html:wrap('About','<p class="eyebrow">Our story</p><h1>About '+brand+'</h1><p>'+desc+'</p>')},
  {slug:'contact',title:'Contact',html:wrap('Contact','<p class="eyebrow">Start a conversation</p><h1>Contact us</h1>'+email)}
  ]};
