@@ -2,7 +2,7 @@
 import {useEffect,useRef,useState} from 'react';
 import dynamic from 'next/dynamic';
 import Link from 'next/link';
-const Scene3D=dynamic(()=>import('../components/Scene3D'),{ssr:false});
+const Scene3D=dynamic(()=>import('../../components/Scene3D'),{ssr:false});
 import {starterSite,generateDraft,Site,SiteSchema} from '../../lib/schema';
 import {readProjects,saveProject,removeProject,freshSite,parseImport,Project} from '../../lib/projects';
 import {renderStaticHtml,downloadText} from '../../lib/export';
