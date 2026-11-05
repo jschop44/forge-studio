@@ -4,4 +4,5 @@ import {initializeLeads} from './leads';
 import {initializeAssets} from './assets';
 import {initializeJobs} from './jobs';
 import {initializeFeedback} from './feedback';
-export async function migrate(){await initializeDatabase();await initializePublishing();await initializeLeads();await initializeAssets();await initializeJobs();await initializeFeedback()}
+import {initializeRateLimits} from './rate-limits';
+export async function migrate(){await initializeDatabase();await initializePublishing();await initializeLeads();await initializeAssets();await initializeJobs();await initializeFeedback();await initializeRateLimits()}
