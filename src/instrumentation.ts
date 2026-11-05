@@ -10,5 +10,6 @@ export async function register(){
  if(!Number.isInteger(port)||port<1||port>65535)return;
  let running=false;
  const tick=async()=>{if(running)return;running=true;try{await fetch('http://127.0.0.1:'+port+'/api/agents/worker',{method:'POST',headers:{'x-forge-worker-key':secret},signal:AbortSignal.timeout(20000)})}catch{}finally{running=false}};
+ setTimeout(async()=>{try{const r=await fetch('http://127.0.0.1:'+port+'/api/health/ready',{signal:AbortSignal.timeout(10000)});console.info('Forge readiness smoke test',r.status)}catch{console.warn('Forge readiness smoke test unavailable')}},15000).unref();
  const timer=setInterval(()=>{void tick()},120000);timer.unref();
 }
