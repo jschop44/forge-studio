@@ -1,0 +1,2 @@
+import {database} from './db';
+export async function initializeBusinessPublishing(){const sql=database();await sql`CREATE TABLE IF NOT EXISTS forge_business_publications(id UUID NOT NULL,owner_id UUID NOT NULL REFERENCES forge_users(id) ON DELETE CASCADE,slug TEXT NOT NULL,html TEXT NOT NULL,created_at TIMESTAMPTZ NOT NULL DEFAULT now(),PRIMARY KEY(id,slug))`;await sql`CREATE INDEX IF NOT EXISTS forge_business_publications_owner ON forge_business_publications(owner_id,created_at DESC)`;}
