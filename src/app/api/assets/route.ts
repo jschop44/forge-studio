@@ -15,6 +15,7 @@ export async function POST(req:NextRequest){
  const validation=validateAsset(file);if(!validation.ok)return NextResponse.json({error:validation.reason},{status:400});
  const projectId=data.get('projectId');if(projectId!==null&&(typeof projectId!=='string'||!/^[-a-f0-9]{36}$/i.test(projectId)))return NextResponse.json({error:'Invalid project ID'},{status:400});
  const sql=database();if(projectId){const found=await sql`SELECT id FROM forge_projects WHERE id=${projectId}::uuid AND owner_id=${user}::uuid`;if(!found.length)return NextResponse.json({error:'Project not found'},{status:404})}
+ const quota=await sql`SELECT count(*)::int AS files,coalesce(sum(octet_length(bytes)),0)::bigint AS used FROM forge_assets WHERE owner_id=${user}::uuid`;if(Number(quota[0]?.files||0)>=20||Number(quota[0]?.used||0)+file.size>48*1024*1024)return NextResponse.json({error:'Private asset quota exceeded (20 files / 48 MB)'},{status:413});
  const id=crypto.randomUUID(),bytes=Buffer.from(await file.arrayBuffer());const hex=bytes.toString('hex');
  if(file.name.toLowerCase().endsWith('.glb')&&bytes.toString('ascii',0,4)!=='glTF')return NextResponse.json({error:'Invalid GLB signature'},{status:400});
  await sql`INSERT INTO forge_assets(id,owner_id,project_id,name,mime_type,bytes) VALUES(${id}::uuid,${user}::uuid,${projectId||null}::uuid,${file.name},${file.type},decode(${hex},'hex'))`;
