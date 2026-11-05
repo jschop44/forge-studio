@@ -57,3 +57,5 @@
 .forge-auto-placeholder p{color:#bbb0c2}
 @media(max-width:950px){.forge-auto-layout{grid-template-columns:1fr}.forge-auto-panel{border-right:0;border-bottom:1px solid #ffffff20}.forge-auto-placeholder{min-height:420px}.forge-auto-frame,.forge-auto-frame iframe{min-height:560px}}
 @media(prefers-reduced-motion:reduce){.forge-auto-orb{animation:none}.forge-auto-cta,.forge-auto-frame iframe{transition:none}}
+
+.forge-auto-demo{width:100%;padding:15px 18px;border:1px solid #eac9a088;background:transparent;color:#f1d8ba;border-radius:12px;font-weight:700;letter-spacing:.03em;transition:background .2s}.forge-auto-demo:hover{background:#eac9a01a}
