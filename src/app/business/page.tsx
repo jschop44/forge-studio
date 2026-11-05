@@ -37,7 +37,7 @@ export default function BusinessGenerator(){
  <button className="forge-auto-cta" onClick={()=>void generate()} disabled={busy}>{busy?'Creating your website…':'✦ Generate my website'}</button>
  <button className="forge-auto-demo" onClick={()=>{setPages(createImmersiveShowcase());setActive('index');setStatus('Showing a complete cinematic concept website with interactive sections.');setMobile(false)}}>✧ Explore an immersive demo</button>
  {status&&<p role="status" className="forge-auto-status">{status}</p>}
- <p className="forge-auto-note">Automatically generates Home, Services, About and Contact pages. Free generation remains available if an AI provider is offline.</p>
+ <p className="forge-auto-note">For the best results, include your products, services and atmosphere. Business-specific visuals are selected automatically. Automatically generates Home, Services, About and Contact pages. Free generation remains available if an AI provider is offline.</p>
  {pages.length>0&&<div className="forge-auto-export"><button onClick={()=>pages.forEach(p=>downloadText(p.slug+'.html',p.html,'text/html'))}>↓ Download website pages</button><Link href="/cloud">Save & publish ↗</Link></div>}
  <details className="forge-auto-advanced"><summary>Advanced editing and intelligence tools</summary><div><Link href="/editor">Visual editor</Link><Link href="/intelligence">Intelligence</Link><Link href="/experiences">Immersive 3D editor</Link><Link href="/assets">Asset library</Link></div></details>
  </aside>
