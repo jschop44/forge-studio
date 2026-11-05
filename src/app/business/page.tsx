@@ -8,9 +8,9 @@ import {createImmersiveShowcase} from '../../lib/immersive-showcase';
 type Brief={businessName:string;industry:string;description:string;services:string[]};
 function infer(name:string,brief:string):Brief{
  const text=(name+' '+brief).toLowerCase();
- const industry=/restaurant|pizza|cafe|food|bakery/.test(text)?'Restaurant and hospitality':/real estate|realtor|property/.test(text)?'Real estate':/gym|fitness|wellness|spa/.test(text)?'Health and wellness':/auto|car|vehicle/.test(text)?'Automotive':/fashion|jewelry|clothing/.test(text)?'Fashion and luxury':/software|tech|digital|ai /.test(text)?'Technology':'Professional services';
+ const industry=/coffee|espresso|roast|barista|café|cafe/.test(text)?'Coffee shop and cafe':/restaurant|pizza|food|bakery/.test(text)?'Restaurant and hospitality':/real estate|realtor|property/.test(text)?'Real estate':/gym|fitness|wellness|spa/.test(text)?'Health and wellness':/auto|car|vehicle/.test(text)?'Automotive':/fashion|jewelry|clothing/.test(text)?'Fashion and luxury':/software|tech|digital|ai /.test(text)?'Technology':'Professional services';
  const description=brief.trim().length>=15?brief.trim():name+' provides thoughtful, professional solutions for customers seeking quality and dependable service.';
- const services=/restaurant|pizza|cafe|food/.test(text)?['Explore our menu','Reservations','Catering']:/real estate|realtor|property/.test(text)?['Find a property','Sell your home','Market insights']:/gym|fitness|wellness|spa/.test(text)?['Programs','Membership','Consultations']:['Services','Consultations','Customer support'];
+ const services=/coffee|espresso|roast|barista|café|cafe/.test(text)?['Coffee and espresso','Fresh pastries','Coffee beans and catering']:/restaurant|pizza|food/.test(text)?['Explore our menu','Reservations','Catering']:/real estate|realtor|property/.test(text)?['Find a property','Sell your home','Market insights']:/gym|fitness|wellness|spa/.test(text)?['Programs','Membership','Consultations']:['Services','Consultations','Customer support'];
  return {businessName:name.trim(),industry,description,services};
 }
 export default function BusinessGenerator(){
