@@ -3,7 +3,7 @@ export const ExperienceSchema=z.object({
  id:z.string().uuid(),name:z.string().min(1).max(100),
  category:z.enum(['cinematic-product','luxury-brand','business']),
  industry:z.enum(['automotive','fashion','jewelry','hospitality','real-estate','technology','services','other']),
- scene:z.object({object:z.enum(['torus','sphere','box','knot','product-image']),metalness:z.number().min(0).max(1),roughness:z.number().min(0).max(1),rotationSpeed:z.number().min(0).max(2),particles:z.boolean(),scrollMotion:z.boolean(),background:z.string().regex(/^#[0-9a-fA-F]{6}$/),accent:z.string().regex(/^#[0-9a-fA-F]{6}$/),imageUrl:z.string().url().max(2000).optional(),modelUrl:z.string().url().max(2000).optional()}),
+ scene:z.object({object:z.enum(['torus','sphere','box','knot','product-image']),metalness:z.number().min(0).max(1),roughness:z.number().min(0).max(1),rotationSpeed:z.number().min(0).max(2),particles:z.boolean(),scrollMotion:z.boolean(),background:z.string().regex(/^#[0-9a-fA-F]{6}$/),accent:z.string().regex(/^#[0-9a-fA-F]{6}$/),imageUrl:z.string().url().max(2000).optional(),modelUrl:z.string().max(2000).refine(x=>x.startsWith('https://')||x.startsWith('blob:')||/^\/api\/assets\/[a-f0-9-]{36}$/i.test(x),'Use HTTPS or an owned asset URL').optional()}),
  hero:z.object({eyebrow:z.string().max(100),headline:z.string().max(140),description:z.string().max(500),cta:z.string().max(60)}),
  sections:z.array(z.object({id:z.string(),title:z.string().max(100),body:z.string().max(1000)})).max(15)
 });
