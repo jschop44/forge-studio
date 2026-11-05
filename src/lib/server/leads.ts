@@ -1,0 +1,2 @@
+import {database} from './db';
+export async function initializeLeads(){const sql=database();await sql`CREATE TABLE IF NOT EXISTS forge_leads (id UUID PRIMARY KEY, owner_id UUID NOT NULL REFERENCES forge_users(id) ON DELETE CASCADE, project_id UUID NOT NULL REFERENCES forge_projects(id) ON DELETE CASCADE, name TEXT NOT NULL, email TEXT NOT NULL, message TEXT NOT NULL, created_at TIMESTAMPTZ NOT NULL DEFAULT now())`;await sql`CREATE INDEX IF NOT EXISTS forge_leads_owner_created ON forge_leads(owner_id,created_at DESC)`;}
