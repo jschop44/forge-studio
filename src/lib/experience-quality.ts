@@ -9,7 +9,7 @@ export function reviewExperience(input:unknown):{passed:boolean;issues:Experienc
  if(e.hero.description.trim().length<60)issues.push({severity:'warning',message:'Hero description needs more business context'});
  if(e.sections.length<2)issues.push({severity:'warning',message:'Add at least two content sections'});
  if(e.category==='business'&&!e.sections.some(s=>/service|contact|about/i.test(s.title)))issues.push({severity:'warning',message:'Add service and contact information for business websites'});
- if(e.scene.object==='product-image'&&!e.scene.imageUrl)issues.push({severity:'error',message:'Product image requires an asset URL'});
+ if(e.scene.object==='product-image'&&!e.scene.imageUrl&&!e.scene.modelUrl)issues.push({severity:'error',message:'Product image requires an asset URL'});
  return {passed:!issues.some(i=>i.severity==='error'),issues};
 }
 export function renderExperienceHtml(e:Experience){
