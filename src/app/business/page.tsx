@@ -1,15 +1,45 @@
 'use client';
-import {useEffect,useState} from 'react';
+import {useState} from 'react';
 import Link from 'next/link';
 import {generateBusinessWebsite,type GeneratedPage} from '../../lib/business-site';
 import {downloadText} from '../../lib/export';
 import {auditGeneratedSite} from '../../lib/site-audit';
+type Brief={businessName:string;industry:string;description:string;services:string[]};
+function infer(name:string,brief:string):Brief{
+ const text=(name+' '+brief).toLowerCase();
+ const industry=/restaurant|pizza|cafe|food|bakery/.test(text)?'Restaurant and hospitality':/real estate|realtor|property/.test(text)?'Real estate':/gym|fitness|wellness|spa/.test(text)?'Health and wellness':/auto|car|vehicle/.test(text)?'Automotive':/fashion|jewelry|clothing/.test(text)?'Fashion and luxury':/software|tech|digital|ai /.test(text)?'Technology':'Professional services';
+ const description=brief.trim().length>=15?brief.trim():name+' provides thoughtful, professional solutions for customers seeking quality and dependable service.';
+ const services=/restaurant|pizza|cafe|food/.test(text)?['Explore our menu','Reservations','Catering']:/real estate|realtor|property/.test(text)?['Find a property','Sell your home','Market insights']:/gym|fitness|wellness|spa/.test(text)?['Programs','Membership','Consultations']:['Services','Consultations','Customer support'];
+ return {businessName:name.trim(),industry,description,services};
+}
 export default function BusinessGenerator(){
- const [signals,setSignals]=useState<Record<string,number>>({});useEffect(()=>{fetch('/api/intelligence/feedback').then(r=>r.ok?r.json():{signals:[]}).then(data=>setSignals(Object.fromEntries((data.signals||[]).map((x:{category:string;positive:number;total:number})=>[x.category,(x.positive+1)/(x.total+2)])))).catch(()=>{})},[]);
- const [name,setName]=useState(''),[industry,setIndustry]=useState('Professional services'),[description,setDescription]=useState(''),[services,setServices]=useState('Consulting\nStrategy\nSupport'),[email,setEmail]=useState(''),[pages,setPages]=useState<GeneratedPage[]>([]),[active,setActive]=useState('index'),[error,setError]=useState('');
- async function feedback(category:string,action:string,outcome:'helpful'|'not-helpful'){try{const r=await fetch('/api/intelligence/feedback',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({category,action,outcome})});if(!r.ok)throw Error('Sign in to save feedback');setError('Feedback saved')}catch(e){setError(e instanceof Error?e.message:'Unable to save feedback')}}
- async function generateAi(){try{setError('Generating…');const r=await fetch('/api/ai/business',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({businessName:name,industry,description,services:services.split('\\n').map(x=>x.trim()).filter(Boolean)})});const data=await r.json();if(!r.ok)throw Error(data.error||'Generation unavailable');setPages(data.pages);setActive('index');setError(data.provider==='ollama'?'Generated using local AI':'Generated using free deterministic fallback')}catch(e){setError(e instanceof Error?e.message:'Generation failed')}}
- function generate(){try{const result=generateBusinessWebsite({businessName:name,industry,description,services:services.split('\n').map(s=>s.trim()).filter(Boolean),...(email?{contactEmail:email}:{})});setPages(result.pages);setActive('index');setError('')}catch{setError('Please provide a business name, description (at least 15 characters), valid services and optional email address.')}}
- const page=pages.find(p=>p.slug===active);const quality=page?auditGeneratedSite({html:page.html}):null;
- return <div className="business-generator"><header><Link href="/">← Forge Studio</Link><strong>BUSINESS WEBSITE GENERATOR</strong><Link href="/experiences">3D Experience Lab</Link></header><div className="business-generator-grid"><aside><h2>Generate a complete website</h2><p>Four responsive pages, generated locally without paid AI requests.</p><label>Business name<input value={name} onChange={e=>setName(e.target.value)} placeholder="Your business"/></label><label>Industry<input value={industry} onChange={e=>setIndustry(e.target.value)}/></label><label>Business description<textarea rows={5} value={description} onChange={e=>setDescription(e.target.value)}/></label><label>Services (one per line)<textarea rows={5} value={services} onChange={e=>setServices(e.target.value)}/></label><label>Contact email (optional)<input type="email" value={email} onChange={e=>setEmail(e.target.value)}/></label><button onClick={generate}>Generate website</button><button onClick={generateAi}>Generate with AI (local / free)</button>{error&&<p role="alert">{error}</p>}{pages.length>0&&<><p>Preview pages</p><div className="business-page-buttons">{pages.map(p=><button key={p.slug} onClick={()=>setActive(p.slug)}>{p.title}</button>)}</div><button onClick={()=>pages.forEach(p=>downloadText(p.slug+'.html',p.html,'text/html'))}>Export all four HTML pages</button></>}</aside><main>{quality&&<div style={{padding:12,marginBottom:10,border:"1px solid #444"}}><strong>Quality score: {quality.score}/100</strong><span> · SEO {quality.seo} · AEO {quality.aeo} · GEO {quality.geo} · Accessibility {quality.accessibility} · Conversion {quality.conversion}</span><details><summary>{quality.findings.length} recommendations</summary>{[...quality.findings].sort((a,b)=>(signals[b.category]||0)-(signals[a.category]||0)).map((x,i)=><p key={i}><strong>{x.category}:</strong> {x.recommendation} <button onClick={()=>feedback(x.category,x.recommendation,'helpful')}>Helpful</button> <button onClick={()=>feedback(x.category,x.recommendation,'not-helpful')}>Not useful</button></p>)}</details></div>}{page?<iframe title={'Preview '+page.title} sandbox="" srcDoc={page.html}/>:<div className="business-empty"><h1>Your next website starts here.</h1><p>Enter a business brief and generate your first four-page website.</p></div>}</main></div></div>
+ const [name,setName]=useState(''),[brief,setBrief]=useState(''),[busy,setBusy]=useState(false),[status,setStatus]=useState(''),[pages,setPages]=useState<GeneratedPage[]>([]),[active,setActive]=useState('index'),[mobile,setMobile]=useState(false);
+ const current=pages.find(p=>p.slug===active),quality=current?auditGeneratedSite({html:current.html}):null;
+ async function generate(){
+ if(name.trim().length<2){setStatus('Enter your business name to get started.');return}
+ setBusy(true);setStatus('Building your website and choosing its design automatically…');
+ const input=infer(name,brief);
+ try{
+ const response=await fetch('/api/ai/business',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(input)});
+ if(!response.ok)throw Error((await response.json()).error||'AI generation unavailable');
+ const result=await response.json();setPages(result.pages);setActive('index');setStatus(result.provider==='ollama'?'Website created with local AI.':'Website created with automatic design and content. Local AI is optional.');
+ }catch{
+ try{const site=generateBusinessWebsite(input);setPages(site.pages);setActive('index');setStatus('Website created with the free automatic generator.')}catch{setStatus('Unable to generate. Check your business name and description.')}
+ }finally{setBusy(false)}
+ }
+ return <div className="business-generator forge-auto">
+ <header><Link href="/">✦ FORGE STUDIO</Link><strong>AI WEBSITE BUILDER</strong><Link href="/experiences">3D experiences ↗</Link></header>
+ <div className="forge-auto-layout">
+ <aside className="forge-auto-panel"><div className="eyebrow">YOUR WEBSITE, AUTOMATICALLY</div><h1>Tell us about your business.<br/><em>We build the rest.</em></h1><p>Design, copy, page structure and visual direction are selected automatically. No complex settings required.</p>
+ <label>Business name<input autoFocus value={name} onChange={e=>setName(e.target.value)} placeholder="e.g. Northstar Coffee"/></label>
+ <label>What does your business do? <span className="optional">(optional)</span><textarea rows={5} value={brief} onChange={e=>setBrief(e.target.value)} placeholder="Describe what you offer, who you serve and what makes you different."/></label>
+ <button className="forge-auto-cta" onClick={()=>void generate()} disabled={busy}>{busy?'Creating your website…':'✦ Generate my website'}</button>
+ {status&&<p role="status" className="forge-auto-status">{status}</p>}
+ <p className="forge-auto-note">Automatically generates Home, Services, About and Contact pages. Free generation remains available if an AI provider is offline.</p>
+ {pages.length>0&&<div className="forge-auto-export"><button onClick={()=>pages.forEach(p=>downloadText(p.slug+'.html',p.html,'text/html'))}>↓ Download website pages</button><Link href="/cloud">Save & publish ↗</Link></div>}
+ <details className="forge-auto-advanced"><summary>Advanced editing and intelligence tools</summary><div><Link href="/">Visual editor</Link><Link href="/intelligence">Intelligence</Link><Link href="/experiences">Immersive 3D editor</Link><Link href="/assets">Asset library</Link></div></details>
+ </aside>
+ <main className="forge-auto-preview"><div className="forge-auto-toolbar"><span>● LIVE WEBSITE PREVIEW</span><div><button onClick={()=>setMobile(false)} aria-pressed={!mobile}>Desktop</button><button onClick={()=>setMobile(true)} aria-pressed={mobile}>Mobile</button></div></div>
+ {pages.length>0?<><nav className="forge-auto-tabs" aria-label="Website pages">{pages.map(p=><button key={p.slug} aria-current={active===p.slug?'page':undefined} onClick={()=>setActive(p.slug)}>{p.title}</button>)}</nav><div className={'forge-auto-frame '+(mobile?'mobile':'')}><iframe title={'Website preview: '+(current?.title||'Home')} sandbox="" srcDoc={current?.html||''}/></div>{quality&&<div className="forge-auto-quality"><strong>Automated quality review: {quality.score}/100</strong><span>SEO {quality.seo} · AEO {quality.aeo} · GEO {quality.geo}</span></div>}</>:<div className="forge-auto-placeholder"><div className="forge-auto-orb">✦</div><span>THE NEXT GENERATION OF WEBSITES</span><h2>Beautiful by default.<br/>Built around your brand.</h2><p>Your website preview will appear here, ready to explore.</p></div>}
+ </main></div></div>
 }
