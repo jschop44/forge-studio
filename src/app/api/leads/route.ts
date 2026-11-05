@@ -14,6 +14,6 @@ export async function POST(req:NextRequest){
  const sql=database();const {name,email,message,projectId}=parsed.data;
  const result=await sql`INSERT INTO forge_leads(id,owner_id,project_id,name,email,message) SELECT ${crypto.randomUUID()}::uuid,owner_id,id,${name},${email},${message} FROM forge_projects WHERE id=${projectId}::uuid AND EXISTS(SELECT 1 FROM forge_publications WHERE project_id=${projectId}::uuid) RETURNING id`;
  if(!result.length)return NextResponse.json({error:'Project not found'},{status:404});
- return NextResponse.json({ok:true});
+ return new NextResponse('<!doctype html><html lang="en"><head><meta charset="utf-8"><title>Inquiry received</title></head><body><h1>Thank you</h1><p>Your inquiry has been received.</p></body></html>',{headers:{'Content-Type':'text/html; charset=utf-8','Cache-Control':'no-store'}});
  }catch{return NextResponse.json({error:'Unable to submit inquiry'},{status:503})}
 }
