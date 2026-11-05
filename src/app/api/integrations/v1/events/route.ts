@@ -12,6 +12,7 @@ export async function POST(req:NextRequest){
  const parsed=Input.safeParse(JSON.parse(raw));if(!parsed.success)return NextResponse.json({error:'Invalid event or missing consent'},{status:400});
  const e=parsed.data,sql=database();const payload=JSON.stringify({businessName:e.businessName,website:e.website,summary:e.summary,eventId:e.eventId,consent:e.consent});
  const rows=await sql`INSERT INTO forge_jobs(id,tenant_id,kind,source,payload) SELECT ${e.eventId}::uuid,id,'lead-enrichment',${e.source},${payload}::jsonb FROM forge_users WHERE id=${e.tenantId}::uuid ON CONFLICT(id) DO NOTHING RETURNING id`;
+ if(rows.length===0){const owner=await sql`SELECT id FROM forge_users WHERE id=${e.tenantId}::uuid LIMIT 1`;if(!owner.length)return NextResponse.json({error:'Tenant not found'},{status:404});}
  return NextResponse.json({accepted:true,duplicate:rows.length===0},{status:202});
  }catch{return NextResponse.json({error:'Integration unavailable'},{status:503})}
 }
