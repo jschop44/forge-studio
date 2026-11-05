@@ -45,3 +45,15 @@ Important: the exported HTML is a **static fallback** and does not contain the i
 
 ## Agent orchestration
 Modular task planning lives in src/lib/agents. It is an execution plan, not a background worker. No automated cross-app polling, learning or publication is active.
+
+## Expanded platform modules (source-development milestone)
+
+- `/business`: four-page business website generator with SEO/AEO/GEO quality recommendations and feedback.
+- `/experiences`: cinematic 3D editor with GLB/glTF models and local preview; public HTTPS model exports include an interactive viewer.
+- `/account`, `/cloud`: opt-in authentication, cloud project persistence and gated publishing.
+- `/assets`, `/leads`: private asset library and authenticated lead inbox.
+- `/intelligence`: durable agent task queue, approval gates and structured outputs.
+- `npm run verify`: run regression tests, type checking and production build.
+- `npm run db:migrate`: initialize dedicated database tables.
+
+The Growth Lens and LeadFlow repositories contain opt-in signed Forge Studio event adapters. See `docs/DEPLOYMENT_RUNBOOK.md` and `docs/ACCEPTANCE_REPORT.md` before enabling features. An estimated 85% source feature implementation does **not** mean the deployment or end-to-end integrations have passed verification. All paid API calls remain disabled by default.
