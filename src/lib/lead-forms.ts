@@ -1,0 +1,4 @@
+import {z} from 'zod';
+export const LeadFormSchema=z.object({name:z.string().trim().min(1).max(100),email:z.string().trim().email().max(254),message:z.string().trim().min(1).max(3000),website:z.string().max(200).optional(),projectId:z.string().uuid().optional()});
+export type LeadForm=z.infer<typeof LeadFormSchema>;
+export function leadFormHtml(projectId:string){const id=projectId.replace(/[^a-zA-Z0-9-]/g,'');return '<form method="post" action="/api/leads" class="forge-contact-form"><input type="hidden" name="projectId" value="'+id+'"><label>Name<input name="name" required maxlength="100" autocomplete="name"></label><label>Email<input type="email" name="email" required maxlength="254" autocomplete="email"></label><label>Message<textarea name="message" required maxlength="3000"></textarea></label><label class="forge-honeypot" aria-hidden="true">Website<input name="website" tabindex="-1" autocomplete="off"></label><button type="submit">Send inquiry</button></form>'}
