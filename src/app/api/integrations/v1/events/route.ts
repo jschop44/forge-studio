@@ -1,7 +1,7 @@
 import {NextRequest,NextResponse} from 'next/server';
 import {createHmac,timingSafeEqual} from 'node:crypto';
 import {z} from 'zod';
-import {database} from '../../../../../../lib/server/db';
+import {database} from '../../../../../lib/server/db';
 const Input=z.object({eventId:z.string().uuid(),tenantId:z.string().uuid(),source:z.enum(['leadflow','growth-lens']),businessName:z.string().min(2).max(120),website:z.string().url().max(2048).optional(),summary:z.string().max(3000).optional(),consent:z.literal(true)});
 export const runtime='nodejs';
 export async function POST(req:NextRequest){
