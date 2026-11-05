@@ -1,0 +1,9 @@
+import {NextRequest,NextResponse} from 'next/server';
+import {z} from 'zod';
+import {database} from '../../../../lib/server/db';
+import {currentUserId} from '../../../../lib/server/auth';
+import {sameOrigin} from '../../../../lib/server/request-security';
+export const runtime='nodejs';
+const Input=z.object({category:z.enum(['seo','aeo','geo','accessibility','conversion','lead-quality','site-generation']),action:z.string().trim().min(2).max(150),outcome:z.enum(['helpful','not-helpful','implemented','rejected']),notes:z.string().max(500).optional()});
+export async function POST(req:NextRequest){if(!sameOrigin(req))return NextResponse.json({error:'Origin rejected'},{status:403});const user=await currentUserId();if(!user)return NextResponse.json({error:'Unauthorized'},{status:401});try{const raw=await req.text();if(raw.length>2500)return NextResponse.json({error:'Too large'},{status:413});const input=Input.safeParse(JSON.parse(raw));if(!input.success)return NextResponse.json({error:'Invalid feedback'},{status:400});const x=input.data,sql=database();await sql`INSERT INTO forge_feedback(id,owner_id,category,action,outcome,notes) VALUES(${crypto.randomUUID()}::uuid,${user}::uuid,${x.category},${x.action},${x.outcome},${x.notes||null})`;return NextResponse.json({ok:true},{status:201})}catch{return NextResponse.json({error:'Feedback unavailable'},{status:503})}}
+export async function GET(){const user=await currentUserId();if(!user)return NextResponse.json({error:'Unauthorized'},{status:401});try{const sql=database();const rows=await sql`SELECT category,count(*)::int AS total,count(*) FILTER(WHERE outcome IN ('helpful','implemented'))::int AS positive FROM forge_feedback WHERE owner_id=${user}::uuid GROUP BY category ORDER BY total DESC`;return NextResponse.json({signals:rows},{headers:{'Cache-Control':'no-store'}})}catch{return NextResponse.json({error:'Feedback unavailable'},{status:503})}}
