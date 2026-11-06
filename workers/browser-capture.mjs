@@ -13,7 +13,8 @@ try{
  });
  const page=await context.newPage();
  await page.goto(target.href,{waitUntil:'domcontentloaded',timeout:15000});
+ await page.screenshot({path:'browser-screenshot.png',fullPage:true,animations:'disabled'});
  const landmarks=await page.locator('h1,h2,nav,main').evaluateAll(nodes=>nodes.slice(0,30).map(n=>({role:n.tagName.toLowerCase(),text:(n.textContent||'').trim().slice(0,120)})));
  const interactions=await page.locator('a,button,form').evaluateAll(nodes=>nodes.slice(0,80).map(n=>({kind:n.tagName.toLowerCase()==='a'?'link':n.tagName.toLowerCase()==='form'?'form':'button',label:(n.getAttribute('aria-label')||n.textContent||'').trim().slice(0,100),verified:false})));
- process.stdout.write(JSON.stringify({version:1,sourceUrl:target.origin,capturedAt:new Date().toISOString(),viewport:{width:1280,height:800},pages:[{path:target.pathname,title:await page.title(),landmarks,interactions}],warnings:['Interactions not executed; screenshots not stored']})+'\n');
+ process.stdout.write(JSON.stringify({version:1,sourceUrl:target.origin,capturedAt:new Date().toISOString(),viewport:{width:1280,height:800},pages:[{path:target.pathname,title:await page.title(),landmarks,interactions}],warnings:['Interactions not executed; screenshot saved separately as browser-screenshot.png']})+'\n');
 }finally{await browser.close()}
