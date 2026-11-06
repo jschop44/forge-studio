@@ -18,3 +18,19 @@ test('keeps observed navigation same-origin and escapes link text',()=>{
  assert.doesNotMatch(html,/evil\.example|javascript:alert/);
  assert.match(html,/aria-label="Observed navigation"/);
 });
+
+test('renders measured capture regions and a safe page inventory',()=>{
+ const html=blueprintToHtml({version:1,sourceUrl:'https://example.com',title:'Site',sections:[],pages:[
+  {title:'Home',regions:[{type:'hero',headline:'Observed hero',bounds:{x:0,y:0,width:800,height:280}}]},
+  {title:'<img src=x>',regions:[]}
+ ]});
+ assert.match(html,/Observed hero/);
+ assert.match(html,/min-height:280px/);
+ assert.match(html,/Captured pages \(2\)/);
+ assert.match(html,/&lt;img src=x&gt;/);
+ assert.doesNotMatch(html,/<img/i);
+});
+test('invalid source URL cannot crash preview navigation rendering',()=>{
+ const html=blueprintToHtml({version:1,sourceUrl:'not-a-url',title:'Site',sections:[],navigation:[{label:'Click',target:'/path'}]});
+ assert.doesNotMatch(html,/href=/);
+});
