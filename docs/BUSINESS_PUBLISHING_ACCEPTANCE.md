@@ -10,7 +10,9 @@ The opt-in `POST /api/business/publish` route now exists, but **publishing is di
 - [x] Register `forge_business_publications` migration.
 - [x] Serve stored pages from `/business-sites/{id}/{slug}` with restrictive CSP.
 - [x] Add owner-scoped unpublish endpoint: `DELETE /api/business/publish/{id}` (same-origin, authenticated, feature-gated).
-- [ ] Add versioned rollback and owner-only publication management UI.
+- [x] Add initial versioned snapshot storage, owner-only version metadata, and compatible-page-set rollback endpoint.
+- [x] Remove snapshot history on unpublish.
+- [ ] Add owner-only publication management UI, new revision creation, and full versioned rollback across changed page sets.
 - [ ] Connect publishing to the builder's owner-approval UI.
 - [ ] Verify the production database migration and authentication flow.
 - [ ] Test published navigation, assets, accessibility, forms, mobile layout, and reduced-motion behavior.
