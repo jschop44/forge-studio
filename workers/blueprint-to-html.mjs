@@ -26,15 +26,14 @@ export function blueprintToHtml(blueprint,selectedPage=0,localNavigation=false){
 }
 
 function previewFileName(pages,index){
- const raw=typeof pages[index]?.path==='string'?pages[index].path:'/';
- const normalized=raw.replace(/^\\/+|\\/+$/g,'').replace(/[^a-zA-Z0-9/_-]/g,'-');
- const slug=(normalized||'index').replace(/\\//g,'-').slice(0,80)||'index';
+ const slugFor=page=>{
+  const path=typeof page?.path==='string'?page.path:'/';
+  const parts=path.split('/').filter(Boolean).map(part=>part.replace(/[^a-zA-Z0-9_-]/g,'-'));
+  return (parts.join('-')||'index').slice(0,80);
+ };
+ const slug=slugFor(pages[index]);
  let collisions=0;
- for(let i=0;i<index;i++){
-  const prior=typeof pages[i]?.path==='string'?pages[i].path:'/';
-  const clean=prior.replace(/^\\/+|\\/+$/g,'').replace(/[^a-zA-Z0-9/_-]/g,'-');
-  if((clean||'index').replace(/\\//g,'-').slice(0,80)===slug)collisions++;
- }
+ for(let i=0;i<index;i++)if(slugFor(pages[i])===slug)collisions++;
  return slug+(collisions?'-'+(index+1):'')+'.html';
 }
 /** Export a bounded multi-page, self-contained preview package; no live network calls. */
