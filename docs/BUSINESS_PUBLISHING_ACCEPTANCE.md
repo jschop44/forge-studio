@@ -12,7 +12,9 @@ The opt-in `POST /api/business/publish` route now exists, but **publishing is di
 - [x] Add owner-scoped unpublish endpoint: `DELETE /api/business/publish/{id}` (same-origin, authenticated, feature-gated).
 - [x] Add initial versioned snapshot storage, owner-only version metadata, and compatible-page-set rollback endpoint.
 - [x] Remove snapshot history on unpublish.
-- [ ] Add owner-only publication management UI, new revision creation, and full versioned rollback across changed page sets.
+- [x] Add owner-only publication management UI and a revision API for unchanged page sets.
+- [ ] Wire revision saving into the UI and verify concurrent revision handling.
+- [ ] Support full versioned rollback across changed page sets.
 - [ ] Connect publishing to the builder's owner-approval UI.
 - [ ] Verify the production database migration and authentication flow.
 - [ ] Test published navigation, assets, accessibility, forms, mobile layout, and reduced-motion behavior.
