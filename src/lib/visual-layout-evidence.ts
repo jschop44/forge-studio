@@ -37,5 +37,8 @@ export function summarizeVisualLayout(input:unknown) {
     footerObserved:regions.some(r=>r.role==="footer"),
     viewport:evidence.viewport,
     screenshotPixelsAnalyzed:false as const,
+    heroAreaRatio:hero?Number((hero.width*hero.height/(evidence.viewport.width*evidence.viewport.height)).toFixed(3)):null,
+    observedRoles:[...new Set(regions.map(r=>r.role))],
+    regionCoverageRatio:Number((regions.reduce((sum,r)=>sum+r.width*r.height,0)/(evidence.viewport.width*evidence.viewport.height)).toFixed(3)),
   };
 }
