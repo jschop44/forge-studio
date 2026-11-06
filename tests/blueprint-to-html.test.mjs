@@ -106,3 +106,10 @@ test('applies observed heading and body typography without accepting CSS injecti
  const unsafe=blueprintToHtml({version:1,title:'Site',sections:[],pages:[{path:'/',regions:[],designTokens:{fontFamily:'Arial;body{display:none}',headingFontSize:'42px;display:none'}}]});
  assert.doesNotMatch(unsafe,/display:none/);
 });
+
+test('each exported page has its own escaped heading',()=>{
+ const files=blueprintToPages({version:1,title:'Brand',headline:'Home headline',sections:[],pages:[{path:'/',title:'Home',regions:[]},{path:'/contact',title:'Contact <team>',regions:[]}]});
+ assert.match(files[0].html,/<h1>Home<\/h1>/);
+ assert.match(files[1].html,/<h1>Contact &lt;team&gt;<\/h1>/);
+ assert.doesNotMatch(files[1].html,/<h1>Home headline<\/h1>/);
+});
