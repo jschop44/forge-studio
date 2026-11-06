@@ -27,3 +27,17 @@ export async function POST(req:NextRequest){
   return NextResponse.json({error:'Business publication unavailable; check database migrations'},{status:503});
  }
 }
+
+/** Owner-only listing; never expose HTML bodies or other owners' publications. */
+export async function GET(){
+ if(process.env.ENABLE_BUSINESS_PUBLISHING!=='true')return NextResponse.json({error:'Business publishing is not configured'},{status:503});
+ const owner=await currentUserId();
+ if(!owner)return NextResponse.json({error:'Unauthorized'},{status:401});
+ try{
+  const sql=database();
+  const rows=await sql`SELECT id,COUNT(*)::int AS page_count,MIN(created_at) AS created_at
+   FROM forge_business_publications WHERE owner_id=${owner}::uuid
+   GROUP BY id ORDER BY MIN(created_at) DESC LIMIT 100`;
+  return NextResponse.json({publications:rows.map(row=>({id:row.id,pageCount:row.page_count,createdAt:row.created_at,url:'/business-sites/'+row.id+'/index'}))});
+ }catch{return NextResponse.json({error:'Unable to list publications'},{status:503})}
+}
