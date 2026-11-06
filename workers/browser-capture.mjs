@@ -2,6 +2,7 @@
 // Example: FORGE_CAPTURE_HOSTS=example.com node workers/browser-capture.mjs https://example.com
 import { chromium } from 'playwright';
 import { isIP } from 'node:net';
+import { isSafeNavigationProbe } from './navigation-probe-policy.mjs';
 const unsafeHost=host=>isIP(host.replace(/^\\[|\\]$/g,''))!==0||host==='localhost'||host.endsWith('.localhost')||host.endsWith('.local')||host.endsWith('.internal')||host.endsWith('.test');
 const target=new URL(process.argv[2]);
 const hosts=(process.env.FORGE_CAPTURE_HOSTS||'').split(',').map(x=>x.trim());
@@ -36,7 +37,7 @@ try{
   if(item.kind!=='link'||!item.target||navigationChecks.length>=8)continue;
   let url;
   try{url=new URL(item.target,page.url());}catch{continue;}
-  if(url.origin!==target.origin||url.protocol!=='https:'||url.username||url.password||url.pathname===page.url().split('?')[0]&&url.search===new URL(page.url()).search||seenPaths.has(url.pathname+url.search))continue;
+  if(!isSafeNavigationProbe(url.href,target.origin)||url.pathname===new URL(page.url()).pathname&&url.search===new URL(page.url()).search||seenPaths.has(url.pathname+url.search))continue;
   seenPaths.add(url.pathname+url.search);
   // A separate isolated page verifies read-only navigation; no forms or buttons are executed.
   const probe=await context.newPage();
