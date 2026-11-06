@@ -1,4 +1,5 @@
 import { generateBusinessWebsite } from "./business-site";
+import { auditGeneratedDraft } from "./draft-quality-gate";
 import { prepareBrowserEvidenceGeneration } from "./browser-evidence-generation";
 
 /**
@@ -35,16 +36,14 @@ export function generateReviewedCaptureSite(
 ) {
   if (!ownerApproved) throw new Error("Explicit owner approval is required");
   const proposal = proposeBusinessSiteFromCapture(capture);
-  const { generateBusinessWebsite } = requireBusinessGenerator();
-  return generateBusinessWebsite({
+  const site = generateBusinessWebsite({
     businessName: proposal.businessName,
     industry: approved.industry,
     description: approved.description,
     services: approved.services,
     contactEmail: approved.contactEmail,
   });
-}
-
-function requireBusinessGenerator() {
-  return { generateBusinessWebsite };
+  const quality = auditGeneratedDraft(site.pages);
+  if (!quality.readyForReview) throw new Error("Generated draft failed quality checks: " + quality.errors.join("; "));
+  return site;
 }
