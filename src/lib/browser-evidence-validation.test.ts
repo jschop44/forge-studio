@@ -24,3 +24,8 @@ test('rejects fabricated navigation check methods',()=>{
  const navigationChecks=[{path:'/checkout',status:200,ok:true,verifiedBy:'form-submit'}];
  assert.equal(validateBrowserEvidence({...base,pages:[{...base.pages[0],navigationChecks}]}),false);
 });
+
+test('rejects navigation probes with success flags inconsistent with status',()=>{
+ const navigationChecks=[{path:'/missing',status:404,ok:true,verifiedBy:'navigation-get'}];
+ assert.equal(validateBrowserEvidence({...base,pages:[{...base.pages[0],navigationChecks}]}),false);
+});
