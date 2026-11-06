@@ -1,15 +1,17 @@
 // Optional worker; install Playwright in a separate authorized capture environment.
 // Example: FORGE_CAPTURE_HOSTS=example.com node workers/browser-capture.mjs https://example.com
 import { chromium } from 'playwright';
+import { isIP } from 'node:net';
+const unsafeHost=host=>isIP(host.replace(/^\\[|\\]$/g,''))!==0||host==='localhost'||host.endsWith('.localhost')||host.endsWith('.local')||host.endsWith('.internal')||host.endsWith('.test');
 const target=new URL(process.argv[2]);
 const hosts=(process.env.FORGE_CAPTURE_HOSTS||'').split(',').map(x=>x.trim());
-if(target.protocol!=='https:'||!hosts.includes(target.hostname)||target.port||target.username||target.password)throw Error('Host not allowlisted');
+if(target.protocol!=='https:'||!hosts.includes(target.hostname)||unsafeHost(target.hostname)||target.port||target.username||target.password)throw Error('Host not allowlisted');
 const browser=await chromium.launch({headless:true});
 try{
  const context=await browser.newContext({viewport:{width:1280,height:800},serviceWorkers:'block'});
  await context.route('**/*',route=>{
   const url=new URL(route.request().url());
-  return url.protocol==='https:'&&hosts.includes(url.hostname)?route.continue():route.abort();
+  return url.protocol==='https:'&&hosts.includes(url.hostname)&&!unsafeHost(url.hostname)&&!url.port&&!url.username&&!url.password?route.continue():route.abort();
  });
  const page=await context.newPage();
  await page.goto(target.href,{waitUntil:'domcontentloaded',timeout:15000});
