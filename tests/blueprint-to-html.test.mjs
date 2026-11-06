@@ -10,3 +10,11 @@ test('escapes untrusted source content without executing scripts',()=>{
  assert.doesNotMatch(html,/<script|<img|<svg/i);assert.match(html,/&lt;script&gt;/);
 });
 test('rejects invalid blueprints',()=>assert.throws(()=>blueprintToHtml({version:2,sections:[]})));
+
+test('keeps observed navigation same-origin and escapes link text',()=>{
+ const html=blueprintToHtml({version:1,sourceUrl:'https://example.com',title:'Example',sections:[],navigation:[{label:'About <us>',target:'/about'},{label:'External',target:'https://evil.example/'},{label:'Unsafe',target:'javascript:alert(1)'}]});
+ assert.match(html,/href="https:\/\/example.com\/about"/);
+ assert.match(html,/About &lt;us&gt;/);
+ assert.doesNotMatch(html,/evil\.example|javascript:alert/);
+ assert.match(html,/aria-label="Observed navigation"/);
+});
