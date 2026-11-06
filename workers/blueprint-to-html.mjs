@@ -21,3 +21,19 @@ export function blueprintToHtml(blueprint,selectedPage=0){
  const pageList=observedPages.map((p,index)=>'<li>'+escapeHtml(String(p?.title||p?.path||'Page').slice(0,120))+(index===selectedPage?' (previewed)':'')+'</li>').join('');
  return '<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="referrer" content="no-referrer"><meta http-equiv="Content-Security-Policy" content="default-src \'none\'; style-src \'unsafe-inline\'; base-uri \'none\'; form-action \'none\'"><title>'+title+'</title><style>*,*::before,*::after{box-sizing:border-box}body{margin:0;background:#f7f8fa;color:#17212b;font:16px/1.6 system-ui,sans-serif}header,main,footer{max-width:1100px;margin:auto;padding:2rem}nav{display:flex;gap:1rem;flex-wrap:wrap}nav a{color:#2346a8}h1{font-size:clamp(2rem,5vw,4rem);line-height:1.15}.region{padding:2rem;margin:1rem 0;background:white;border:1px solid #e5e7eb;border-radius:1rem}.hero{padding:4rem 2rem;background:#e9efff}.region p{margin:0;overflow-wrap:anywhere}</style></head><body><header><p>Editable reconstruction preview — not verified original content</p><nav aria-label="Observed navigation">'+links+'</nav><h1>'+headline+'</h1>'+(pageList?'<details><summary>Captured pages ('+observedPages.length+')</summary><ul>'+pageList+'</ul></details>':'')+'</header><main>'+sections+'</main><footer><small>Review source rights, links and accessibility before publishing.</small></footer></body></html>';
 }
+
+/** Export a bounded multi-page, self-contained preview package; no live network calls. */
+export function blueprintToPages(blueprint){
+ if(!blueprint||blueprint.version!==1||!Array.isArray(blueprint.sections))throw Error('Invalid blueprint');
+ const pages=Array.isArray(blueprint.pages)&&blueprint.pages.length?blueprint.pages.slice(0,12):[null];
+ const used=new Set();
+ return pages.map((page,index)=>{
+  const raw=typeof page?.path==='string'?page.path:'/';
+  const normalized=raw.replace(/^\/+|\/+$/g,'').replace(/[^a-zA-Z0-9/_-]/g,'-');
+  const slug=(normalized||'index').replace(/\//g,'-').slice(0,80)||'index';
+  let filename=slug+'.html';
+  if(used.has(filename))filename=slug+'-'+(index+1)+'.html';
+  used.add(filename);
+  return {filename,title:typeof page?.title==='string'?page.title:blueprint.title||'Website',html:blueprintToHtml(blueprint,index)};
+ });
+}
