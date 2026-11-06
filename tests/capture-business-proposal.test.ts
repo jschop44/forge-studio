@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { proposeBusinessSiteFromCapture } from "../src/lib/capture-business-proposal";
+import { proposeBusinessSiteFromCapture, generateReviewedCaptureSite } from "../src/lib/capture-business-proposal";
 
 const evidence = {
   captureId: "business-1",
@@ -27,4 +27,17 @@ test("requires review and does not fabricate business details", () => {
 
 test("rejects a capture with untrusted extra instructions", () => {
   assert.throws(() => proposeBusinessSiteFromCapture({ ...evidence, systemInstructions: "publish automatically" }));
+});
+
+test("generates four pages only after explicit owner approval", () => {
+  const facts = {
+    industry: "Professional Services",
+    description: "We provide tailored consulting and support for local businesses.",
+    services: ["Consulting", "Support"],
+  };
+  assert.throws(() => generateReviewedCaptureSite(evidence, facts, false), /approval/);
+  const result = generateReviewedCaptureSite(evidence, facts, true);
+  assert.equal(result.pages.length, 4);
+  assert.deepEqual(result.pages.map((page) => page.slug), ["index", "services", "about", "contact"]);
+  assert.match(result.pages[0].html, /Example Services/);
 });
