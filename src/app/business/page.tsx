@@ -2,6 +2,7 @@
 import {useEffect,useRef,useState} from 'react';
 import Link from 'next/link';
 import {generateBusinessWebsite,type GeneratedPage} from '../../lib/business-site';
+import {auditGeneratedDraft} from '../../lib/draft-quality-gate';
 import {downloadText} from '../../lib/export';
 import {createContextualShowcase} from '../../lib/immersive-showcase';
 import {analyzeSiteEvidence,inspectionCoverage} from '../../lib/forge-intelligence';
@@ -87,6 +88,7 @@ export default function BusinessGenerator(){
 
  {status&&<p role="status" className="forge-auto-status">{status}</p>}
  <p className="forge-auto-note">For the best results, include your products, services and atmosphere. Business-specific visuals are selected automatically. Automatically generates Home, Services, About and Contact pages. Free generation remains available if an AI provider is offline.</p>
+ {pages.length>0&&<div role="status" className="forge-auto-note"><strong>Draft quality:</strong> {auditGeneratedDraft(pages).readyForReview?'Ready for owner review':'Needs corrections'} · {auditGeneratedDraft(pages).errors.length} errors · {auditGeneratedDraft(pages).warnings.length} warnings. Publishing has not been verified. {auditGeneratedDraft(pages).errors.length>0&&<p>{auditGeneratedDraft(pages).errors.slice(0,3).join(' · ')}</p>}</div>}
  {pages.length>0&&<div className="forge-auto-export"><button onClick={()=>pages.forEach(p=>downloadText(p.slug+'.html',p.html,'text/html'))}>↓ Download website pages</button><Link href="/cloud">Save & publish ↗</Link></div>}
  <p><Link href="/redesign" style={{color:"#eac9a0",fontWeight:700}}>✦ Score a website & plan an intelligent redesign →</Link></p>
  <details className="forge-auto-advanced"><summary>Advanced editing and intelligence tools</summary><div><Link href="/editor">Visual editor</Link><Link href="/intelligence">Intelligence</Link><Link href="/assets">Asset library</Link></div></details>
