@@ -1,0 +1,33 @@
+import {NextRequest,NextResponse} from 'next/server';
+import {sameOrigin} from '../../../../lib/server/request-security';
+import {lookup} from 'node:dns/promises';
+import {isIP} from 'node:net';
+export const runtime='nodejs';
+const blocked=(ip:string)=>{if(isIP(ip)===4){const n=ip.split('.').map(Number);return n[0]===0||n[0]===10||n[0]===127||n[0]>=224||n[0]===169&&n[1]===254||n[0]===172&&n[1]>=16&&n[1]<=31||n[0]===192&&n[1]===168||n[0]===100&&n[1]>=64&&n[1]<=127||n[0]===192&&n[1]===0||n[0]===198&&n[1]>=18&&n[1]<=19}if(isIP(ip)===6){const s=ip.toLowerCase();return s==='::1'||s==='::'||s.startsWith('fe80:')||s.startsWith('fc')||s.startsWith('fd')||s.startsWith('::ffff:')}return true};
+function clean(value:string){return value.replace(/<[^>]*>/g,' ').replace(/&amp;/g,'&').replace(/&quot;/g,'"').replace(/&#39;/g,"'").replace(/\s+/g,' ').trim().slice(0,400)}
+function meta(html:string,key:string){const tags=html.match(/<meta\b[^>]*>/gi)||[];for(const tag of tags){if(new RegExp('(?:name|property)\\s*=\\s*["\\']'+key+'["\\']','i').test(tag))return clean(tag.match(/content\s*=\s*["']([^"']*)["']/i)?.[1]||'')}return ''}
+export async function POST(req:NextRequest){
+ if(!sameOrigin(req))return NextResponse.json({error:'Origin rejected'},{status:403});
+ try{
+ const raw=await req.text();if(raw.length>2048)return NextResponse.json({error:'Address too long'},{status:413});
+ const value=JSON.parse(raw).url;if(typeof value!=='string'||value.length>500)return NextResponse.json({error:'Invalid website address'},{status:400});
+ const url=new URL(/^https?:\/\//i.test(value)?value:'https://'+value);
+ if(url.protocol!=='https:'||url.username||url.password||url.port&&url.port!=='443'||!url.hostname.includes('.')||isIP(url.hostname)||url.hostname.endsWith('.local'))return NextResponse.json({error:'Enter a public HTTPS website address'},{status:400});
+ const addresses=await lookup(url.hostname,{all:true,verbatim:true});if(!addresses.length||addresses.some(a=>blocked(a.address)))return NextResponse.json({error:'Website address is not public'},{status:400});
+ const response=await fetch(url,{redirect:'manual',signal:AbortSignal.timeout(8000),headers:{'User-Agent':'ForgeStudioSiteResearch/1.0','Accept':'text/html'}});
+ if(response.status>=300&&response.status<400)return NextResponse.json({error:'Website redirects to another address. Enter its final HTTPS address.'},{status:422});
+ if(!response.ok)return NextResponse.json({error:'Website could not be retrieved ('+response.status+')'},{status:422});
+ if(!(response.headers.get('content-type')||'').includes('text/html'))return NextResponse.json({error:'Address did not return HTML'},{status:422});
+ const reader=response.body?.getReader();if(!reader)throw Error('No response body');let size=0;const parts:Uint8Array[]=[];while(true){const item=await reader.read();if(item.done)break;size+=item.value.length;if(size>450000){await reader.cancel();break}parts.push(item.value)}
+ const html=new TextDecoder().decode(Buffer.concat(parts));
+ const title=clean(html.match(/<title[^>]*>([\s\S]*?)<\/title>/i)?.[1]||'');
+ const description=meta(html,'description')||meta(html,'og:description');
+ const css=(html.match(/<style\b[^>]*>[\s\S]*?<\/style>/gi)||[]).join(' ').slice(0,70000);
+ const styles=css+' '+(html.match(/<body[^>]*style=["'][^"']+["']/i)?.[0]||'');
+ const background=styles.match(/(?:--(?:background|bg|surface|brand-bg)|background(?:-color)?)\s*:\s*(#[a-f0-9]{3,8})/i)?.[1];
+ const accent=styles.match(/(?:--(?:primary|accent|brand|brand-accent)|color)\s*:\s*(#[a-f0-9]{3,8})/i)?.[1];
+ const fontFamily=styles.match(/font-family\s*:\s*['"]?(Georgia|Arial|Verdana|Tahoma|Trebuchet MS|Times New Roman|system-ui|sans-serif|serif)/i)?.[1];
+ const headings=[...html.matchAll(/<h[12]\b[^>]*>([\s\S]*?)<\/h[12]>/gi)].slice(0,7).map(m=>clean(m[1])).filter(Boolean);
+ return NextResponse.json({url:url.origin,title,description,headings,styleReference:{background,accent,fontFamily},notice:'Public homepage metadata and embedded CSS only. External stylesheets, scripts and imagery were not copied.'},{headers:{'Cache-Control':'no-store'}});
+ }catch{return NextResponse.json({error:'Unable to inspect this website. Check the HTTPS address and availability.'},{status:422})}
+}
