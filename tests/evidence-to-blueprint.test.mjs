@@ -8,3 +8,11 @@ test('transforms observed regions into a bounded editable blueprint',()=>{
 test('rejects malformed evidence and unsafe sources',()=>{
  for(const input of [null,{}, {version:1,sourceUrl:'http://example.com',pages:[{visualRegions:[]}]},{version:1,sourceUrl:'https://example.com',pages:[{}]}])assert.throws(()=>evidenceToBlueprint(input));
 });
+
+test('captures multiple pages and distinguishes observed from executed interactions',()=>{
+ const page=(path,kind)=>({path,title:path,landmarks:[],visualRegions:[{role:'hero',x:0,y:0,width:400,height:200,text:path}],interactions:[{kind,label:'Control',verified:false}]});
+ const result=evidenceToBlueprint({version:1,sourceUrl:'https://example.com',capturedAt:'2026-11-06T00:00:00Z',pages:[page('/','link'),page('/about','button'),page('/contact','form')]});
+ assert.equal(result.pages.length,3);
+ assert.equal(result.pages[1].path,'/about');
+ assert.deepEqual(result.interactionCoverage,{links:1,buttons:1,forms:1,verified:0,executed:false});
+});
