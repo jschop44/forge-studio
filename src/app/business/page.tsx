@@ -34,11 +34,24 @@ function parseStyleReference(source:string):StyleReference{
 }
 export default function BusinessGenerator(){
  const [inspected,setInspected]=useState<{url:string;title:string;description:string;headings:string[];navigation?:{label:string;path:string}[];pageSummaries?:{path:string;label:string;title:string;description:string;headings:string[]}[];stylesheetsRead:number;visualSignals?:{navigationLinks:number;heroSections:number;imageCount:number;sectionCount:number;buttonCount:number;hasVideo:boolean;hasCanvas:boolean}}|null>(null),[siteUrl,setSiteUrl]=useState(''),[researchBusy,setResearchBusy]=useState(false),[referenceStyle,setReferenceStyle]=useState<StyleReference>({}),[name,setName]=useState(''),[designMode,setDesignMode]=useState<'new'|'inspired'|'redesign'>('new'),[referenceMarkup,setReferenceMarkup]=useState(''),[brief,setBrief]=useState(''),[contactEmail,setContactEmail]=useState(''),[busy,setBusy]=useState(false),[status,setStatus]=useState(''),[pages,setPages]=useState<GeneratedPage[]>([]),[active,setActive]=useState('index'),[mobile,setMobile]=useState(false);
+ const [publishApproved,setPublishApproved]=useState(false),[publishBusy,setPublishBusy]=useState(false),[publishedUrls,setPublishedUrls]=useState<string[]>([]);
  const [reviewIndustry,setReviewIndustry]=useState(''),[reviewServices,setReviewServices]=useState(''),[reviewApproved,setReviewApproved]=useState(false);
  // Any change to the reviewed facts or source invalidates prior approval.
  useEffect(()=>{setReviewApproved(false)},[inspected,designMode,name,brief,contactEmail,reviewIndustry,reviewServices,siteUrl]);
  const frameRef=useRef<HTMLIFrameElement>(null);
  useEffect(()=>{const receive=(event:MessageEvent)=>{if(event.source!==frameRef.current?.contentWindow||!event.data||event.data.type!=='forge-preview-navigate'||typeof event.data.slug!=='string')return;const slug=event.data.slug;if(pages.some(page=>page.slug===slug))setActive(slug)};window.addEventListener('message',receive);return()=>window.removeEventListener('message',receive)},[pages]);
+ useEffect(()=>{setPublishApproved(false);setPublishedUrls([])},[pages,name,brief,contactEmail]);
+ async function publishReviewedDraft(){
+  if(!publishApproved||!pages.length){setStatus('Review the generated pages and approve publication first.');return}
+  setPublishBusy(true);
+  try{
+   const response=await fetch('/api/business/publish',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({ownerApproved:true,businessName:name.trim(),pages})});
+   const data=await response.json();
+   if(!response.ok)throw Error(data.error||'Publishing unavailable');
+   setPublishedUrls(Array.isArray(data.urls)?data.urls:[]);
+   setStatus('Publication saved. Open each page and verify navigation and content.');
+  }catch(error){setStatus(error instanceof Error?error.message:'Publishing unavailable')}finally{setPublishBusy(false)}
+ }
  const current=pages.find(p=>p.slug===active);
  const draftAudit=pages.length?auditGeneratedDraft(pages):null;
  const previewHtml=(current?.html||'').replace(/<\/body>/i,`<script>document.addEventListener('click',function(event){const anchor=event.target.closest('a[href]');if(!anchor)return;const href=anchor.getAttribute('href');if(!href||!/^([a-z0-9-]+)\\.html(?:[?#].*)?$/i.test(href))return;event.preventDefault();parent.postMessage({type:'forge-preview-navigate',slug:href.split('.')[0]},'*')})<\/script></body>`);
@@ -90,6 +103,7 @@ export default function BusinessGenerator(){
  {status&&<p role="status" className="forge-auto-status">{status}</p>}
  <p className="forge-auto-note">For the best results, include your products, services and atmosphere. Business-specific visuals are selected automatically. Automatically generates Home, Services, About and Contact pages. Free generation remains available if an AI provider is offline.</p>
  {pages.length>0&&<div role="status" className="forge-auto-note"><strong>Draft quality:</strong> {draftAudit?.readyForReview?'Ready for owner review':'Needs corrections'} · {draftAudit?.errors.length} errors · {draftAudit?.warnings.length} warnings. Publishing has not been verified. {(draftAudit?.errors.length??0)>0&&<p>{draftAudit?.errors.slice(0,3).join(' · ')}</p>}</div>}
+ {pages.length>0&&<div className="forge-auto-note"><label><input type="checkbox" checked={publishApproved} onChange={e=>setPublishApproved(e.target.checked)}/> I reviewed every generated page and approve publishing this business website.</label><button type="button" disabled={!publishApproved||!draftAudit?.readyForReview||publishBusy} onClick={()=>void publishReviewedDraft()}>{publishBusy?"Publishing…":"Publish approved draft (if enabled)"}</button>{publishedUrls.map(url=><p key={url}><a href={url} target="_blank" rel="noopener noreferrer">View published page: {url}</a></p>)}<p>Publishing requires sign-in and server configuration; it is disabled by default.</p></div>}
  {pages.length>0&&<div className="forge-auto-export"><button onClick={()=>pages.forEach(p=>downloadText(p.slug+'.html',p.html,'text/html'))}>↓ Download website pages</button><Link href="/cloud">Save & publish ↗</Link></div>}
  <p><Link href="/redesign" style={{color:"#eac9a0",fontWeight:700}}>✦ Score a website & plan an intelligent redesign →</Link></p>
  <details className="forge-auto-advanced"><summary>Advanced editing and intelligence tools</summary><div><Link href="/editor">Visual editor</Link><Link href="/intelligence">Intelligence</Link><Link href="/assets">Asset library</Link></div></details>
