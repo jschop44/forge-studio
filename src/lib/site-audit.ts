@@ -1,6 +1,6 @@
 import {z} from 'zod';
 const Input=z.object({html:z.string().min(1).max(250000),url:z.string().url().optional()});
-export type SiteAudit={score:number;seo:number;aeo:number;geo:number;accessibility:number;conversion:number;findings:{category:string;severity:'high'|'medium'|'low';message:string;recommendation:string}[]};
+export type SiteAudit={score:number;technicalScore:number;visualHeuristic:number;seo:number;aeo:number;geo:number;accessibility:number;conversion:number;findings:{category:string;severity:'high'|'medium'|'low';message:string;recommendation:string}[]};
 export function auditGeneratedSite(input:unknown):SiteAudit{
  const {html}=Input.parse(input),findings:SiteAudit['findings']=[],has=(re:RegExp)=>re.test(html);
  const dimensions={seo:100,aeo:100,geo:100,accessibility:100,conversion:100};
@@ -18,6 +18,15 @@ export function auditGeneratedSite(input:unknown):SiteAudit{
  if(has(/<img\b(?![^>]*\balt=)/i))flag('accessibility',25,'Image without alternative text','Add meaningful alt text');
  if(!has(/<a\b|<button\b/i))flag('conversion',25,'No clear next action','Add an accessible call to action');
  if(!has(/contact|mailto:|form/i))flag('conversion',25,'No contact path','Provide a contact method or lead form');
- const score=Math.round(Object.values(dimensions).reduce((a,b)=>a+b,0)/5);
- return {score,...dimensions,findings};
+ const technicalScore=Math.round(Object.values(dimensions).reduce((a,b)=>a+b,0)/5);
+ // Structural visual checks only: these cannot establish photographic relevance or aesthetic quality.
+ let visualHeuristic=100;
+ if(!has(/<img\b|background-image\s*:|url\(["']?https?:/i))visualHeuristic-=30;
+ if(!has(/@media\s*\(|clamp\s*\(|grid-template-columns|flex-wrap/i))visualHeuristic-=25;
+ if(!has(/<section\b|<article\b|class=["'][^"']*(?:card|feature|hero)/i))visualHeuristic-=20;
+ if(!has(/prefers-reduced-motion/i))visualHeuristic-=10;
+ if(!has(/font-family\s*:|font\s*:/i))visualHeuristic-=15;
+ visualHeuristic=Math.max(0,visualHeuristic);
+ const score=Math.round(technicalScore*.7+visualHeuristic*.3);
+ return {score,technicalScore,visualHeuristic,...dimensions,findings};
 }
