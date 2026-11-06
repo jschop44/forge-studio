@@ -39,6 +39,7 @@ export default function BusinessGenerator(){
  {status&&<p role="status" className="forge-auto-status">{status}</p>}
  <p className="forge-auto-note">For the best results, include your products, services and atmosphere. Business-specific visuals are selected automatically. Automatically generates Home, Services, About and Contact pages. Free generation remains available if an AI provider is offline.</p>
  {pages.length>0&&<div className="forge-auto-export"><button onClick={()=>pages.forEach(p=>downloadText(p.slug+'.html',p.html,'text/html'))}>↓ Download website pages</button><Link href="/cloud">Save & publish ↗</Link></div>}
+ <p><Link href="/redesign" style={{color:"#eac9a0",fontWeight:700}}>✦ Score a website & plan an intelligent redesign →</Link></p>
  <details className="forge-auto-advanced"><summary>Advanced editing and intelligence tools</summary><div><Link href="/editor">Visual editor</Link><Link href="/intelligence">Intelligence</Link><Link href="/experiences">Immersive 3D editor</Link><Link href="/assets">Asset library</Link></div></details>
  </aside>
  <main className="forge-auto-preview"><div className="forge-auto-toolbar"><span>● LIVE WEBSITE PREVIEW</span><div><button onClick={()=>setMobile(false)} aria-pressed={!mobile}>Desktop</button><button onClick={()=>setMobile(true)} aria-pressed={mobile}>Mobile</button></div></div>
