@@ -49,5 +49,11 @@ export async function POST(req:NextRequest,{params}:{params:Promise<{id:string}>
   const result=rows[0];
   if(!result||Number(result.page_count)===0)return NextResponse.json({error:'Publication missing, revision conflict, or page structure changed. Refresh versions before retrying.'},{status:409});
   return NextResponse.json({saved:true,id,version:Number(result.version),pageCount:Number(result.page_count)});
- }catch{return NextResponse.json({error:'Revision unavailable; check migration or concurrent updates'},{status:503})}
+ }catch(error){
+  // A simultaneous request may win the immutable snapshot unique constraint.
+  // Report a conflict rather than a transient infrastructure failure.
+  if(error&&typeof error==='object'&&'code' in error&&error.code==='23505')
+   return NextResponse.json({error:'Revision conflict. Reload the latest version and review again.'},{status:409});
+  return NextResponse.json({error:'Revision unavailable; check migration or concurrent updates'},{status:503});
+ }
 }
