@@ -30,6 +30,14 @@ test("free generator produces preview pages and navigates tabs", async ({ page }
   await expect(tabs).toBeVisible({ timeout: 30000 });
   await expect(page.getByText(/Draft quality:/i)).toBeVisible();
   await expect(page.getByText(/Publishing has not been verified/i)).toBeVisible();
+  const approvePublish=page.getByRole("checkbox", { name: /reviewed every generated page and approve publishing/i });
+  await expect(approvePublish).not.toBeChecked();
+  await expect(page.getByRole("button", { name: /publish approved draft/i })).toBeDisabled();
+  await approvePublish.check();
+  await expect(page.getByRole("button", { name: /publish approved draft/i })).toBeEnabled();
+  await page.getByPlaceholder("e.g. Northstar Coffee").fill("Northstar Roasters");
+  await expect(approvePublish).not.toBeChecked();
+  await expect(page.getByRole("button", { name: /publish approved draft/i })).toBeDisabled();
   await expect(tabs.getByRole("button", { name: "Services" })).toBeVisible();
   await tabs.getByRole("button", { name: "Services" }).click();
   await expect(tabs.getByRole("button", { name: "Services" })).toHaveAttribute("aria-current", "page");
