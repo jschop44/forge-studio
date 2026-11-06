@@ -16,10 +16,14 @@ describe('business publication request validation',()=>{
   assert.equal(validateBusinessPublicationRequest({...valid,pages:[page,{...page,html:page.html.replace('</body>','<a href="missing.html">Missing</a></body>')}] }).valid,false);
  });
  it('rejects active HTML, event handlers and redirects',()=>{
-  for(const injection of ['<script>alert(1)</script>','<iframe src="https://example.com"></iframe>','<form action="/x"></form>','<meta http-equiv="refresh" content="0;url=https://example.com">','<img src="x" onerror="alert(1)">']){
+  for(const injection of ['<script>alert(1)</script>','<iframe src="https://example.com"></iframe>','<form action="/x"></form>','<meta http-equiv="refresh" content="0;url=https://example.com">','<img src="x" onerror="alert(1)">','<svg><script>alert(1)</script></svg>','<math><mi>x</mi></math>','<link rel="stylesheet" href="https://example.com/x.css">','<div srcdoc="<script>bad</script>"></div>']){
    const html=page.html.replace('</body>',injection+'</body>');
    assert.equal(validateBusinessPublicationRequest({...valid,pages:[{...page,html}]}).valid,false,injection);
   }
+ });
+ it('accepts generated inline static CSS',()=>{
+  const html=page.html.replace('</head>','<style>body{color:#fff}</style></head>');
+  assert.equal(validateBusinessPublicationRequest({...valid,pages:[{...page,html}]}).valid,true);
  });
  it('rejects oversized HTML and unknown request fields',()=>{
   assert.equal(validateBusinessPublicationRequest({...valid,pages:[{...page,html:'x'.repeat(300001)}]}).valid,false);
