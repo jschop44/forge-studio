@@ -15,7 +15,10 @@ export async function POST(req:NextRequest,{params}:{params:Promise<{id:string}>
  if(!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id))
   return NextResponse.json({error:'Invalid publication id'},{status:400});
  try{
-  const checked=validateBusinessPublicationRequest(await req.json());
+  const payload=await req.json();
+  const expectedVersion=payload?.expectedVersion;
+  if(!Number.isSafeInteger(expectedVersion)||expectedVersion<1)return NextResponse.json({error:'Expected publication version required'},{status:400});
+  const checked=validateBusinessPublicationRequest({ownerApproved:payload?.ownerApproved,businessName:payload?.businessName,pages:payload?.pages});
   if(!checked.valid||!checked.pages)return NextResponse.json({error:'Invalid revision',details:checked.errors.slice(0,10)},{status:422});
   const pageRows=JSON.stringify(checked.pages.map(({slug,html})=>({slug,html})));
   const sql=database();
@@ -35,7 +38,7 @@ export async function POST(req:NextRequest,{params}:{params:Promise<{id:string}>
    ), snapshot AS (
      INSERT INTO forge_business_publication_snapshots(publication_id,owner_id,version,slug,html)
      SELECT ${id}::uuid,${owner}::uuid,v.version,p.slug,p.html
-     FROM proposed p CROSS JOIN next_version v CROSS JOIN compatible c WHERE c.matches
+     FROM proposed p CROSS JOIN next_version v CROSS JOIN compatible c WHERE c.matches AND v.version=${expectedVersion}+1
      RETURNING slug,version
    ), updated AS (
      UPDATE forge_business_publications live SET html=p.html
@@ -44,7 +47,7 @@ export async function POST(req:NextRequest,{params}:{params:Promise<{id:string}>
      RETURNING live.slug
    ) SELECT (SELECT MAX(version) FROM snapshot) AS version,COUNT(*)::int AS page_count FROM updated`;
   const result=rows[0];
-  if(!result||Number(result.page_count)===0)return NextResponse.json({error:'Publication missing or page structure changed'},{status:409});
+  if(!result||Number(result.page_count)===0)return NextResponse.json({error:'Publication missing, revision conflict, or page structure changed. Refresh versions before retrying.'},{status:409});
   return NextResponse.json({saved:true,id,version:Number(result.version),pageCount:Number(result.page_count)});
  }catch{return NextResponse.json({error:'Revision unavailable; check migration or concurrent updates'},{status:503})}
 }
