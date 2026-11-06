@@ -58,3 +58,11 @@ test("business publication routes remain disabled by default", async ({ request 
   const create=await request.post("/api/business/publish",{data:{}});
   expect(create.status()).toBe(503);
 });
+
+
+test("publication management page loads and shows disabled publishing state", async ({ page }) => {
+  await page.goto("/business/publications");
+  await expect(page.getByRole("heading",{name:"Business website publications"})).toBeVisible();
+  await expect(page.getByRole("status")).toContainText("Business publishing is not configured");
+  await expect(page.getByRole("link",{name:/back to website builder/i})).toBeVisible();
+});
