@@ -41,6 +41,7 @@ try{
   });
   if(bodyRegion.width>0&&bodyRegion.height>0)visualRegions.push(bodyRegion);
  }
+ const designTokens=await page.evaluate(()=>{const body=getComputedStyle(document.body);const heading=document.querySelector('h1,h2');const h=heading?getComputedStyle(heading):body;return {backgroundColor:body.backgroundColor,textColor:body.color,fontFamily:body.fontFamily,headingFontFamily:h.fontFamily,headingFontSize:h.fontSize,baseFontSize:body.fontSize}});
  const interactions=await page.locator('a,button,form').evaluateAll(nodes=>nodes.slice(0,80).map(n=>({kind:n.tagName.toLowerCase()==='a'?'link':n.tagName.toLowerCase()==='form'?'form':'button',label:(n.getAttribute('aria-label')||n.textContent||'').trim().slice(0,100),target:n.tagName.toLowerCase()==='a'?(n.getAttribute('href')||'').slice(0,300):undefined,verified:false})));
  const navigationChecks=[];
  const seenPaths=new Set();
@@ -61,5 +62,5 @@ try{
   }finally{await probe.close();}
  }
  const interactionSummary={observed:interactions.length,links:interactions.filter(i=>i.kind==='link').length,buttons:interactions.filter(i=>i.kind==='button').length,forms:interactions.filter(i=>i.kind==='form').length,unlabeledControls:interactions.filter(i=>!i.label).length,linksWithoutTargets:interactions.filter(i=>i.kind==='link'&&!i.target).length,interactionsExecuted:false};
- process.stdout.write(JSON.stringify({version:1,sourceUrl:target.origin,capturedAt:new Date().toISOString(),viewport:{width:1280,height:800},pages:[{path:target.pathname,title:await page.title(),screenshotUrl:'browser-screenshot.png',landmarks,interactions,interactionSummary,navigationChecks,visualRegions}],warnings:['Links probed with read-only GET navigation; forms and buttons not executed; screenshot saved separately as browser-screenshot.png']})+'\n');
+ process.stdout.write(JSON.stringify({version:1,sourceUrl:target.origin,capturedAt:new Date().toISOString(),viewport:{width:1280,height:800},pages:[{path:target.pathname,title:await page.title(),screenshotUrl:'browser-screenshot.png',landmarks,designTokens,interactions,interactionSummary,navigationChecks,visualRegions}],warnings:['Links probed with read-only GET navigation; forms and buttons not executed; screenshot saved separately as browser-screenshot.png']})+'\n');
 }finally{await browser.close()}
