@@ -14,3 +14,24 @@ export const photoLibrary={
  general:['photo-1497366811353-6870744d04b2','photo-1497366754035-f200968a6e72']
 } as const;
 export function industryPhotos(industry:string){const term=industry.toLowerCase();const category=/coffee|espresso|roast|barista|café|cafe/.test(term)?'coffee':/car|auto|vehicle|motor/.test(term)?'automotive':/hotel|travel|resort|stay|hospitality/.test(term)?'hospitality':/fashion|jewel|clothing|luxury/.test(term)?'fashion':/food|restaurant|pizza|cafe|bakery/.test(term)?'food':/real.?estate|home|property|construction/.test(term)?'realestate':/tech|software|digital|ai|computer/.test(term)?'technology':/health|fitness|wellness|spa|beauty/.test(term)?'wellness':'general';return photoLibrary[category].map(id=>'https://images.unsplash.com/'+id+'?auto=format&fit=crop&w=1400&q=80')}
+
+/** Match each offering to its own subject rather than reusing an industry hero. */
+export function servicePhoto(service:string,industry:string):string|null{
+ const term=service.toLowerCase();
+ const subjects:[RegExp,string][]=[
+ [/pastr|croissant|baked|bakery|muffin|cake|bread|dessert/,'photo-1484723091739-30a097e8f929'],
+ [/coffee bean|roast|whole bean/,'photo-1447933601403-0c6688de566e'],
+ [/espresso|latte|cappuccino|coffee|barista/,'photo-1461023058943-07fcbe16d735'],
+ [/tea|matcha/,'photo-1544787219-7f47ccb76574'],
+ [/pizza/,'photo-1513104890138-7c749659a591'],
+ [/burger/,'photo-1568901346375-23c9450c58cd'],
+ [/salad|vegetable/,'photo-1512621776951-a57141f2eefd'],
+ [/property|home|house|listing|real estate/,'photo-1600596542815-ffad4c1539a9'],
+ [/car|vehicle|automotive/,'photo-1503376780353-7e6692767b70'],
+ [/yoga|meditation/,'photo-1544367567-0f2fcb009e0b']
+ ];
+ const found=subjects.find(([pattern])=>pattern.test(term));
+ if(found)return 'https://images.unsplash.com/'+found[1]+'?auto=format&fit=crop&w=1000&q=80';
+ // Do not attach an unrelated stock photo to an unrecognized offering.
+ return null;
+}
