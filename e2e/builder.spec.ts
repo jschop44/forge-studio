@@ -66,3 +66,17 @@ test("publication management page loads and shows disabled publishing state", as
   await expect(page.getByRole("status")).toContainText("Business publishing is not configured");
   await expect(page.getByRole("link",{name:/back to website builder/i})).toBeVisible();
 });
+
+
+test("revision version lookup requires a publication ID", async ({ page }) => {
+  await page.goto("/business");
+  await page.getByPlaceholder("e.g. Northstar Coffee").fill("Northstar Coffee");
+  await page.getByRole("button", { name: /generate my immersive website/i }).click();
+  await expect(page.getByRole("navigation", { name: "Website pages" })).toBeVisible({timeout:30000});
+  const load=page.getByRole("button",{name:"Load current publication version"});
+  await expect(load).toBeDisabled();
+  await page.getByPlaceholder("Publication UUID, leave blank for a new website").fill("00000000-0000-4000-8000-000000000001");
+  await expect(load).toBeEnabled();
+  await load.click();
+  await expect(page.getByText(/Business publishing is not configured/i)).toBeVisible();
+});
