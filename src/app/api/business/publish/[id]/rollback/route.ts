@@ -45,7 +45,7 @@ export async function POST(req:NextRequest,{params}:{params:Promise<{id:string}>
     FROM snapshot s WHERE p.id=${id}::uuid AND p.owner_id=${owner}::uuid AND p.slug=s.slug
       AND EXISTS(SELECT 1 FROM recorded)
     RETURNING p.slug
-   ) SELECT COUNT(*)::int AS page_count,MAX((SELECT MAX(version) FROM recorded)) AS new_version FROM updated`;
+   ) SELECT COUNT(*)::int AS page_count,(SELECT MAX(version) FROM recorded) AS new_version FROM updated`;
   if(!rows.length||Number(rows[0].page_count)===0)return NextResponse.json({error:'Publication, snapshot, or current version mismatch. Refresh before restoring.'},{status:409});
   return NextResponse.json({restored:true,version,versionCreated:Number(rows[0].new_version),pageCount:Number(rows[0].page_count)});
  }catch(error){
