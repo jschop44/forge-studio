@@ -113,3 +113,9 @@ test('each exported page has its own escaped heading',()=>{
  assert.match(files[1].html,/<h1>Contact &lt;team&gt;<\/h1>/);
  assert.doesNotMatch(files[1].html,/<h1>Home headline<\/h1>/);
 });
+
+test('exports distinct page titles in HTML metadata',()=>{
+ const files=blueprintToPages({version:1,title:'Brand',sections:[],pages:[{path:'/',title:'Home',regions:[]},{path:'/pricing',title:'Pricing & Plans',regions:[]}]});
+ assert.match(files[0].html,/<title>Home<\/title>/);
+ assert.match(files[1].html,/<title>Pricing &amp; Plans<\/title>/);
+});
