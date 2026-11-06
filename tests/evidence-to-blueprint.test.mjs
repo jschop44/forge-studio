@@ -16,3 +16,19 @@ test('captures multiple pages and distinguishes observed from executed interacti
  assert.equal(result.pages[1].path,'/about');
  assert.deepEqual(result.interactionCoverage,{links:1,buttons:1,forms:1,verified:0,executed:false});
 });
+
+test('normalizes page-relative links and discards cross-origin or unsafe navigation',()=>{
+ const result=evidenceToBlueprint({version:1,sourceUrl:'https://example.com',capturedAt:'2026-11-06T00:00:00Z',pages:[{
+  path:'/services/',title:'Services',landmarks:[],visualRegions:[],interactions:[
+   {kind:'link',label:'Details',target:'details'},
+   {kind:'link',label:'Offsite',target:'https://evil.example/path'},
+   {kind:'link',label:'Script',target:'javascript:alert(1)'}
+  ]
+ }]});
+ assert.deepEqual(result.navigation,[{label:'Details',target:'https://example.com/services/details',verified:false}]);
+});
+test('rejects localhost and private-looking source hosts',()=>{
+ for(const sourceUrl of ['https://localhost','https://127.0.0.1','https://server.internal','https://example.test']){
+  assert.throws(()=>evidenceToBlueprint({version:1,sourceUrl,pages:[{visualRegions:[]}]}));
+ }
+});
