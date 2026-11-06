@@ -12,7 +12,10 @@ try{
  const context=await browser.newContext({viewport:{width:1280,height:800},serviceWorkers:'block'});
  await context.route('**/*',route=>{
   const url=new URL(route.request().url());
-  return url.protocol==='https:'&&hosts.includes(url.hostname)&&!unsafeHost(url.hostname)&&!url.port&&!url.username&&!url.password?route.continue():route.abort();
+  const allowed=url.protocol==='https:'&&hosts.includes(url.hostname)&&!unsafeHost(url.hostname)&&!url.port&&!url.username&&!url.password;
+  const method=route.request().method();
+  // Captures must never submit mutations, even if a page script attempts them.
+  return allowed&&(method==='GET'||method==='HEAD')?route.continue():route.abort();
  });
  const page=await context.newPage();
  await page.goto(target.href,{waitUntil:'domcontentloaded',timeout:15000});
