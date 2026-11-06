@@ -12,6 +12,9 @@ test("summarizes measured layout without pretending to analyze pixels",()=>{
   assert.equal(result.regionCount,1);
   assert.equal(result.heroPosition?.height,400);
   assert.equal(result.screenshotPixelsAnalyzed,false);
+  assert.equal(result.heroAreaRatio,0.5);
+  assert.equal(result.regionCoverageRatio,0.5);
+  assert.deepEqual(result.observedRoles,['hero']);
 });
 test("rejects out-of-bounds visual measurements",()=>{
   const invalid={...evidence(),regions:[{role:"hero",x:900,y:120,width:800,height:400}]};
