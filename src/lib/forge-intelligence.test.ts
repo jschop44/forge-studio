@@ -6,3 +6,8 @@ test('does not invent an industry for an unknown business',()=>{const result=ana
 test('counts successfully inspected pages',()=>{const result=analyzeSiteEvidence({url:'https://example.com',title:'A cafe',description:'Coffee and espresso',headings:[],pageSummaries:[{path:'/menu',label:'Menu',title:'Coffee menu',description:'Espresso',headings:['Coffee menu']}]});assert.equal(result.sourcePages,2)});
 
 test('reports missing visual capture and internal pages',()=>{const coverage=inspectionCoverage({url:'https://example.com',title:'Example',description:'',headings:[]});assert.equal(coverage.visualCapture,false);assert.equal(coverage.internalPages,0);assert.ok(coverage.limitations.some(item=>item.includes('Rendered screenshots')))});
+
+test('marks competing industry signals as ambiguous rather than high confidence',()=>{
+ const result=analyzeSiteEvidence({url:'https://example.com',title:'Coffee restaurant pizza cafe',description:'Coffee espresso pizza bakery dining restaurant',headings:['Coffee shop restaurant','Coffee pizza menu']});
+ assert.equal(result.confidence,'low');
+});
