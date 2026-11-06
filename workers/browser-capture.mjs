@@ -30,6 +30,23 @@ try{
   if(bodyRegion.width>0&&bodyRegion.height>0)visualRegions.push(bodyRegion);
  }
  const interactions=await page.locator('a,button,form').evaluateAll(nodes=>nodes.slice(0,80).map(n=>({kind:n.tagName.toLowerCase()==='a'?'link':n.tagName.toLowerCase()==='form'?'form':'button',label:(n.getAttribute('aria-label')||n.textContent||'').trim().slice(0,100),target:n.tagName.toLowerCase()==='a'?(n.getAttribute('href')||'').slice(0,300):undefined,verified:false})));
+ const navigationChecks=[];
+ const seenPaths=new Set();
+ for(const item of interactions){
+  if(item.kind!=='link'||!item.target||navigationChecks.length>=8)continue;
+  let url;
+  try{url=new URL(item.target,page.url());}catch{continue;}
+  if(url.origin!==target.origin||url.protocol!=='https:'||url.username||url.password||url.pathname===page.url().split('?')[0]&&url.search===new URL(page.url()).search||seenPaths.has(url.pathname+url.search))continue;
+  seenPaths.add(url.pathname+url.search);
+  // A separate isolated page verifies read-only navigation; no forms or buttons are executed.
+  const probe=await context.newPage();
+  try{
+   const response=await probe.goto(url.href,{waitUntil:'domcontentloaded',timeout:8000});
+   navigationChecks.push({path:url.pathname+url.search,status:response?.status()??null,ok:Boolean(response?.ok()),verifiedBy:'navigation-get'});
+  }catch{
+   navigationChecks.push({path:url.pathname+url.search,status:null,ok:false,verifiedBy:'navigation-get'});
+  }finally{await probe.close();}
+ }
  const interactionSummary={observed:interactions.length,links:interactions.filter(i=>i.kind==='link').length,buttons:interactions.filter(i=>i.kind==='button').length,forms:interactions.filter(i=>i.kind==='form').length,unlabeledControls:interactions.filter(i=>!i.label).length,linksWithoutTargets:interactions.filter(i=>i.kind==='link'&&!i.target).length,interactionsExecuted:false};
- process.stdout.write(JSON.stringify({version:1,sourceUrl:target.origin,capturedAt:new Date().toISOString(),viewport:{width:1280,height:800},pages:[{path:target.pathname,title:await page.title(),screenshotUrl:'browser-screenshot.png',landmarks,interactions,interactionSummary,visualRegions}],warnings:['Interactions not executed; screenshot saved separately as browser-screenshot.png']})+'\n');
+ process.stdout.write(JSON.stringify({version:1,sourceUrl:target.origin,capturedAt:new Date().toISOString(),viewport:{width:1280,height:800},pages:[{path:target.pathname,title:await page.title(),screenshotUrl:'browser-screenshot.png',landmarks,interactions,interactionSummary,navigationChecks,visualRegions}],warnings:['Links probed with read-only GET navigation; forms and buttons not executed; screenshot saved separately as browser-screenshot.png']})+'\n');
 }finally{await browser.close()}
