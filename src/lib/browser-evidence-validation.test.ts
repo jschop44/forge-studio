@@ -6,3 +6,12 @@ test('accepts bounded browser evidence',()=>assert.equal(validateBrowserEvidence
 test('rejects malformed capture timestamps',()=>assert.equal(validateBrowserEvidence({...base,capturedAt:'invalid'}),false));
 test('rejects oversized landmarks',()=>assert.equal(validateBrowserEvidence({...base,pages:[{...base.pages[0],landmarks:[{role:'h1',text:'x'.repeat(501)}]}]}),false));
 test('rejects credentialed source URLs',()=>assert.equal(validateBrowserEvidence({...base,sourceUrl:'https://user:password@example.com'}),false));
+
+test('accepts bounded interaction summary without implying execution',()=>{
+ const summary={observed:1,links:1,buttons:0,forms:0,unlabeledControls:0,linksWithoutTargets:0,interactionsExecuted:false};
+ assert.equal(validateBrowserEvidence({...base,pages:[{...base.pages[0],interactions:[{kind:'link',label:'Home',target:'/',verified:false}],interactionSummary:summary}]}),true);
+});
+test('rejects claimed execution in static interaction summary',()=>{
+ const summary={observed:1,links:1,buttons:0,forms:0,unlabeledControls:0,linksWithoutTargets:0,interactionsExecuted:true};
+ assert.equal(validateBrowserEvidence({...base,pages:[{...base.pages[0],interactionSummary:summary}]}),false);
+});
