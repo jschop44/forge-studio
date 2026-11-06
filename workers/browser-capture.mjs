@@ -3,10 +3,12 @@
 import { chromium } from 'playwright';
 import { isIP } from 'node:net';
 import { isSafeNavigationProbe } from './navigation-probe-policy.mjs';
+import { assertPublicDns } from './public-network-policy.mjs';
 const unsafeHost=host=>isIP(host.replace(/^\\[|\\]$/g,''))!==0||host==='localhost'||host.endsWith('.localhost')||host.endsWith('.local')||host.endsWith('.internal')||host.endsWith('.test');
 const target=new URL(process.argv[2]);
 const hosts=(process.env.FORGE_CAPTURE_HOSTS||'').split(',').map(x=>x.trim());
 if(target.protocol!=='https:'||!hosts.includes(target.hostname)||unsafeHost(target.hostname)||target.port||target.username||target.password)throw Error('Host not allowlisted');
+await Promise.all(hosts.filter(Boolean).map(assertPublicDns));
 const browser=await chromium.launch({headless:true});
 try{
  const context=await browser.newContext({viewport:{width:1280,height:800},serviceWorkers:'block',acceptDownloads:false,permissions:[]});
