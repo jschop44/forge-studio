@@ -3,7 +3,7 @@
 This optional module stores bounded, user-submitted observations in the existing Neon Postgres database. It does not autonomously train models, read third-party apps, or run background collection.
 
 ## Enable
-1. Run the existing database migration with `npm run migrate` if configured, or invoke the project's migration entrypoint.
+1. Run the existing database migration with `npm run db:migrate`.
 2. Set `ENABLE_FORGE_LEARNING_MEMORY=true` on the Forge Studio server only after the database and authentication are configured.
 3. Keep the flag unset or false to disable API access.
 
