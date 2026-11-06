@@ -18,24 +18,22 @@ export async function POST(req:NextRequest,{params}:{params:Promise<{id:string}>
   const version=body?.version;
   if(!Number.isSafeInteger(version)||version<1)return NextResponse.json({error:'Invalid snapshot version'},{status:400});
   const sql=database();
-  // A single statement makes restoration atomic, including deletion of newer pages.
-  const rows=await sql`WITH owned AS (
-    SELECT DISTINCT id FROM forge_business_publications WHERE id=${id}::uuid AND owner_id=${owner}::uuid
-   ), snapshot AS (
-    SELECT s.slug,s.html FROM forge_business_publication_snapshots s
-    JOIN owned ON owned.id=s.publication_id
-    WHERE s.owner_id=${owner}::uuid AND s.version=${version}
-   ), removed AS (
-    DELETE FROM forge_business_publications
-    WHERE id=${id}::uuid AND owner_id=${owner}::uuid
-    AND EXISTS (SELECT 1 FROM snapshot)
-    RETURNING id
-   ), restored AS (
-    INSERT INTO forge_business_publications(id,owner_id,slug,html)
-    SELECT ${id}::uuid,${owner}::uuid,s.slug,s.html FROM snapshot s
-    WHERE EXISTS (SELECT 1 FROM removed)
-    RETURNING slug
-   ) SELECT slug FROM restored`;
+  // Restore content only when the current page set exactly matches the snapshot.
+  // This avoids unsafe delete-and-reinsert operations on the same table in a CTE.
+  const rows=await sql`WITH snapshot AS (
+    SELECT slug,html FROM forge_business_publication_snapshots
+    WHERE publication_id=${id}::uuid AND owner_id=${owner}::uuid AND version=${version}
+   ), current_pages AS (
+    SELECT slug FROM forge_business_publications WHERE id=${id}::uuid AND owner_id=${owner}::uuid
+   ), compatible AS (
+    SELECT EXISTS(SELECT 1 FROM snapshot) AND
+     NOT EXISTS((SELECT slug FROM snapshot EXCEPT SELECT slug FROM current_pages)) AND
+     NOT EXISTS((SELECT slug FROM current_pages EXCEPT SELECT slug FROM snapshot)) AS matches
+   )
+   UPDATE forge_business_publications p SET html=s.html
+   FROM snapshot s,compatible c
+   WHERE c.matches AND p.id=${id}::uuid AND p.owner_id=${owner}::uuid AND p.slug=s.slug
+   RETURNING p.slug`;
   if(!rows.length)return NextResponse.json({error:'Publication or snapshot not found'},{status:404});
   return NextResponse.json({restored:true,version,pageCount:rows.length});
  }catch{return NextResponse.json({error:'Rollback unavailable'},{status:503})}
