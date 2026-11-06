@@ -55,6 +55,8 @@ test("business publication routes remain disabled by default", async ({ request 
   const published=await request.get("/business-sites/"+id+"/index");
   expect(published.status()).toBe(503);
   expect(published.headers()["cache-control"]).toBe("no-store");
+  const rejectedOrigin=await request.post("/api/business/publish",{data:{}});
+  expect(rejectedOrigin.status()).toBe(403);
   const create=await request.post("/api/business/publish",{data:{},headers:{origin:new URL("/",process.env.PLAYWRIGHT_BASE_URL||"http://127.0.0.1:3000").origin}});
   expect(create.status()).toBe(503);
 });
