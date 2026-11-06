@@ -42,3 +42,26 @@ test("records accessible screenshot without claiming analysis happened", () => {
   assert.equal(brief.screenshotStatus, "available");
   assert.equal(brief.observations.some((item) => item.kind === "visual"), false);
 });
+
+test("rejects IP literals and internal hostnames", () => {
+  for (const href of [
+    "https://[::1]/",
+    "https://[fd00::1]/",
+    "https://8.8.8.8/",
+    "https://169.254.169.254/latest/meta-data",
+    "https://service.internal/",
+    "https://preview.local/",
+    "https://service.test/",
+    "https://user:password@example.com/",
+  ]) {
+    const sample = valid();
+    sample.navigation[0].href = href;
+    assert.equal(browserEvidenceSchema.safeParse(sample).success, false, href);
+  }
+});
+
+test("rejects oversized navigation and screenshot dimensions", () => {
+  const sample = valid();
+  assert.equal(browserEvidenceSchema.safeParse({ ...sample, navigation: Array(31).fill(sample.navigation[0]) }).success, false);
+  assert.equal(browserEvidenceSchema.safeParse({ ...sample, screenshot: { ...sample.screenshot, width: 100000 } }).success, false);
+});
