@@ -48,7 +48,21 @@ export async function POST(req:NextRequest){
  const visualSignals={navigationLinks:(html.match(/<nav\b/gi)||[]).length,heroSections:(html.match(/(?:class|id)\s*=\s*["'][^"']*(?:hero|banner|masthead)[^"']*["']/gi)||[]).length,imageCount:(html.match(/<img\b/gi)||[]).length,sectionCount:(html.match(/<section\b/gi)||[]).length,buttonCount:(html.match(/<button\b/gi)||[]).length,hasVideo:/<video\b/i.test(html),hasCanvas:/<canvas\b/i.test(html)};
 
  const navigation=[...html.matchAll(/<a\b[^>]*href\s*=\s*["']([^"']+)["'][^>]*>([\s\S]*?)<\/a>/gi)].slice(0,180).map(match=>{try{const link=new URL(match[1],url);if(link.origin!==url.origin||!/^https:$/.test(link.protocol)||/\.(?:pdf|png|jpe?g|gif|svg|webp|mp4|zip)$/i.test(link.pathname))return null;return {label:clean(match[2]).slice(0,60),path:link.pathname}}catch{return null}}).filter((item):item is {label:string;path:string}=>Boolean(item&&item.label.length>=2&&item.path!=='/'&&item.path.length<=140&&!/^(sign in|log in|logout|register|account|privacy|terms|cookies|accessibility)$/i.test(item.label))).filter((item,index,all)=>all.findIndex(other=>other.path===item.path)===index).slice(0,12);
+ const pageSummaries:{path:string;label:string;title:string;description:string;headings:string[]}[]=[];
+ for(const item of navigation.slice(0,2)){
+  try{
+   const pageUrl=new URL(item.path,url);
+   const pinned=addresses.find(a=>a.family===4)||addresses[0];
+   const pageHtml=await new Promise<string>((resolve,reject)=>{
+    const request=httpsRequest(pageUrl,{method:'GET',timeout:4500,headers:{'User-Agent':'ForgeStudioSiteResearch/1.0','Accept':'text/html','Accept-Encoding':'identity'},lookup:pinnedLookup(pinned.address,pinned.family)},response=>{
+     if(response.statusCode!==200||!(response.headers['content-type']||'').includes('text/html')){response.resume();reject(new Error('Page unavailable'));return}
+     let size=0;const parts:Buffer[]=[];response.on('data',(chunk:Buffer)=>{size+=chunk.length;if(size>180000){request.destroy(new Error('Page too large'));return}parts.push(chunk)});response.on('end',()=>resolve(Buffer.concat(parts).toString('utf8')));response.on('error',reject);
+    });request.on('timeout',()=>request.destroy(new Error('Page timed out')));request.on('error',reject);request.end();
+   });
+   pageSummaries.push({path:item.path,label:item.label,title:clean(pageHtml.match(/<title[^>]*>([\s\S]*?)<\/title>/i)?.[1]||item.label),description:meta(pageHtml,'description')||meta(pageHtml,'og:description'),headings:[...pageHtml.matchAll(/<h([1-3])\b[^>]*>([\s\S]*?)<\/h\1>/gi)].slice(0,5).map(m=>clean(m[2])).filter(Boolean)});
+  }catch{continue}
+ }
  const headings=[...html.matchAll(/<h([1-3])\b[^>]*>([\s\S]*?)<\/h\1>/gi)].slice(0,25).map(m=>clean(m[2])).filter(Boolean).filter((heading,index,all)=>all.findIndex(other=>other.toLowerCase()===heading.toLowerCase())===index).slice(0,12);
- return NextResponse.json({url:url.origin,title,description,headings,navigation,styleReference:{background,accent,fontFamily},styleFound:Boolean(background||accent||fontFamily),stylesheetsRead:externalCss.length,visualSignals,notice:'Public homepage metadata, embedded CSS and a limited number of same-host stylesheets. Scripts and imagery were not copied.'},{headers:{'Cache-Control':'no-store'}});
+ return NextResponse.json({url:url.origin,title,description,headings,navigation,pageSummaries,styleReference:{background,accent,fontFamily},styleFound:Boolean(background||accent||fontFamily),stylesheetsRead:externalCss.length,visualSignals,notice:'Public homepage metadata, embedded CSS and a limited number of same-host stylesheets. Scripts and imagery were not copied.'},{headers:{'Cache-Control':'no-store'}});
  }catch(error){return NextResponse.json({error:error instanceof Error?error.message:'Unable to inspect website'},{status:422})}
 }
