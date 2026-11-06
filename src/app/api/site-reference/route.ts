@@ -6,7 +6,7 @@ import {request as httpsRequest} from 'node:https';
 export const runtime='nodejs';
 const blocked=(ip:string)=>{if(isIP(ip)===4){const n=ip.split('.').map(Number);return n[0]===0||n[0]===10||n[0]===127||n[0]>=224||n[0]===169&&n[1]===254||n[0]===172&&n[1]>=16&&n[1]<=31||n[0]===192&&n[1]===168||n[0]===100&&n[1]>=64&&n[1]<=127||n[0]===192&&n[1]===0||n[0]===198&&n[1]>=18&&n[1]<=19}if(isIP(ip)===6){const s=ip.toLowerCase();return s==='::1'||s==='::'||s.startsWith('fe80:')||s.startsWith('fc')||s.startsWith('fd')||s.startsWith('::ffff:')}return true};
 function clean(value:string){return value.replace(/<[^>]*>/g,' ').replace(/&amp;/g,'&').replace(/&quot;/g,'"').replace(/&#39;/g,"'").replace(/\s+/g,' ').trim().slice(0,400)}
-function meta(html:string,key:string){const tags=html.match(/<meta\\b[^>]*>/gi)||[];for(const tag of tags){const property=tag.match(/(?:name|property)\\s*=\\s*["']([^"']+)["']/i)?.[1];if(property?.toLowerCase()===key.toLowerCase())return clean(tag.match(/content\\s*=\\s*["']([^"']*)["']/i)?.[1]||'')}return ''}
+function meta(html:string,key:string){const tags=html.match(/<meta\b[^>]*>/gi)||[];for(const tag of tags){const property=tag.match(/(?:name|property)\s*=\s*["']([^"']+)["']/i)?.[1];if(property?.toLowerCase()===key.toLowerCase())return clean(tag.match(/content\s*=\s*["']([^"']*)["']/i)?.[1]||'')}return ''}
 export async function POST(req:NextRequest){
  if(!sameOrigin(req))return NextResponse.json({error:'Origin rejected'},{status:403});
  try{
@@ -33,5 +33,5 @@ export async function POST(req:NextRequest){
  const fontFamily=styles.match(/font-family\s*:\s*['"]?(Georgia|Arial|Verdana|Tahoma|Trebuchet MS|Times New Roman|system-ui|sans-serif|serif)/i)?.[1];
  const headings=[...html.matchAll(/<h[12]\b[^>]*>([\s\S]*?)<\/h[12]>/gi)].slice(0,7).map(m=>clean(m[1])).filter(Boolean);
  return NextResponse.json({url:url.origin,title,description,headings,styleReference:{background,accent,fontFamily},notice:'Public homepage metadata and embedded CSS only. External stylesheets, scripts and imagery were not copied.'},{headers:{'Cache-Control':'no-store'}});
- }catch{return NextResponse.json({error:'Unable to inspect this website. Check the HTTPS address and availability.'},{status:422})}
+ }catch(error){return NextResponse.json({error:error instanceof Error?error.message:'Unable to inspect website'},{status:422})}
 }
