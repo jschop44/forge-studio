@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import {isPublicAddress} from '../workers/public-network-policy.mjs';
 test('allows ordinary public IPv4 and IPv6',()=>{
  assert.equal(isPublicAddress('8.8.8.8'),true);
+ assert.equal(isPublicAddress('192.0.3.1'),true); // not within 192.0.0.0/24 or 192.0.2.0/24
  assert.equal(isPublicAddress('2606:4700:4700::1111'),true);
 });
 test('rejects private, link-local, loopback, reserved and documentation ranges',()=>{
