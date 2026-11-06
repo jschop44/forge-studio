@@ -38,3 +38,11 @@ test("rejects malformed worker captures", () => {
   assert.throws(() => workerCaptureToReviewEvidence({ ...worker(), pages: [] }));
   assert.throws(() => workerCaptureToReviewEvidence({ ...worker(), sourceUrl: "http://localhost/" }));
 });
+
+test("includes evidence-grounded broken navigation recommendations for owner review",()=>{
+ const capture=worker();
+ const page={...capture.pages[0],navigationChecks:[{path:'/missing',status:404,ok:false,verifiedBy:'navigation-get'}]};
+ const evidence=workerCaptureToReviewEvidence({...capture,pages:[page]});
+ assert.match(evidence.captureErrors.join(' '),/\/missing/);
+ assert.match(evidence.captureErrors.join(' '),/correct the internal link target/);
+});
