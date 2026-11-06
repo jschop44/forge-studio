@@ -48,3 +48,13 @@ test("free generator produces preview pages and navigates tabs", async ({ page }
   await page.getByRole("button", { name: /switch to 390 pixel mobile website preview/i }).click();
   await expect(page.getByRole("button", { name: /switch to 390 pixel mobile website preview/i })).toHaveAttribute("aria-pressed", "true");
 });
+
+
+test("business publication routes remain disabled by default", async ({ request }) => {
+  const id="00000000-0000-4000-8000-000000000001";
+  const published=await request.get("/business-sites/"+id+"/index");
+  expect(published.status()).toBe(503);
+  expect(published.headers()["cache-control"]).toBe("no-store");
+  const create=await request.post("/api/business/publish",{data:{}});
+  expect(create.status()).toBe(503);
+});
