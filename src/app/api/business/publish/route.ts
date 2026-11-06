@@ -19,9 +19,11 @@ export async function POST(req:NextRequest){
   const id=randomUUID(),sql=database();
   // A single INSERT statement prevents partially published multi-page sites.
   const pageRows=JSON.stringify(checked.pages.map(({slug,html})=>({slug,html})));
-  await sql`INSERT INTO forge_business_publications(id,owner_id,slug,html)
-    SELECT ${id}::uuid,${owner}::uuid,p.slug,p.html
-    FROM jsonb_to_recordset(${pageRows}::jsonb) AS p(slug text,html text)`;
+  await sql`WITH pages AS (SELECT p.slug,p.html FROM jsonb_to_recordset(${pageRows}::jsonb) AS p(slug text,html text)),
+   stored AS (INSERT INTO forge_business_publications(id,owner_id,slug,html)
+    SELECT ${id}::uuid,${owner}::uuid,slug,html FROM pages RETURNING id,owner_id,slug,html)
+   INSERT INTO forge_business_publication_snapshots(publication_id,owner_id,version,slug,html)
+   SELECT id,owner_id,1,slug,html FROM stored`;
   return NextResponse.json({id,urls:checked.pages.map(page=>'/business-sites/'+id+'/'+page.slug),published:true},{status:201});
  }catch{
   return NextResponse.json({error:'Business publication unavailable; check database migrations'},{status:503});
