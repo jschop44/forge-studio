@@ -24,7 +24,9 @@ export function analyzeSiteEvidence(input:SiteEvidence):IntelligenceFinding{
  const scored=categories.map(category=>({category,score:(primary.match(new RegExp(category.pattern.source,'gi'))||[]).length*2+(secondary.match(new RegExp(category.pattern.source,'gi'))||[]).length}));
  scored.sort((a,b)=>b.score-a.score);
  const winner=scored[0];
- const confidence=winner.score>=6?'high':winner.score>=2?'medium':'low';
+ const runnerUp=scored[1]?.score||0;
+ // A strong but ambiguous keyword match is not reliable high-confidence evidence.
+ const confidence=winner.score>=6&&winner.score>=runnerUp*2?'high':winner.score>=2&&winner.score>runnerUp?'medium':'low';
  const industry=winner.score>0?winner.category.industry:'General business';
  const signals=[input.title?'page title':'',input.description?'meta description':'',input.navigation?.length?'navigation':'',input.pageSummaries?.length?'internal pages':''].filter(Boolean);
  const headings=[...input.headings,...(input.pageSummaries||[]).flatMap(p=>p.headings)].map(h=>h.trim()).filter(h=>h.length>=5&&h.length<=65&&!/^(home|about|contact|welcome|menu|explore|learn more)$/i.test(h));
