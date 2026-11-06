@@ -57,3 +57,11 @@ test('exports distinct standalone HTML files for multiple observed routes',()=>{
  assert.match(result[1].html,/About us/);
  assert.equal(new Set(result.map(p=>p.filename)).size,3);
 });
+
+test('rewrites captured same-site links to generated local preview files',()=>{
+ const files=blueprintToPages({version:1,title:'Site',sourceUrl:'https://example.com',sections:[],pages:[
+  {path:'/',title:'Home',regions:[]},{path:'/about',title:'About',regions:[]}
+ ],navigation:[{label:'About',target:'/about'},{label:'Outside',target:'https://other.example/'}]});
+ assert.match(files[0].html,/href="about.html"/);
+ assert.doesNotMatch(files[0].html,/href="https:\/\/other.example/);
+});
