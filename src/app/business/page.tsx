@@ -15,13 +15,26 @@ function infer(name:string,brief:string):Brief{
  const services=listed.length>=2?listed: /coffee|espresso|roast|barista|café|cafe/.test(text)?['Coffee menu','Visit our café','Contact the team']:/restaurant|pizza|food|bakery/.test(text)?['Explore the menu','Visit us','Ask a question']:/real estate|realtor|property/.test(text)?['Explore properties','Discuss your goals','Contact an agent']:/gym|fitness|wellness|spa/.test(text)?['Explore programs','Ask about availability','Contact the team']:['Explore services','Discuss your project','Contact the team'];
  return {businessName:name.trim(),industry,description,services};
 }
+type StyleReference={background?:string;accent?:string;fontFamily?:string};
+function parseStyleReference(source:string):StyleReference{
+ if(!source.trim())return {};
+ const doc=new DOMParser().parseFromString(source,'text/html');
+ const css=[...doc.querySelectorAll('style')].map(node=>node.textContent||'').join(' ');
+ const inline=[doc.body?.getAttribute('style')||'',doc.querySelector('header')?.getAttribute('style')||''].join(';');
+ const text=(css+';'+inline).slice(0,150000);
+ const color=(pattern:RegExp)=>text.match(pattern)?.[1]?.trim();
+ const background=color(/(?:--(?:background|bg|surface|brand-bg)|background(?:-color)?)\s*:\s*(#[0-9a-fA-F]{3,8})/i);
+ const accent=color(/(?:--(?:primary|accent|brand|brand-accent)|color)\s*:\s*(#[0-9a-fA-F]{3,8})/i);
+ const fontFamily=text.match(/font-family\s*:\s*['"]?(Georgia|Arial|Verdana|Tahoma|Trebuchet MS|Times New Roman|system-ui|sans-serif|serif)/i)?.[1];
+ return {background,accent,fontFamily};
+}
 export default function BusinessGenerator(){
- const [name,setName]=useState(''),[brief,setBrief]=useState(''),[contactEmail,setContactEmail]=useState(''),[busy,setBusy]=useState(false),[status,setStatus]=useState(''),[pages,setPages]=useState<GeneratedPage[]>([]),[active,setActive]=useState('index'),[mobile,setMobile]=useState(false);
+ const [designMode,setDesignMode]=useState<'new'|'inspired'|'redesign'>('new'),[referenceMarkup,setReferenceMarkup]=useState(''),[brief,setBrief]=useState(''),[contactEmail,setContactEmail]=useState(''),[busy,setBusy]=useState(false),[status,setStatus]=useState(''),[pages,setPages]=useState<GeneratedPage[]>([]),[active,setActive]=useState('index'),[mobile,setMobile]=useState(false);
  const current=pages.find(p=>p.slug===active);
  async function generate(){
- if(name.trim().length<2){setStatus('Enter your business name to get started.');return}
+ if(name.trim().length<2){setStatus('Enter your business name to get started.');return}if(designMode!=='new'&&!referenceMarkup.trim()){setStatus('Paste the existing website HTML/CSS to use this mode.');return}
  setBusy(true);setStatus('Building your website and choosing its design automatically…');
- const input={...infer(name,brief),...(contactEmail.trim()?{contactEmail:contactEmail.trim()}: {})};
+ const input={...infer(name,brief),...(contactEmail.trim()?{contactEmail:contactEmail.trim()}: {}),...(designMode==='inspired'?{styleReference:parseStyleReference(referenceMarkup)}:{})};
  try{
  const response=await fetch('/api/ai/business',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(input)});
  if(!response.ok)throw Error((await response.json()).error||'AI generation unavailable');
@@ -34,6 +47,8 @@ export default function BusinessGenerator(){
  <header><Link href="/">✦ FORGE STUDIO</Link><strong>AI WEBSITE BUILDER</strong></header>
  <div className="forge-auto-layout">
  <aside className="forge-auto-panel"><div className="eyebrow">YOUR WEBSITE, AUTOMATICALLY</div><h1>Tell us about your business.<br/><em>We build the rest.</em></h1><p>One business name, one generation step. Forge selects industry-relevant photography, page structure and visual direction automatically. Review all facts and images before publishing.</p>
+ <label>Design approach<select value={designMode} onChange={e=>setDesignMode(e.target.value as 'new'|'inspired'|'redesign')}><option value="new">Create a completely new website</option><option value="inspired">Preserve an existing site's visual style</option><option value="redesign">Fully redesign an existing site</option></select></label>
+ {designMode!=='new'&&<label>Existing website source (HTML with embedded CSS)<textarea rows={5} value={referenceMarkup} onChange={e=>setReferenceMarkup(e.target.value)} placeholder="Paste HTML source or a saved page's HTML/CSS. No scripts from this source are executed."/>{designMode==='inspired'?<small>Forge extracts a limited set of colors and typography. It does not duplicate copyrighted layouts, assets or source code.</small>:<small>Forge builds a new design using your business details. Existing HTML is reference material only; automatic content extraction is not yet supported.</small>}</label>}
  <label>Business name<input autoFocus value={name} onChange={e=>setName(e.target.value)} placeholder="e.g. Northstar Coffee"/></label>
  <label>What does your business do? <span className="optional">(optional)</span><textarea rows={5} value={brief} onChange={e=>setBrief(e.target.value)} placeholder="Describe what you offer, who you serve and what makes you different."/></label>
  <details className="forge-auto-advanced"><summary>Add contact information (recommended before publishing)</summary><label>Business email<input type="email" value={contactEmail} onChange={e=>setContactEmail(e.target.value)} placeholder="hello@yourbusiness.com"/></label></details>
