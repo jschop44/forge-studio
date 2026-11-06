@@ -38,6 +38,9 @@ test("free generator produces preview pages and navigates tabs", async ({ page }
   await page.getByPlaceholder("e.g. Northstar Coffee").fill("Northstar Roasters");
   await expect(approvePublish).not.toBeChecked();
   await expect(page.getByRole("button", { name: /publish approved draft/i })).toBeDisabled();
+  await page.getByPlaceholder("Publication UUID, leave blank for a new website").fill("00000000-0000-4000-8000-000000000001");
+  await expect(approvePublish).not.toBeChecked();
+  await expect(page.getByRole("button", { name: /publish approved draft/i })).toBeDisabled();
   await expect(tabs.getByRole("button", { name: "Services" })).toBeVisible();
   await tabs.getByRole("button", { name: "Services" }).click();
   await expect(tabs.getByRole("button", { name: "Services" })).toHaveAttribute("aria-current", "page");
