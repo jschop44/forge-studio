@@ -3,6 +3,10 @@ on:
   push:
     paths:
       - 'workers/browser-capture.mjs'
+      - 'workers/navigation-probe-policy.mjs'
+      - 'workers/public-network-policy.mjs'
+      - 'tests/navigation-probe-policy.test.mjs'
+      - 'tests/public-network-policy.test.mjs'
       - '.github/workflows/browser-capture.yml'
   workflow_dispatch:
     inputs:
@@ -21,6 +25,8 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
+      - name: Validate navigation and network safety policies
+        run: node --test tests/navigation-probe-policy.test.mjs tests/public-network-policy.test.mjs
       - name: Install isolated browser runtime
         run: |
           npm install --no-save --no-package-lock playwright
