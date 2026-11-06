@@ -15,7 +15,14 @@ export async function DELETE(req:NextRequest,{params}:{params:Promise<{id:string
   return NextResponse.json({error:'Invalid publication id'},{status:400});
  try{
   const sql=database();
-  const removed=await sql`DELETE FROM forge_business_publications WHERE id=${id}::uuid AND owner_id=${owner}::uuid RETURNING slug`;
+  // Remove retained snapshots with the publication; no orphaned history remains.
+  const removed=await sql`WITH gone AS (
+    DELETE FROM forge_business_publications WHERE id=${id}::uuid AND owner_id=${owner}::uuid RETURNING id,slug
+   ), discarded AS (
+    DELETE FROM forge_business_publication_snapshots
+    WHERE publication_id=${id}::uuid AND owner_id=${owner}::uuid
+    AND EXISTS(SELECT 1 FROM gone) RETURNING version
+   ) SELECT slug FROM gone`;
   if(!removed.length)return NextResponse.json({error:'Publication not found'},{status:404});
   return NextResponse.json({unpublished:true,removedPages:removed.length});
  }catch{return NextResponse.json({error:'Unable to unpublish'},{status:503})}
