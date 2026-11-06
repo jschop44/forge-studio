@@ -26,7 +26,7 @@ export function validateBusinessPublicationRequest(input:unknown):{
     if(/<\s*(script|iframe|object|embed|form|base)\b/i.test(page.html))errors.push(page.slug+': active or embedded HTML is not allowed');
     if(/<\s*meta\b[^>]*http-equiv\s*=\s*[\"']?refresh\b/i.test(page.html))errors.push(page.slug+': automatic redirects are not allowed');
     if(/\bon[a-z]+\s*=/i.test(page.html))errors.push(page.slug+': inline event handlers are not allowed');
-    if(/<\s*(svg|math|template|link|style)\b/i.test(page.html))errors.push(page.slug+': unsupported embedded, stylesheet or foreign HTML elements are not allowed');
+    if(/<\s*(svg|math|template|link)\b/i.test(page.html))errors.push(page.slug+': unsupported embedded, stylesheet or foreign HTML elements are not allowed');
     if(/\b(?:srcdoc|formaction|xlink:href)\s*=/i.test(page.html))errors.push(page.slug+': unsafe embedded or action attributes are not allowed');
   }
   return {valid:errors.length===0,errors,businessName:parsed.data.businessName,pages:parsed.data.pages};
