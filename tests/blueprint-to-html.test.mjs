@@ -80,3 +80,13 @@ test('resolves relative links using the captured page path',()=>{
  ],navigation:[{label:'Details',target:'details'}]});
  assert.match(files[0].html,/href="services-details.html"/);
 });
+
+test('uses page-specific observed navigation when exporting pages',()=>{
+ const files=blueprintToPages({version:1,sourceUrl:'https://example.com',title:'Site',sections:[],pages:[
+  {path:'/',title:'Home',regions:[],navigation:[{label:'About',target:'/about'}]},
+  {path:'/about',title:'About',regions:[],navigation:[{label:'Home',target:'/'}]}
+ ]});
+ assert.match(files[0].html,/href="about.html"/);
+ assert.doesNotMatch(files[0].html,/>Home<\/a>/);
+ assert.match(files[1].html,/href="index.html"/);
+});
