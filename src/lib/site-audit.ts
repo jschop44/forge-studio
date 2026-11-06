@@ -30,3 +30,12 @@ export function auditGeneratedSite(input:unknown):SiteAudit{
  const score=Math.round(technicalScore*.7+visualHeuristic*.3);
  return {score,technicalScore,visualHeuristic,...dimensions,findings};
 }
+
+export function explainDiscoverability(audit:SiteAudit){
+ return {
+ seo:audit.seo>=85?'SEO foundations are strong in the supplied markup; verify indexing, content relevance and real performance.':'SEO needs work: improve titles, descriptions, headings and canonical information before launch.',
+ aeo:audit.aeo>=85?'AEO structure includes readable answers and headings; validate that it answers real customer questions.':'AEO needs clear question-led sections, direct answers and useful descriptions of services.',
+ geo:audit.geo>=85?'GEO foundations include structured information; AI citations and recommendations cannot be guaranteed.':'GEO needs accurate structured data, clear business offerings and trustworthy, verifiable information.',
+ visual:'Visual score is a markup-based heuristic only. It cannot judge image relevance, brand quality, visual appeal or 3D immersion.'
+ };
+}
