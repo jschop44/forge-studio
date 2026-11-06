@@ -16,6 +16,8 @@ export async function POST(req:NextRequest,{params}:{params:Promise<{id:string}>
  try{
   const body=await req.json();
   const version=body?.version;
+  const expectedVersion=body?.expectedVersion;
+  if(!Number.isSafeInteger(expectedVersion)||expectedVersion<1)return NextResponse.json({error:'Expected current version required'},{status:400});
   if(!Number.isSafeInteger(version)||version<1)return NextResponse.json({error:'Invalid snapshot version'},{status:400});
   const sql=database();
   // Restore content only when the current page set exactly matches the snapshot.
@@ -23,6 +25,9 @@ export async function POST(req:NextRequest,{params}:{params:Promise<{id:string}>
   const rows=await sql`WITH snapshot AS (
     SELECT slug,html FROM forge_business_publication_snapshots
     WHERE publication_id=${id}::uuid AND owner_id=${owner}::uuid AND version=${version}
+   ), current_version AS (
+    SELECT MAX(version) AS version FROM forge_business_publication_snapshots
+    WHERE publication_id=${id}::uuid AND owner_id=${owner}::uuid
    ), current_pages AS (
     SELECT slug FROM forge_business_publications WHERE id=${id}::uuid AND owner_id=${owner}::uuid
    ), compatible AS (
@@ -32,9 +37,9 @@ export async function POST(req:NextRequest,{params}:{params:Promise<{id:string}>
    )
    UPDATE forge_business_publications p SET html=s.html
    FROM snapshot s,compatible c
-   WHERE c.matches AND p.id=${id}::uuid AND p.owner_id=${owner}::uuid AND p.slug=s.slug
+   WHERE c.matches AND (SELECT version FROM current_version)=${expectedVersion} AND p.id=${id}::uuid AND p.owner_id=${owner}::uuid AND p.slug=s.slug
    RETURNING p.slug`;
-  if(!rows.length)return NextResponse.json({error:'Publication or snapshot not found'},{status:404});
+  if(!rows.length)return NextResponse.json({error:'Publication, snapshot, or current version mismatch. Refresh before restoring.'},{status:409});
   return NextResponse.json({restored:true,version,pageCount:rows.length});
  }catch{return NextResponse.json({error:'Rollback unavailable'},{status:503})}
 }
