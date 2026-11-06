@@ -6,14 +6,17 @@ import {escapeHtml} from './export';
 export function capturePreviewPages(input:unknown):GeneratedPage[]{
  if(!validateBrowserEvidence(input))throw Error('Invalid browser evidence');
  const evidence:BrowserEvidence=input;
- const page=evidence.pages[0];
- if(!page)throw Error('Capture has no pages');
+ if(!evidence.pages.length)throw Error('Capture has no pages');
+ return evidence.pages.map((page,index)=>{
  const title=escapeHtml(page.title||'Captured website');
  const sections=[...(page.visualRegions||[])].sort((a,b)=>a.y-b.y||a.x-b.x).slice(0,80).map(region=>{
   const role=region.role==='hero'?'hero':region.role==='footer'?'footer':region.role==='nav'?'navigation':'content';
   const height=Math.min(560,Math.max(70,Math.round(region.height)));
-  return '<section class="region '+role+'" style="min-height:'+height+'px"><p>'+escapeHtml((region.text||'').slice(0,200))+'</p></section>';
+  const width=Math.min(100,Math.max(15,Math.round(region.width/evidence.viewport.width*100)));
+  const left=Math.min(85,Math.max(0,Math.round(region.x/evidence.viewport.width*100)));
+  return '<section class="region '+role+'" style="min-height:'+height+'px;width:'+width+'%;margin-left:'+left+'%"><p>'+escapeHtml((region.text||'').slice(0,200))+'</p></section>';
  }).join('');
- const html='<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta http-equiv="Content-Security-Policy" content="default-src \'none\';style-src \'unsafe-inline\';base-uri \'none\';form-action \'none\'"><title>'+title+'</title><style>*{box-sizing:border-box}body{margin:0;font:16px/1.6 system-ui,sans-serif;color:#17212b;background:#f7f8fa}header,main,footer{max-width:1100px;margin:auto;padding:2rem}.region{background:#fff;padding:2rem;margin:1rem 0;border:1px solid #ddd;border-radius:1rem}.hero{background:#e9efff;padding:4rem 2rem}p{overflow-wrap:anywhere}</style></head><body><header><h1>'+title+'</h1><p>Observed layout preview. Not a verified replica; review before publishing.</p></header><main>'+sections+'</main><footer>Source: '+escapeHtml(evidence.sourceUrl)+'</footer></body></html>';
- return [{slug:'index',title:'Captured layout preview',html}];
+ const html='<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta http-equiv="Content-Security-Policy" content="default-src \'none\';style-src \'unsafe-inline\';base-uri \'none\';form-action \'none\'"><title>'+title+'</title><style>*{box-sizing:border-box}body{margin:0;font:16px/1.6 system-ui,sans-serif;color:#17212b;background:#f7f8fa}header,main,footer{max-width:1100px;margin:auto;padding:2rem}.region{background:#fff;padding:2rem;margin:1rem 0;border:1px solid #ddd;border-radius:1rem}.hero{background:#e9efff;padding:4rem 2rem}p{overflow-wrap:anywhere}@media(max-width:650px){.region{width:100%!important;margin-left:0!important;min-height:70px!important}}</style></head><body><header><h1>'+title+'</h1><p>Observed layout preview. Not a verified replica; review before publishing.</p></header><main>'+sections+'</main><footer>Source: '+escapeHtml(evidence.sourceUrl)+'</footer></body></html>';
+ return {slug:index===0?'index':'capture-'+(index+1),title:'Captured layout preview '+(index+1),html};
+ });
 }
