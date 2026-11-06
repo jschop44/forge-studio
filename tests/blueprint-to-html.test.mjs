@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {blueprintToHtml} from '../workers/blueprint-to-html.mjs';
+import {blueprintToHtml,blueprintToPages} from '../workers/blueprint-to-html.mjs';
 test('renders a self-contained responsive preview',()=>{
  const html=blueprintToHtml({version:1,title:'Test',headline:'Welcome',sections:[{type:'hero',headline:'Hello'}]});
  assert.match(html,/<!doctype html>/);assert.match(html,/viewport/);assert.match(html,/Hello/);assert.match(html,/Content-Security-Policy/);
@@ -45,4 +45,15 @@ test('selects a distinct captured page without leaking other page content',()=>{
  assert.doesNotMatch(html,/Homepage heading/);
  assert.match(html,/Services \(previewed\)/);
  assert.throws(()=>blueprintToHtml(blueprint,2),/Invalid selected page/);
+});
+
+test('exports distinct standalone HTML files for multiple observed routes',()=>{
+ const result=blueprintToPages({version:1,title:'Site',sections:[],pages:[
+  {path:'/',title:'Home',regions:[{type:'hero',headline:'Welcome'}]},
+  {path:'/about/',title:'About',regions:[{type:'section',headline:'About us'}]},
+  {path:'/about/',title:'Duplicate',regions:[]}
+ ]});
+ assert.deepEqual(result.map(p=>p.filename),['index.html','about.html','about-3.html']);
+ assert.match(result[1].html,/About us/);
+ assert.equal(new Set(result.map(p=>p.filename)).size,3);
 });
