@@ -65,7 +65,7 @@ try{
      const links=[...document.querySelectorAll('a')].slice(0,30).map(n=>({kind:'link',label:(n.getAttribute('aria-label')||n.textContent||'').trim().slice(0,100),target:(n.getAttribute('href')||'').slice(0,300),verified:false}));
      return {title:document.title,visualRegions:regions,designTokens:{backgroundColor:body.backgroundColor,textColor:body.color,fontFamily:body.fontFamily,headingFontFamily:h.fontFamily,headingFontSize:h.fontSize,baseFontSize:body.fontSize},interactions:links,landmarks:[...document.querySelectorAll('h1,h2')].slice(0,30).map(n=>({role:n.tagName.toLowerCase(),text:(n.textContent||'').trim().slice(0,120)}))};
     });
-    additionalPages.push({path:url.pathname,title:snapshot.title,...snapshot,navigationChecks:[]});
+    additionalPages.push({path:url.pathname+url.search,...snapshot,navigationChecks:[],interactionSummary:{observed:snapshot.interactions.length,links:snapshot.interactions.length,buttons:0,forms:0,unlabeledControls:snapshot.interactions.filter(i=>!i.label).length,linksWithoutTargets:snapshot.interactions.filter(i=>!i.target).length,interactionsExecuted:false}});
    }
   }catch{
    navigationChecks.push({path:url.pathname+url.search,status:null,ok:false,verifiedBy:'navigation-get'});
