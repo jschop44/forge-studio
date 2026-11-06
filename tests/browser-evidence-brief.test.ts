@@ -40,7 +40,7 @@ test("records accessible screenshot without claiming analysis happened", () => {
   sample.screenshot.accessibleToGenerator = true;
   const brief = createGroundedDesignBrief(sample);
   assert.equal(brief.screenshotStatus, "available");
-  assert.equal(brief.observations.some((item) => item.kind === "visual"), false);
+  assert.deepEqual(brief.observations.map((item) => item.kind), ["title", "heading", "navigation"]);
 });
 
 test("rejects IP literals and internal hostnames", () => {
