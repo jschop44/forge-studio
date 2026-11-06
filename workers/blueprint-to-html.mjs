@@ -13,6 +13,7 @@ export function blueprintToHtml(blueprint,selectedPage=0,localNavigation=false){
  const safeFont=v=>typeof v==='string'&&/^[a-zA-Z0-9 ,"'_-]{1,160}$/.test(v)?v:null;
  const safeSize=v=>typeof v==='string'&&/^(?:[0-9]{1,3}(?:\.[0-9]{1,2})?px)$/.test(v)?v:null;
  const tokenStyle=':root{'+(safeColor(tokens.backgroundColor)?'--capture-bg:'+safeColor(tokens.backgroundColor)+';':'')+(safeColor(tokens.textColor)?'--capture-fg:'+safeColor(tokens.textColor)+';':'')+(safeFont(tokens.fontFamily)?'--capture-font:'+safeFont(tokens.fontFamily)+';':'')+(safeFont(tokens.headingFontFamily)?'--capture-heading-font:'+safeFont(tokens.headingFontFamily)+';':'')+(safeSize(tokens.baseFontSize)?'--capture-base-size:'+safeSize(tokens.baseFontSize)+';':'')+(safeSize(tokens.headingFontSize)?'--capture-heading-size:'+safeSize(tokens.headingFontSize)+';':'')+'}';
+ const pageHeading=escapeHtml(String(currentPage?.title||blueprint.headline||blueprint.title||'Website').slice(0,180));
  const pageSections=currentPage&&Array.isArray(currentPage.regions)?currentPage.regions:blueprint.sections;
  const sections=pageSections.slice(0,100).map(section=>{
   const type=section?.type==='hero'?'hero':section?.type==='navigation'?'navigation':section?.type==='footer'?'footer':'content';
