@@ -9,7 +9,7 @@ export function blueprintToHtml(blueprint,selectedPage=0,localNavigation=false){
  if(!Number.isInteger(selectedPage)||selectedPage<0||selectedPage>=Math.max(1,observedPages.length))throw Error('Invalid selected page');
  const currentPage=observedPages[selectedPage];
  const tokens=currentPage?.designTokens||{};
- const safeColor=v=>typeof v==='string'&&/^(?:#[0-9a-f]{3,8}|rgba?\\([0-9.,%\\s]+\\))$/i.test(v)?v:null;
+ const safeColor=v=>typeof v==='string'&&/^(?:#[0-9a-f]{3,8}|rgba?\([0-9.,%\s]+\))$/i.test(v)?v:null;
  const safeFont=v=>typeof v==='string'&&/^[a-zA-Z0-9 ,"'_-]{1,160}$/.test(v)?v:null;
  const safeSize=v=>typeof v==='string'&&/^(?:[0-9]{1,3}(?:\.[0-9]{1,2})?px)$/.test(v)?v:null;
  const tokenStyle=':root{'+(safeColor(tokens.backgroundColor)?'--capture-bg:'+safeColor(tokens.backgroundColor)+';':'')+(safeColor(tokens.textColor)?'--capture-fg:'+safeColor(tokens.textColor)+';':'')+(safeFont(tokens.fontFamily)?'--capture-font:'+safeFont(tokens.fontFamily)+';':'')+(safeFont(tokens.headingFontFamily)?'--capture-heading-font:'+safeFont(tokens.headingFontFamily)+';':'')+(safeSize(tokens.baseFontSize)?'--capture-base-size:'+safeSize(tokens.baseFontSize)+';':'')+(safeSize(tokens.headingFontSize)?'--capture-heading-size:'+safeSize(tokens.headingFontSize)+';':'')+'}';
