@@ -1,0 +1,34 @@
+name: Browser capture smoke test
+on:
+  workflow_dispatch:
+    inputs:
+      target_url:
+        description: Public HTTPS site to inspect
+        required: true
+        default: https://example.com
+jobs:
+  capture:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install isolated browser runtime
+        run: |
+          npm install --no-save --no-package-lock playwright
+          npx playwright install --with-deps chromium
+      - name: Capture allowed public site
+        env:
+          TARGET_URL: ${{ inputs.target_url }}
+        run: |
+          node -e "const u=new URL(process.env.TARGET_URL);if(u.protocol!=='https:'||u.hostname!=='example.com')process.exit(1)"
+          FORGE_CAPTURE_HOSTS=example.com node workers/browser-capture.mjs "$TARGET_URL" > browser-evidence.json
+      - uses: actions/upload-artifact@v4
+        with:
+          name: browser-evidence
+          path: browser-evidence.json
+          retention-days: 1
