@@ -3,7 +3,7 @@ import {z} from 'zod';
 import {sameOrigin} from '../../../../lib/server/request-security';
 import {generateWithLocalAi} from '../../../../lib/server/local-ai';
 export const runtime='nodejs';
-const Input=z.object({businessName:z.string().trim().min(2).max(100),industry:z.string().trim().min(2).max(80),description:z.string().trim().min(15).max(1800),services:z.array(z.string().trim().min(2).max(100)).min(1).max(12)});
+const Input=z.object({businessName:z.string().trim().min(2).max(100),industry:z.string().trim().min(2).max(80),description:z.string().trim().min(15).max(1800),services:z.array(z.string().trim().min(2).max(100)).min(1).max(12),contactEmail:z.string().email().max(254).optional()});
 export async function POST(req:NextRequest){
  if(!sameOrigin(req))return NextResponse.json({error:'Origin rejected'},{status:403});
  try{const raw=await req.text();if(raw.length>8000)return NextResponse.json({error:'Brief too large'},{status:413});
