@@ -56,3 +56,12 @@ test('clamps section width to the viewport and allows only same-origin HTTPS lin
  assert.match(html,/Contact &lt;us&gt;/);
  assert.doesNotMatch(html,/javascript:alert|other\.example/);
 });
+
+test('resolves relative navigation from the captured page and labels the page',()=>{
+ const input={...evidence,pages:[{...evidence.pages[0],path:'/services/',title:'Services',interactions:[
+  {kind:'link',label:'Details',target:'details',verified:false}
+ ]}]};
+ const pages=capturePreviewPages(input);
+ assert.equal(pages[0].title,'Services');
+ assert.match(pages[0].html,/href="https:\/\/example.com\/services\/details"/);
+});
