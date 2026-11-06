@@ -9,7 +9,9 @@ function infer(name:string,brief:string):Brief{
  const text=(name+' '+brief).toLowerCase();
  const industry=/coffee|espresso|roast|barista|café|cafe/.test(text)?'Coffee shop and cafe':/restaurant|pizza|food|bakery/.test(text)?'Restaurant and hospitality':/real estate|realtor|property/.test(text)?'Real estate':/gym|fitness|wellness|spa/.test(text)?'Health and wellness':/auto|car|vehicle/.test(text)?'Automotive':/fashion|jewelry|clothing/.test(text)?'Fashion and luxury':/software|tech|digital|ai /.test(text)?'Technology':'Professional services';
  const description=brief.trim().length>=15?brief.trim():name+' provides thoughtful, professional solutions for customers seeking quality and dependable service.';
- const listed=brief.split(/[,;\n]|\\band\\b/i).map(part=>part.trim()).filter(part=>part.length>=4&&part.length<=65).filter(part=>!/^(we |our |the |a |an |with |for |to |in |at )/i.test(part)).slice(0,5);
+ const serviceLine=brief.split('\n').find(line=>/^(services|products|offerings|menu)\s*:/i.test(line.trim()));
+ const listed=serviceLine?serviceLine.replace(/^[^:]+:/,'').split(/[,;]/).map(part=>part.trim()).filter(part=>part.length>=3&&part.length<=65).slice(0,5):[];
+
  const services=listed.length>=2?listed: /coffee|espresso|roast|barista|café|cafe/.test(text)?['Coffee menu','Visit our café','Contact the team']:/restaurant|pizza|food|bakery/.test(text)?['Explore the menu','Visit us','Ask a question']:/real estate|realtor|property/.test(text)?['Explore properties','Discuss your goals','Contact an agent']:/gym|fitness|wellness|spa/.test(text)?['Explore programs','Ask about availability','Contact the team']:['Explore services','Discuss your project','Contact the team'];
  return {businessName:name.trim(),industry,description,services};
 }
