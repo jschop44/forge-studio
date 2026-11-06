@@ -43,3 +43,16 @@ test('renders distinct captured pages and preserves bounded horizontal positions
  assert.match(pages[1].html,/width:50%;margin-left:25%/);
  assert.match(pages[1].html,/@media\(max-width:650px\)/);
 });
+
+test('clamps section width to the viewport and allows only same-origin HTTPS links',()=>{
+ const input={...evidence,pages:[{...evidence.pages[0],visualRegions:[{role:'section',x:1000,y:0,width:280,height:100,text:'Right edge'}],interactions:[
+  {kind:'link',label:'Contact <us>',target:'/contact',verified:false},
+  {kind:'link',label:'Bad',target:'javascript:alert(1)',verified:false},
+  {kind:'link',label:'External',target:'https://other.example/',verified:false}
+ ]}]};
+ const html=capturePreviewPages(input)[0].html;
+ assert.match(html,/width:22%;margin-left:78%/);
+ assert.match(html,/href="https:\/\/example.com\/contact"/);
+ assert.match(html,/Contact &lt;us&gt;/);
+ assert.doesNotMatch(html,/javascript:alert|other\.example/);
+});
