@@ -43,6 +43,7 @@ export default function BusinessGenerator(){
  useEffect(()=>{setPublishApproved(false);setPublishedUrls([])},[pages,name,brief,contactEmail]);
  async function publishReviewedDraft(){
   if(!publishApproved||!pages.length){setStatus('Review the generated pages and approve publication first.');return}
+  if(revisionId.trim()&&!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(revisionId.trim())){setStatus('Enter a valid publication UUID or leave it blank for a new website.');return}
   setPublishBusy(true);
   try{
    const target=revisionId.trim()?'/api/business/publish/'+revisionId.trim()+'/revisions':'/api/business/publish';
