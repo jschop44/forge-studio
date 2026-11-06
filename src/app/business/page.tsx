@@ -31,12 +31,12 @@ export default function BusinessGenerator(){
  return <div className="business-generator forge-auto">
  <header><Link href="/">✦ FORGE STUDIO</Link><strong>AI WEBSITE BUILDER</strong><Link href="/experiences">3D experiences ↗</Link></header>
  <div className="forge-auto-layout">
- <aside className="forge-auto-panel"><div className="eyebrow">YOUR WEBSITE, AUTOMATICALLY</div><h1>Tell us about your business.<br/><em>We build the rest.</em></h1><p>Design, copy, page structure and visual direction are selected automatically. No complex settings required.</p>
+ <aside className="forge-auto-panel"><div className="eyebrow">YOUR WEBSITE, AUTOMATICALLY</div><h1>Tell us about your business.<br/><em>We build the rest.</em></h1><p>One business name, one generation step. Forge selects industry-relevant photography, page structure and visual direction automatically. Review all facts and images before publishing.</p>
  <label>Business name<input autoFocus value={name} onChange={e=>setName(e.target.value)} placeholder="e.g. Northstar Coffee"/></label>
  <label>What does your business do? <span className="optional">(optional)</span><textarea rows={5} value={brief} onChange={e=>setBrief(e.target.value)} placeholder="Describe what you offer, who you serve and what makes you different."/></label>
  <details className="forge-auto-advanced"><summary>Add contact information (recommended before publishing)</summary><label>Business email<input type="email" value={contactEmail} onChange={e=>setContactEmail(e.target.value)} placeholder="hello@yourbusiness.com"/></label></details>
- <button className="forge-auto-cta" onClick={()=>void generate()} disabled={busy}>{busy?'Creating your website…':'✦ Generate my website'}</button>
- <button className="forge-auto-demo" onClick={()=>{if(name.trim().length<2){setStatus('Enter a business name first to preview its own immersive design.');return}const input=infer(name,brief);const site=generateBusinessWebsite(input);setPages([...createContextualShowcase(input),...site.pages.filter(p=>p.slug!=='index')]);setActive('index');setStatus('Showing an industry-specific immersive concept based on the business details you provided.');setMobile(false)}}>✧ Preview my business immersive design</button>
+ <button className="forge-auto-cta" onClick={()=>void generate()} disabled={busy}>{busy?'Creating your website…':'✦ Generate my immersive website'}</button>
+
  {status&&<p role="status" className="forge-auto-status">{status}</p>}
  <p className="forge-auto-note">For the best results, include your products, services and atmosphere. Business-specific visuals are selected automatically. Automatically generates Home, Services, About and Contact pages. Free generation remains available if an AI provider is offline.</p>
  {pages.length>0&&<div className="forge-auto-export"><button onClick={()=>pages.forEach(p=>downloadText(p.slug+'.html',p.html,'text/html'))}>↓ Download website pages</button><Link href="/cloud">Save & publish ↗</Link></div>}
