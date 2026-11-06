@@ -1,5 +1,9 @@
 name: Browser capture smoke test
 on:
+  push:
+    paths:
+      - 'workers/browser-capture.mjs'
+      - '.github/workflows/browser-capture.yml'
   workflow_dispatch:
     inputs:
       target_url:
@@ -23,10 +27,11 @@ jobs:
           npx playwright install --with-deps chromium
       - name: Capture allowed public site
         env:
-          TARGET_URL: ${{ inputs.target_url }}
+          TARGET_URL: ${{ inputs.target_url || 'https://example.com' }}
         run: |
           node -e "const u=new URL(process.env.TARGET_URL);if(u.protocol!=='https:'||u.hostname!=='example.com')process.exit(1)"
           FORGE_CAPTURE_HOSTS=example.com node workers/browser-capture.mjs "$TARGET_URL" > browser-evidence.json
+          node -e "const fs=require('node:fs');const e=JSON.parse(fs.readFileSync('browser-evidence.json','utf8'));if(e.version!==1||e.pages.length!==1||!e.pages[0].title||!e.pages[0].landmarks.length)process.exit(1)"
       - uses: actions/upload-artifact@v4
         with:
           name: browser-evidence
