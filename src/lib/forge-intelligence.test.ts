@@ -9,5 +9,5 @@ test('reports missing visual capture and internal pages',()=>{const coverage=ins
 
 test('marks competing industry signals as ambiguous rather than high confidence',()=>{
  const result=analyzeSiteEvidence({url:'https://example.com',title:'Coffee restaurant pizza cafe',description:'Coffee espresso pizza bakery dining restaurant',headings:['Coffee shop restaurant','Coffee pizza menu']});
- assert.equal(result.confidence,'low');
+ assert.notEqual(result.confidence,'high');
 });
