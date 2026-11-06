@@ -18,7 +18,8 @@ export function analyzeSiteEvidence(input:SiteEvidence):IntelligenceFinding{
  const winner=scored[0];
  const confidence=winner.score>=6?'high':winner.score>=2?'medium':'low';
  const industry=winner.score>0?winner.category.industry:'General business';
+ const signals=[input.title?'page title':'',input.description?'meta description':'',input.navigation?.length?'navigation':'',input.pageSummaries?.length?'internal pages':''].filter(Boolean);
  const headings=[...input.headings,...(input.pageSummaries||[]).flatMap(p=>p.headings)].map(h=>h.trim()).filter(h=>h.length>=5&&h.length<=65&&!/^(home|about|contact|welcome|menu|explore|learn more)$/i.test(h));
  const services=[...new Set(headings)].slice(0,3);
- return {industry,confidence,signals:[input.title?'page title':'',input.description?'meta description':'',input.navigation?.length?'navigation':'',input.pageSummaries?.length?'internal pages':''].filter(Boolean),services:services.length>=2?services:winner.score>0?winner.category.services:['Explore','About','Contact'],sourcePages:1+(input.pageSummaries?.length||0)};
+ return {industry,confidence,signals,services:services.length>=2?services:winner.score>0?winner.category.services:['Explore','About','Contact'],sourcePages:1+(input.pageSummaries?.length||0)};
 }
