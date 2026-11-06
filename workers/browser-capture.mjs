@@ -44,6 +44,7 @@ try{
  const designTokens=await page.evaluate(()=>{const body=getComputedStyle(document.body);const heading=document.querySelector('h1,h2');const h=heading?getComputedStyle(heading):body;return {backgroundColor:body.backgroundColor,textColor:body.color,fontFamily:body.fontFamily,headingFontFamily:h.fontFamily,headingFontSize:h.fontSize,baseFontSize:body.fontSize}});
  const interactions=await page.locator('a,button,form').evaluateAll(nodes=>nodes.slice(0,80).map(n=>({kind:n.tagName.toLowerCase()==='a'?'link':n.tagName.toLowerCase()==='form'?'form':'button',label:(n.getAttribute('aria-label')||n.textContent||'').trim().slice(0,100),target:n.tagName.toLowerCase()==='a'?(n.getAttribute('href')||'').slice(0,300):undefined,verified:false})));
  const navigationChecks=[];
+ const additionalPages=[];
  const seenPaths=new Set();
  for(const item of interactions){
   if(item.kind!=='link'||!item.target||navigationChecks.length>=8)continue;
@@ -57,10 +58,19 @@ try{
   try{
    const response=await probe.goto(url.href,{waitUntil:'domcontentloaded',timeout:8000});
    navigationChecks.push({path:url.pathname+url.search,status:response?.status()??null,ok:Boolean(response?.ok()),verifiedBy:'navigation-get'});
+   if(response?.ok()&&additionalPages.length<3){
+    const snapshot=await probe.evaluate(()=>{
+     const regions=[...document.querySelectorAll('header,nav,main,footer,h1,section')].slice(0,100).map(n=>{const r=n.getBoundingClientRect();return {role:n.tagName.toLowerCase()==='h1'?'hero':n.tagName.toLowerCase(),x:Math.max(0,r.left),y:Math.max(0,r.top),width:Math.max(0,Math.min(r.width,innerWidth-Math.max(0,r.left))),height:Math.max(0,Math.min(r.height,innerHeight-Math.max(0,r.top))),text:(n.textContent||'').trim().slice(0,200)}}).filter(r=>r.width>0&&r.height>0);
+     const body=getComputedStyle(document.body);const heading=document.querySelector('h1,h2');const h=heading?getComputedStyle(heading):body;
+     const links=[...document.querySelectorAll('a')].slice(0,30).map(n=>({kind:'link',label:(n.getAttribute('aria-label')||n.textContent||'').trim().slice(0,100),target:(n.getAttribute('href')||'').slice(0,300),verified:false}));
+     return {title:document.title,visualRegions:regions,designTokens:{backgroundColor:body.backgroundColor,textColor:body.color,fontFamily:body.fontFamily,headingFontFamily:h.fontFamily,headingFontSize:h.fontSize,baseFontSize:body.fontSize},interactions:links,landmarks:[...document.querySelectorAll('h1,h2')].slice(0,30).map(n=>({role:n.tagName.toLowerCase(),text:(n.textContent||'').trim().slice(0,120)}))};
+    });
+    additionalPages.push({path:url.pathname,title:snapshot.title,...snapshot,navigationChecks:[]});
+   }
   }catch{
    navigationChecks.push({path:url.pathname+url.search,status:null,ok:false,verifiedBy:'navigation-get'});
   }finally{await probe.close();}
  }
  const interactionSummary={observed:interactions.length,links:interactions.filter(i=>i.kind==='link').length,buttons:interactions.filter(i=>i.kind==='button').length,forms:interactions.filter(i=>i.kind==='form').length,unlabeledControls:interactions.filter(i=>!i.label).length,linksWithoutTargets:interactions.filter(i=>i.kind==='link'&&!i.target).length,interactionsExecuted:false};
- process.stdout.write(JSON.stringify({version:1,sourceUrl:target.origin,capturedAt:new Date().toISOString(),viewport:{width:1280,height:800},pages:[{path:target.pathname,title:await page.title(),screenshotUrl:'browser-screenshot.png',landmarks,designTokens,interactions,interactionSummary,navigationChecks,visualRegions}],warnings:['Links probed with read-only GET navigation; forms and buttons not executed; screenshot saved separately as browser-screenshot.png']})+'\n');
+ process.stdout.write(JSON.stringify({version:1,sourceUrl:target.origin,capturedAt:new Date().toISOString(),viewport:{width:1280,height:800},pages:[{path:target.pathname,title:await page.title(),screenshotUrl:'browser-screenshot.png',landmarks,designTokens,interactions,interactionSummary,navigationChecks,visualRegions},...additionalPages],warnings:['Links probed with read-only GET navigation; forms and buttons not executed; screenshot saved separately as browser-screenshot.png']})+'\n');
 }finally{await browser.close()}
