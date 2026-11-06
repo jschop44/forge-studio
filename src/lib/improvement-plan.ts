@@ -12,5 +12,5 @@ export function createImprovementPlan(input:{businessName:string;industry:string
  {id:'seo',title:'Strengthen SEO, AEO and GEO foundations',why:'Structured information helps search engines and AI systems interpret pages.',steps:['Write unique titles and descriptions.','Add accurate organization and service schema.','Include helpful question-and-answer sections with verified facts.'],impact:'Improved discoverability foundations, not guaranteed rankings',selected:true},
  {id:'contact',title:'Add a real contact and lead capture path',why:'A website cannot convert reliably without a working contact channel.',steps:['Supply a verified business email or approved form endpoint.','Test successful delivery of an inquiry.','Add privacy disclosures and consent where needed.'],impact:'A working path for new inquiries',selected:true}
  ];
- return {review,improvements:improvements.map(item=>({...item,selected:review.findings.some(f=>f.category===item.id)}))};
+ return {review,improvements:improvements.map(item=>({...item,selected:review.findings.some(f=>f.category===item.id||(item.id==='content'&&f.category==='aeo')||(item.id==='mobile'&&f.category==='accessibility')||(item.id==='seo'&&f.category==='geo')||(item.id==='contact'&&f.category==='conversion'))}))};
 }
