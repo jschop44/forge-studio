@@ -19,5 +19,13 @@ export function validateBusinessPublicationRequest(input:unknown):{
   const parsed=BusinessPublicationRequestSchema.safeParse(input);
   if(!parsed.success)return {valid:false,errors:parsed.error.issues.map(issue=>issue.path.join('.')+': '+issue.message)};
   const report=auditGeneratedDraft(parsed.data.pages);
-  return {valid:report.errors.length===0,errors:report.errors,businessName:parsed.data.businessName,pages:parsed.data.pages};
+  const errors=[...report.errors];
+  for(const page of parsed.data.pages){
+    // Published HTML is intentionally static. Reject active or embedded content
+    // rather than relying on the response CSP alone to contain it.
+    if(/<\s*(script|iframe|object|embed|form|base)\b/i.test(page.html))errors.push(page.slug+': active or embedded HTML is not allowed');
+    if(/<\s*meta\b[^>]*http-equiv\s*=\s*[\"']?refresh\b/i.test(page.html))errors.push(page.slug+': automatic redirects are not allowed');
+    if(/\bon[a-z]+\s*=/i.test(page.html))errors.push(page.slug+': inline event handlers are not allowed');
+  }
+  return {valid:errors.length===0,errors,businessName:parsed.data.businessName,pages:parsed.data.pages};
 }
