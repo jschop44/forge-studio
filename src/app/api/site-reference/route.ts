@@ -12,18 +12,18 @@ export async function POST(req:NextRequest){
  try{
  const raw=await req.text();if(raw.length>2048)return NextResponse.json({error:'Address too long'},{status:413});
  const value=JSON.parse(raw).url;if(typeof value!=='string'||value.length>500)return NextResponse.json({error:'Invalid website address'},{status:400});
- const url=new URL(/^https?:\/\//i.test(value)?value:'https://'+value);
+ let url=new URL(/^https?:\/\//i.test(value)?value:'https://'+value);
  if(url.protocol!=='https:'||url.username||url.password||url.port&&url.port!=='443'||!url.hostname.includes('.')||isIP(url.hostname)||url.hostname.endsWith('.local'))return NextResponse.json({error:'Enter a public HTTPS website address'},{status:400});
- const addresses=await lookup(url.hostname,{all:true,verbatim:true});if(!addresses.length||addresses.some(a=>blocked(a.address)))return NextResponse.json({error:'Website address is not public'},{status:400});
- const html=await new Promise<string>((resolve,reject)=>{
+ let addresses=await lookup(url.hostname,{all:true,verbatim:true});if(!addresses.length||addresses.some(a=>blocked(a.address)))return NextResponse.json({error:'Website address is not public'},{status:400});
+ let html='';for(let redirects=0;redirects<4;redirects++){try{html=await new Promise<string>((resolve,reject)=>{
  const pinned=addresses.find(a=>a.family===4)||addresses[0];
  const request=httpsRequest(url,{method:'GET',timeout:8000,headers:{'User-Agent':'ForgeStudioSiteResearch/1.0','Accept':'text/html','Accept-Encoding':'identity'},lookup:(_hostname,_options,callback)=>callback(null,pinned.address,pinned.family)},response=>{
- if(response.statusCode&&response.statusCode>=300&&response.statusCode<400){response.resume();reject(new Error('Website redirects. Enter the final HTTPS address.'));return}
+ if(response.statusCode&&response.statusCode>=300&&response.statusCode<400){const location=response.headers.location;response.resume();reject(new Error(location?'REDIRECT:'+location:'Website redirects without a destination'));return}
  if(response.statusCode!==200){response.resume();reject(new Error('Website returned status '+response.statusCode));return}
  if(!(response.headers['content-type']||'').includes('text/html')){response.resume();reject(new Error('Website did not return HTML'));return}
  let size=0;const parts:Buffer[]=[];response.on('data',(chunk:Buffer)=>{size+=chunk.length;if(size>450000){request.destroy(new Error('Homepage is too large'));return}parts.push(chunk)});response.on('end',()=>resolve(Buffer.concat(parts).toString('utf8')));response.on('error',reject);
  });request.on('timeout',()=>request.destroy(new Error('Website timed out')));request.on('error',reject);request.end();
- });
+ });break;}catch(error){const message=error instanceof Error?error.message:'';if(!message.startsWith('REDIRECT:')||redirects===3)throw error;const next=new URL(message.slice(9),url);if(next.protocol!=='https:'||next.username||next.password||next.port&&next.port!=='443'||!next.hostname.includes('.')||isIP(next.hostname)||next.hostname.endsWith('.local'))throw Error('Unsafe redirect destination');const nextAddresses=await lookup(next.hostname,{all:true,verbatim:true});if(!nextAddresses.length||nextAddresses.some(a=>blocked(a.address)))throw Error('Redirect destination is not public');url=next;addresses=nextAddresses;}}
  const stylesheetUrls=[...html.matchAll(/<link\\b[^>]*>/gi)].map(match=>match[0]).filter(tag=>/rel\\s*=\\s*["']?stylesheet/i.test(tag)).map(tag=>tag.match(/href\\s*=\\s*["']([^"']+)["']/i)?.[1]).filter((href):href is string=>Boolean(href)).slice(0,3);
  const externalCss:string[]=[];
  for(const href of stylesheetUrls){
