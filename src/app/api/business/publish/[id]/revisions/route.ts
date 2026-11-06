@@ -18,7 +18,8 @@ export async function POST(req:NextRequest,{params}:{params:Promise<{id:string}>
   const payload=await req.json();
   const expectedVersion=payload?.expectedVersion;
   if(!Number.isSafeInteger(expectedVersion)||expectedVersion<1)return NextResponse.json({error:'Expected publication version required'},{status:400});
-  const checked=validateBusinessPublicationRequest({ownerApproved:payload?.ownerApproved,businessName:payload?.businessName,pages:payload?.pages});
+  if(!payload||typeof payload!=='object'||Array.isArray(payload)||Object.keys(payload).some(key=>!['ownerApproved','businessName','pages','expectedVersion'].includes(key)))return NextResponse.json({error:'Unexpected revision fields'},{status:400});
+  const checked=validateBusinessPublicationRequest({ownerApproved:payload.ownerApproved,businessName:payload.businessName,pages:payload.pages});
   if(!checked.valid||!checked.pages)return NextResponse.json({error:'Invalid revision',details:checked.errors.slice(0,10)},{status:422});
   const pageRows=JSON.stringify(checked.pages.map(({slug,html})=>({slug,html})));
   const sql=database();
