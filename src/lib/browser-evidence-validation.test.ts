@@ -15,3 +15,12 @@ test('rejects claimed execution in static interaction summary',()=>{
  const summary={observed:1,links:1,buttons:0,forms:0,unlabeledControls:0,linksWithoutTargets:0,interactionsExecuted:true};
  assert.equal(validateBrowserEvidence({...base,pages:[{...base.pages[0],interactionSummary:summary}]}),false);
 });
+
+test('accepts bounded read-only navigation probe results',()=>{
+ const navigationChecks=[{path:'/about',status:200,ok:true,verifiedBy:'navigation-get'}];
+ assert.equal(validateBrowserEvidence({...base,pages:[{...base.pages[0],navigationChecks}]}),true);
+});
+test('rejects fabricated navigation check methods',()=>{
+ const navigationChecks=[{path:'/checkout',status:200,ok:true,verifiedBy:'form-submit'}];
+ assert.equal(validateBrowserEvidence({...base,pages:[{...base.pages[0],navigationChecks}]}),false);
+});
