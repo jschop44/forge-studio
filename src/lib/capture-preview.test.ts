@@ -74,3 +74,12 @@ test('does not render links from protocol-relative captured page paths',()=>{
  assert.doesNotMatch(html,/href="https:\/\/evil\.example/);
  assert.doesNotMatch(html,/Unsafe inherited base/);
 });
+
+test('discloses viewport dimensions, warnings and publication limitations',()=>{
+ const input={...evidence,warnings:['Some elements were inaccessible']};
+ const html=capturePreviewPages(input)[0].html;
+ assert.match(html,/1280 × 800/);
+ assert.match(html,/Capture warnings: 1/);
+ assert.match(html,/Do not publish without review/);
+ assert.match(html,/Interactive controls, fonts, colors and visual fidelity are not verified/);
+});
