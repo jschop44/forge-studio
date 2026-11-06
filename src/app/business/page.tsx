@@ -3,7 +3,6 @@ import {useState} from 'react';
 import Link from 'next/link';
 import {generateBusinessWebsite,type GeneratedPage} from '../../lib/business-site';
 import {downloadText} from '../../lib/export';
-import {auditGeneratedSite,explainDiscoverability} from '../../lib/site-audit';
 import {createContextualShowcase} from '../../lib/immersive-showcase';
 type Brief={businessName:string;industry:string;description:string;services:string[];contactEmail?:string};
 function infer(name:string,brief:string):Brief{
@@ -15,7 +14,7 @@ function infer(name:string,brief:string):Brief{
 }
 export default function BusinessGenerator(){
  const [name,setName]=useState(''),[brief,setBrief]=useState(''),[contactEmail,setContactEmail]=useState(''),[busy,setBusy]=useState(false),[status,setStatus]=useState(''),[pages,setPages]=useState<GeneratedPage[]>([]),[active,setActive]=useState('index'),[mobile,setMobile]=useState(false);
- const current=pages.find(p=>p.slug===active),quality=current?auditGeneratedSite({html:current.html}):null;
+ const current=pages.find(p=>p.slug===active);
  async function generate(){
  if(name.trim().length<2){setStatus('Enter your business name to get started.');return}
  setBusy(true);setStatus('Building your website and choosing its design automatically…');
@@ -44,6 +43,6 @@ export default function BusinessGenerator(){
  <details className="forge-auto-advanced"><summary>Advanced editing and intelligence tools</summary><div><Link href="/editor">Visual editor</Link><Link href="/intelligence">Intelligence</Link><Link href="/experiences">Immersive 3D editor</Link><Link href="/assets">Asset library</Link></div></details>
  </aside>
  <main className="forge-auto-preview"><div className="forge-auto-toolbar"><span>● LIVE WEBSITE PREVIEW · {mobile?"390px mobile":"Full-width desktop"}</span><div><button type="button" onClick={()=>setMobile(false)} aria-pressed={!mobile} aria-label="Switch to full-width desktop website preview">Desktop</button><button type="button" onClick={()=>setMobile(true)} aria-pressed={mobile} aria-label="Switch to 390 pixel mobile website preview">Mobile</button></div></div>
- {pages.length>0?<><nav className="forge-auto-tabs" aria-label="Website pages">{pages.map(p=><button key={p.slug} aria-current={active===p.slug?'page':undefined} onClick={()=>setActive(p.slug)}>{p.title}</button>)}</nav><div className={'forge-auto-frame '+(mobile?'mobile':'')}><iframe title={'Website preview: '+(current?.title||'Home')} sandbox="allow-scripts" srcDoc={current?.html||''}/></div>{quality&&<div className="forge-auto-quality"><strong>Automated markup assessment (not a verified design-quality score): {quality.score}/100</strong><span>Technical {quality.technicalScore} · Visual structure {quality.visualHeuristic} · SEO {quality.seo} · AEO {quality.aeo} · GEO {quality.geo}</span><details><summary>What these scores mean</summary>{Object.entries(explainDiscoverability(quality)).map(([key,value])=><p key={key}><strong>{key.toUpperCase()}:</strong> {value}</p>)}</details></div>}</>:<div className="forge-auto-placeholder"><div className="forge-auto-orb">✦</div><span>THE NEXT GENERATION OF WEBSITES</span><h2>Beautiful by default.<br/>Built around your brand.</h2><p>Your website preview will appear here, ready to explore.</p></div>}
+ {pages.length>0?<><nav className="forge-auto-tabs" aria-label="Website pages">{pages.map(p=><button key={p.slug} aria-current={active===p.slug?'page':undefined} onClick={()=>setActive(p.slug)}>{p.title}</button>)}</nav><div className={'forge-auto-frame '+(mobile?'mobile':'')}><iframe title={'Website preview: '+(current?.title||'Home')} sandbox="allow-scripts" srcDoc={current?.html||''}/></div>}</>:<div className="forge-auto-placeholder"><div className="forge-auto-orb">✦</div><span>THE NEXT GENERATION OF WEBSITES</span><h2>Beautiful by default.<br/>Built around your brand.</h2><p>Your website preview will appear here, ready to explore.</p></div>}
  </main></div></div>
 }
