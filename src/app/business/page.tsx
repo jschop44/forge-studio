@@ -1,5 +1,5 @@
 'use client';
-import {useState} from 'react';
+import {useEffect,useRef,useState} from 'react';
 import Link from 'next/link';
 import {generateBusinessWebsite,type GeneratedPage} from '../../lib/business-site';
 import {downloadText} from '../../lib/export';
@@ -30,7 +30,10 @@ function parseStyleReference(source:string):StyleReference{
 }
 export default function BusinessGenerator(){
  const [inspected,setInspected]=useState<{url:string;title:string;description:string;headings:string[];navigation?:{label:string;path:string}[];pageSummaries?:{path:string;label:string;title:string;description:string;headings:string[]}[];stylesheetsRead:number;visualSignals?:{navigationLinks:number;heroSections:number;imageCount:number;sectionCount:number;buttonCount:number;hasVideo:boolean;hasCanvas:boolean}}|null>(null),[siteUrl,setSiteUrl]=useState(''),[researchBusy,setResearchBusy]=useState(false),[referenceStyle,setReferenceStyle]=useState<StyleReference>({}),[name,setName]=useState(''),[designMode,setDesignMode]=useState<'new'|'inspired'|'redesign'>('new'),[referenceMarkup,setReferenceMarkup]=useState(''),[brief,setBrief]=useState(''),[contactEmail,setContactEmail]=useState(''),[busy,setBusy]=useState(false),[status,setStatus]=useState(''),[pages,setPages]=useState<GeneratedPage[]>([]),[active,setActive]=useState('index'),[mobile,setMobile]=useState(false);
+ const frameRef=useRef<HTMLIFrameElement>(null);
+ useEffect(()=>{const receive=(event:MessageEvent)=>{if(event.source!==frameRef.current?.contentWindow||!event.data||event.data.type!=='forge-preview-navigate'||typeof event.data.slug!=='string')return;const slug=event.data.slug;if(pages.some(page=>page.slug===slug))setActive(slug)};window.addEventListener('message',receive);return()=>window.removeEventListener('message',receive)},[pages]);
  const current=pages.find(p=>p.slug===active);
+ const previewHtml=(current?.html||'').replace(/<\/body>/i,`<script>document.addEventListener('click',function(event){const anchor=event.target.closest('a[href]');if(!anchor)return;const href=anchor.getAttribute('href');if(!href||!/^([a-z0-9-]+)\\.html(?:[?#].*)?$/i.test(href))return;event.preventDefault();parent.postMessage({type:'forge-preview-navigate',slug:href.split('.')[0]},'*')})<\/script></body>`);
  async function inspectWebsite(){
  if(!siteUrl.trim()){setStatus('Enter a website address such as disney.com.');return}
  setResearchBusy(true);setStatus('Reading public website metadata and design details…');
@@ -69,6 +72,6 @@ export default function BusinessGenerator(){
  <details className="forge-auto-advanced"><summary>Advanced editing and intelligence tools</summary><div><Link href="/editor">Visual editor</Link><Link href="/intelligence">Intelligence</Link><Link href="/assets">Asset library</Link></div></details>
  </aside>
  <main className="forge-auto-preview"><div className="forge-auto-toolbar"><span>● LIVE WEBSITE PREVIEW · {mobile?"390px mobile":"Full-width desktop"}</span><div><button type="button" onClick={()=>setMobile(false)} aria-pressed={!mobile} aria-label="Switch to full-width desktop website preview">Desktop</button><button type="button" onClick={()=>setMobile(true)} aria-pressed={mobile} aria-label="Switch to 390 pixel mobile website preview">Mobile</button></div></div>
- {pages.length>0?<><nav className="forge-auto-tabs" aria-label="Website pages">{pages.map(p=><button key={p.slug} aria-current={active===p.slug?'page':undefined} onClick={()=>setActive(p.slug)}>{p.title}</button>)}</nav><div className={'forge-auto-frame '+(mobile?'mobile':'')}><iframe title={'Website preview: '+(current?.title||'Home')} sandbox="allow-scripts" srcDoc={current?.html||''}/></div></>:<div className="forge-auto-placeholder"><div className="forge-auto-orb">✦</div><span>THE NEXT GENERATION OF WEBSITES</span><h2>Beautiful by default.<br/>Built around your brand.</h2><p>Your website preview will appear here, ready to explore.</p></div>}
+ {pages.length>0?<><nav className="forge-auto-tabs" aria-label="Website pages">{pages.map(p=><button key={p.slug} aria-current={active===p.slug?'page':undefined} onClick={()=>setActive(p.slug)}>{p.title}</button>)}</nav><div className={'forge-auto-frame '+(mobile?'mobile':'')}><iframe ref={frameRef} title={'Website preview: '+(current?.title||'Home')} sandbox="allow-scripts" srcDoc={previewHtml}/></div></>:<div className="forge-auto-placeholder"><div className="forge-auto-orb">✦</div><span>THE NEXT GENERATION OF WEBSITES</span><h2>Beautiful by default.<br/>Built around your brand.</h2><p>Your website preview will appear here, ready to explore.</p></div>}
  </main></div></div>
 }
