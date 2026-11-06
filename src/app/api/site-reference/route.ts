@@ -2,6 +2,7 @@ import {NextRequest,NextResponse} from 'next/server';
 import {sameOrigin} from '../../../../lib/server/request-security';
 import {lookup} from 'node:dns/promises';
 import {isIP} from 'node:net';
+import {request as httpsRequest} from 'node:https';
 export const runtime='nodejs';
 const blocked=(ip:string)=>{if(isIP(ip)===4){const n=ip.split('.').map(Number);return n[0]===0||n[0]===10||n[0]===127||n[0]>=224||n[0]===169&&n[1]===254||n[0]===172&&n[1]>=16&&n[1]<=31||n[0]===192&&n[1]===168||n[0]===100&&n[1]>=64&&n[1]<=127||n[0]===192&&n[1]===0||n[0]===198&&n[1]>=18&&n[1]<=19}if(isIP(ip)===6){const s=ip.toLowerCase();return s==='::1'||s==='::'||s.startsWith('fe80:')||s.startsWith('fc')||s.startsWith('fd')||s.startsWith('::ffff:')}return true};
 function clean(value:string){return value.replace(/<[^>]*>/g,' ').replace(/&amp;/g,'&').replace(/&quot;/g,'"').replace(/&#39;/g,"'").replace(/\s+/g,' ').trim().slice(0,400)}
@@ -14,12 +15,15 @@ export async function POST(req:NextRequest){
  const url=new URL(/^https?:\/\//i.test(value)?value:'https://'+value);
  if(url.protocol!=='https:'||url.username||url.password||url.port&&url.port!=='443'||!url.hostname.includes('.')||isIP(url.hostname)||url.hostname.endsWith('.local'))return NextResponse.json({error:'Enter a public HTTPS website address'},{status:400});
  const addresses=await lookup(url.hostname,{all:true,verbatim:true});if(!addresses.length||addresses.some(a=>blocked(a.address)))return NextResponse.json({error:'Website address is not public'},{status:400});
- const response=await fetch(url,{redirect:'manual',signal:AbortSignal.timeout(8000),headers:{'User-Agent':'ForgeStudioSiteResearch/1.0','Accept':'text/html'}});
- if(response.status>=300&&response.status<400)return NextResponse.json({error:'Website redirects to another address. Enter its final HTTPS address.'},{status:422});
- if(!response.ok)return NextResponse.json({error:'Website could not be retrieved ('+response.status+')'},{status:422});
- if(!(response.headers.get('content-type')||'').includes('text/html'))return NextResponse.json({error:'Address did not return HTML'},{status:422});
- const reader=response.body?.getReader();if(!reader)throw Error('No response body');let size=0;const parts:Uint8Array[]=[];while(true){const item=await reader.read();if(item.done)break;size+=item.value.length;if(size>450000){await reader.cancel();break}parts.push(item.value)}
- const html=new TextDecoder().decode(Buffer.concat(parts));
+ const html=await new Promise<string>((resolve,reject)=>{
+ const pinned=addresses[0];
+ const request=httpsRequest(url,{method:'GET',timeout:8000,headers:{'User-Agent':'ForgeStudioSiteResearch/1.0','Accept':'text/html','Accept-Encoding':'identity'},lookup:(_hostname,_options,callback)=>callback(null,pinned.address,pinned.family)},response=>{
+ if(response.statusCode&&response.statusCode>=300&&response.statusCode<400){response.resume();reject(new Error('Website redirects. Enter the final HTTPS address.'));return}
+ if(response.statusCode!==200){response.resume();reject(new Error('Website returned status '+response.statusCode));return}
+ if(!(response.headers['content-type']||'').includes('text/html')){response.resume();reject(new Error('Website did not return HTML'));return}
+ let size=0;const parts:Buffer[]=[];response.on('data',(chunk:Buffer)=>{size+=chunk.length;if(size>450000){request.destroy(new Error('Homepage is too large'));return}parts.push(chunk)});response.on('end',()=>resolve(Buffer.concat(parts).toString('utf8')));response.on('error',reject);
+ });request.on('timeout',()=>request.destroy(new Error('Website timed out')));request.on('error',reject);request.end();
+ });
  const title=clean(html.match(/<title[^>]*>([\s\S]*?)<\/title>/i)?.[1]||'');
  const description=meta(html,'description')||meta(html,'og:description');
  const css=(html.match(/<style\b[^>]*>[\s\S]*?<\/style>/gi)||[]).join(' ').slice(0,70000);
