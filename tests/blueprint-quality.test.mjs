@@ -24,3 +24,11 @@ test('flags duplicate captured routes and pages with missing visual coverage',()
  assert.equal(report.checks.allPagesHaveRegions,false);
  assert.equal(report.publicationReady,false);
 });
+
+test('counts failed read-only navigation checks without treating them as executed interactions',()=>{
+ const report=assessBlueprint({version:1,pages:[{path:'/',regions:[{id:'hero'}]}],provenance:{generatedContent:false},navigationChecks:[{path:'/about',status:200,ok:true},{path:'/missing',status:404,ok:false}]});
+ assert.equal(report.navigationProbes,2);
+ assert.equal(report.failedNavigation,1);
+ assert.equal(report.checks.readOnlyNavigation,false);
+ assert.equal(report.publicationReady,false);
+});
