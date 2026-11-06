@@ -32,3 +32,13 @@ test('counts failed read-only navigation checks without treating them as execute
  assert.equal(report.checks.readOnlyNavigation,false);
  assert.equal(report.publicationReady,false);
 });
+
+test('reports coverage of captured visual regions, navigation and design tokens',()=>{
+ const report=assessBlueprint({version:1,pages:[
+  {path:'/',regions:[{type:'hero'}],navigation:[{label:'About'}],designTokens:{backgroundColor:'#fff'}},
+  {path:'/about',regions:[],navigation:[],designTokens:{}}
+ ],interactionCoverage:{links:1},provenance:{generatedContent:false}});
+ assert.equal(report.coverage.visual,0.5);
+ assert.equal(report.coverage.navigation,0.5);
+ assert.equal(report.coverage.designTokens,0.5);
+});
