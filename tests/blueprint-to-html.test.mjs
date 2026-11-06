@@ -34,3 +34,15 @@ test('invalid source URL cannot crash preview navigation rendering',()=>{
  const html=blueprintToHtml({version:1,sourceUrl:'not-a-url',title:'Site',sections:[],navigation:[{label:'Click',target:'/path'}]});
  assert.doesNotMatch(html,/href=/);
 });
+
+test('selects a distinct captured page without leaking other page content',()=>{
+ const blueprint={version:1,title:'Site',sections:[],pages:[
+  {title:'Home',regions:[{type:'hero',headline:'Homepage heading'}]},
+  {title:'Services',regions:[{type:'section',headline:'Services-only heading'}]}
+ ]};
+ const html=blueprintToHtml(blueprint,1);
+ assert.match(html,/Services-only heading/);
+ assert.doesNotMatch(html,/Homepage heading/);
+ assert.match(html,/Services \(previewed\)/);
+ assert.throws(()=>blueprintToHtml(blueprint,2),/Invalid selected page/);
+});
