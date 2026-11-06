@@ -1,6 +1,7 @@
 import { browserEvidenceSchema } from "./browser-evidence-brief";
 import { validateBrowserEvidence } from "./browser-evidence";
 import type { BrowserEvidence as WorkerEvidence } from "./browser-evidence";
+import {navigationQualityRecommendations} from "./navigation-quality-recommendations";
 
 /**
  * Adapts the existing Playwright worker's version-1 output to the review-only
@@ -10,6 +11,7 @@ export function workerCaptureToReviewEvidence(input: unknown) {
   if (!validateBrowserEvidence(input)) throw new Error("Invalid browser worker evidence");
   const capture = input as WorkerEvidence;
   const origin = new URL(capture.sourceUrl);
+  const navigationQuality = navigationQualityRecommendations(capture);
   const first = capture.pages[0];
   if (!first) throw new Error("Browser worker returned no pages");
   const headings = first.landmarks
@@ -42,7 +44,8 @@ export function workerCaptureToReviewEvidence(input: unknown) {
     navigation,
     captureErrors: [
       "Worker screenshot has not been transferred to the generator; visual analysis unavailable.",
-      ...capture.warnings.slice(0, 19).map(warning => warning.slice(0, 240)),
+      ...navigationQuality.recommendations.slice(0, 8).map(item => (item.finding + ". " + item.action).slice(0, 240)),
+      ...capture.warnings.slice(0, 11).map(warning => warning.slice(0, 240)),
     ].slice(0, 20),
   });
 }
