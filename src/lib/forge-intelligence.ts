@@ -1,4 +1,12 @@
 export type SiteEvidence={url:string;title:string;description:string;headings:string[];navigation?:{label:string;path:string}[];pageSummaries?:{path:string;label:string;title:string;description:string;headings:string[]}[]};
+export type InspectionCoverage={metadata:boolean;navigation:boolean;internalPages:number;visualCapture:boolean;limitations:string[]};
+export function inspectionCoverage(input:SiteEvidence):InspectionCoverage{
+ const limitations:string[]=[];
+ if(!(input.navigation||[]).length)limitations.push('No internal navigation paths discovered');
+ if(!(input.pageSummaries||[]).length)limitations.push('No internal pages successfully inspected');
+ limitations.push('Rendered screenshots and browser interactions not yet inspected');
+ return {metadata:Boolean(input.title||input.description),navigation:Boolean(input.navigation?.length),internalPages:input.pageSummaries?.length||0,visualCapture:false,limitations};
+}
 export type IntelligenceFinding={industry:string;confidence:'high'|'medium'|'low';signals:string[];services:string[];sourcePages:number};
 const categories=[
  {industry:'Entertainment, media and theme parks',pattern:/theme parks?|entertainment|movies?|films?|streaming|characters|cinema|television|resorts? and parks?/i,services:['Entertainment','Destinations','Stories']},
