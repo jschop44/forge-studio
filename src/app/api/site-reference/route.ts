@@ -4,6 +4,7 @@ import {lookup} from 'node:dns/promises';
 import {isIP} from 'node:net';
 import {request as httpsRequest} from 'node:https';
 export const runtime='nodejs';
+function pinnedLookup(address:string,family:number){return (_hostname:string,options:{all?:boolean},callback:(error:NodeJS.ErrnoException|null,address:string|{address:string;family:number}[],family?:number)=>void)=>{if(options.all)callback(null,[{address,family}]);else callback(null,address,family)}}
 const blocked=(ip:string)=>{if(isIP(ip)===4){const n=ip.split('.').map(Number);return n[0]===0||n[0]===10||n[0]===127||n[0]>=224||n[0]===169&&n[1]===254||n[0]===172&&n[1]>=16&&n[1]<=31||n[0]===192&&n[1]===168||n[0]===100&&n[1]>=64&&n[1]<=127||n[0]===192&&n[1]===0||n[0]===198&&n[1]>=18&&n[1]<=19}if(isIP(ip)===6){const s=ip.toLowerCase();return s==='::1'||s==='::'||s.startsWith('fe80:')||s.startsWith('fc')||s.startsWith('fd')||s.startsWith('::ffff:')}return true};
 function clean(value:string){return value.replace(/<[^>]*>/g,' ').replace(/&amp;/g,'&').replace(/&quot;/g,'"').replace(/&#39;/g,"'").replace(/\s+/g,' ').trim().slice(0,400)}
 function meta(html:string,key:string){const tags=html.match(/<meta\b[^>]*>/gi)||[];for(const tag of tags){const property=tag.match(/(?:name|property)\s*=\s*["']([^"']+)["']/i)?.[1];if(property?.toLowerCase()===key.toLowerCase())return clean(tag.match(/content\s*=\s*["']([^"']*)["']/i)?.[1]||'')}return ''}
@@ -17,7 +18,7 @@ export async function POST(req:NextRequest){
  let addresses=await lookup(url.hostname,{all:true,verbatim:true});if(!addresses.length||addresses.some(a=>blocked(a.address)))return NextResponse.json({error:'Website address is not public'},{status:400});
  let html='';for(let redirects=0;redirects<4;redirects++){try{html=await new Promise<string>((resolve,reject)=>{
  const pinned=addresses.find(a=>a.family===4)||addresses[0];
- const request=httpsRequest(url,{method:'GET',timeout:8000,headers:{'User-Agent':'ForgeStudioSiteResearch/1.0','Accept':'text/html','Accept-Encoding':'identity'},lookup:(_hostname,_options,callback)=>callback(null,pinned.address,pinned.family)},response=>{
+ const request=httpsRequest(url,{method:'GET',timeout:8000,headers:{'User-Agent':'ForgeStudioSiteResearch/1.0','Accept':'text/html','Accept-Encoding':'identity'},lookup:pinnedLookup(pinned.address,pinned.family)},response=>{
  if(response.statusCode&&response.statusCode>=300&&response.statusCode<400){const location=response.headers.location;response.resume();reject(new Error(location?'REDIRECT:'+location:'Website redirects without a destination'));return}
  if(response.statusCode!==200){response.resume();reject(new Error('Website returned status '+response.statusCode));return}
  if(!(response.headers['content-type']||'').includes('text/html')){response.resume();reject(new Error('Website did not return HTML'));return}
@@ -30,7 +31,7 @@ export async function POST(req:NextRequest){
  try{
  const cssUrl=new URL(href,url);if(cssUrl.protocol!=='https:'||cssUrl.hostname!==url.hostname||cssUrl.port&&cssUrl.port!=='443')continue;
  const stylesheet=await new Promise<string>((resolve,reject)=>{
- const request=httpsRequest(cssUrl,{method:'GET',timeout:3500,headers:{'User-Agent':'ForgeStudioSiteResearch/1.0','Accept':'text/css','Accept-Encoding':'identity'},lookup:(_host,_options,callback)=>callback(null,addresses.find(a=>a.family===4)?.address||addresses[0].address,addresses.find(a=>a.family===4)?.family||addresses[0].family)},response=>{
+ const request=httpsRequest(cssUrl,{method:'GET',timeout:3500,headers:{'User-Agent':'ForgeStudioSiteResearch/1.0','Accept':'text/css','Accept-Encoding':'identity'},lookup:pinnedLookup((addresses.find(a=>a.family===4)||addresses[0]).address,(addresses.find(a=>a.family===4)||addresses[0]).family)},response=>{
  if(response.statusCode!==200){response.resume();reject(new Error('Stylesheet unavailable'));return}
  let size=0;const chunks:Buffer[]=[];response.on('data',(chunk:Buffer)=>{size+=chunk.length;if(size>100000){request.destroy(new Error('Stylesheet too large'));return}chunks.push(chunk)});response.on('end',()=>resolve(Buffer.concat(chunks).toString('utf8')));response.on('error',reject);
  });request.on('timeout',()=>request.destroy());request.on('error',reject);request.end();
