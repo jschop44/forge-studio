@@ -12,7 +12,7 @@ const httpsUrl = z.string().url().max(2048).refine((value) => {
     const host = url.hostname.toLowerCase();
     if (host === "localhost" || host.endsWith(".localhost") || host.endsWith(".local") || host.endsWith(".internal") || host.endsWith(".test")) return false;
     // IP literals are not accepted: DNS resolution and redirect checks belong to the capture worker.
-    if (isIP(host.replace(/^\\[|\\]$/g, "")) !== 0 || host.startsWith("[")) return false;
+    if (isIP(host.replaceAll("[", "").replaceAll("]", "")) !== 0 || host.startsWith("[")) return false;
     if (/^(?:127|10|0|192\.168)\./.test(host)) return false;
     if (/^172\.(?:1[6-9]|2\d|3[01])\./.test(host)) return false;
     if (host === "[::1]" || host === "[::]" || host === "169.254.169.254") return false;
