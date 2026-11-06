@@ -29,7 +29,7 @@ function parseStyleReference(source:string):StyleReference{
  return {background,accent,fontFamily};
 }
 export default function BusinessGenerator(){
- const [designMode,setDesignMode]=useState<'new'|'inspired'|'redesign'>('new'),[referenceMarkup,setReferenceMarkup]=useState(''),[brief,setBrief]=useState(''),[contactEmail,setContactEmail]=useState(''),[busy,setBusy]=useState(false),[status,setStatus]=useState(''),[pages,setPages]=useState<GeneratedPage[]>([]),[active,setActive]=useState('index'),[mobile,setMobile]=useState(false);
+ const [name,setName]=useState(''),[designMode,setDesignMode]=useState<'new'|'inspired'|'redesign'>('new'),[referenceMarkup,setReferenceMarkup]=useState(''),[brief,setBrief]=useState(''),[contactEmail,setContactEmail]=useState(''),[busy,setBusy]=useState(false),[status,setStatus]=useState(''),[pages,setPages]=useState<GeneratedPage[]>([]),[active,setActive]=useState('index'),[mobile,setMobile]=useState(false);
  const current=pages.find(p=>p.slug===active);
  async function generate(){
  if(name.trim().length<2){setStatus('Enter your business name to get started.');return}if(designMode!=='new'&&!referenceMarkup.trim()){setStatus('Paste the existing website HTML/CSS to use this mode.');return}
