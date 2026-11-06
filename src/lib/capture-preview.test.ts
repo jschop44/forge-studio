@@ -65,3 +65,12 @@ test('resolves relative navigation from the captured page and labels the page',(
  assert.equal(pages[0].title,'Services');
  assert.match(pages[0].html,/href="https:\/\/example.com\/services\/details"/);
 });
+
+test('does not render links from protocol-relative captured page paths',()=>{
+ const input={...evidence,pages:[{...evidence.pages[0],path:'//evil.example/steal',interactions:[
+  {kind:'link',label:'Unsafe inherited base',target:'contact',verified:false}
+ ]}]};
+ const html=capturePreviewPages(input)[0].html;
+ assert.doesNotMatch(html,/href="https:\/\/evil\.example/);
+ assert.doesNotMatch(html,/Unsafe inherited base/);
+});
