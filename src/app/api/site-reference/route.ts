@@ -24,7 +24,7 @@ export async function POST(req:NextRequest){
  let size=0;const parts:Buffer[]=[];response.on('data',(chunk:Buffer)=>{size+=chunk.length;if(size>450000){request.destroy(new Error('Homepage is too large'));return}parts.push(chunk)});response.on('end',()=>resolve(Buffer.concat(parts).toString('utf8')));response.on('error',reject);
  });request.on('timeout',()=>request.destroy(new Error('Website timed out')));request.on('error',reject);request.end();
  });break;}catch(error){const message=error instanceof Error?error.message:'';if(!message.startsWith('REDIRECT:')||redirects===3)throw error;const next=new URL(message.slice(9),url);if(next.protocol!=='https:'||next.username||next.password||next.port&&next.port!=='443'||!next.hostname.includes('.')||isIP(next.hostname)||next.hostname.endsWith('.local'))throw Error('Unsafe redirect destination');const nextAddresses=await lookup(next.hostname,{all:true,verbatim:true});if(!nextAddresses.length||nextAddresses.some(a=>blocked(a.address)))throw Error('Redirect destination is not public');url=next;addresses=nextAddresses;}}
- const stylesheetUrls=[...html.matchAll(/<link\\b[^>]*>/gi)].map(match=>match[0]).filter(tag=>/rel\\s*=\\s*["']?stylesheet/i.test(tag)).map(tag=>tag.match(/href\\s*=\\s*["']([^"']+)["']/i)?.[1]).filter((href):href is string=>Boolean(href)).slice(0,3);
+ const stylesheetUrls=[...html.matchAll(/<link\b[^>]*>/gi)].map(match=>match[0]).filter(tag=>/rel\s*=\s*["']?stylesheet/i.test(tag)).map(tag=>tag.match(/href\s*=\s*["']([^"']+)["']/i)?.[1]).filter((href):href is string=>Boolean(href)).slice(0,3);
  const externalCss:string[]=[];
  for(const href of stylesheetUrls){
  try{
@@ -44,7 +44,7 @@ export async function POST(req:NextRequest){
  const background=styles.match(/(?:--(?:background|bg|surface|brand-bg)|background(?:-color)?)\s*:\s*(#[a-f0-9]{3,8})/i)?.[1];
  const accent=styles.match(/(?:--(?:primary|accent|brand|brand-accent)|color)\s*:\s*(#[a-f0-9]{3,8})/i)?.[1];
  const fontFamily=styles.match(/font-family\s*:\s*['"]?(Georgia|Arial|Verdana|Tahoma|Trebuchet MS|Times New Roman|system-ui|sans-serif|serif)/i)?.[1];
- const visualSignals={navigationLinks:(html.match(/<nav\\b/gi)||[]).length,heroSections:(html.match(/(?:class|id)\\s*=\\s*["'][^"']*(?:hero|banner|masthead)[^"']*["']/gi)||[]).length,imageCount:(html.match(/<img\\b/gi)||[]).length,sectionCount:(html.match(/<section\\b/gi)||[]).length,buttonCount:(html.match(/<button\\b/gi)||[]).length,hasVideo:/<video\\b/i.test(html),hasCanvas:/<canvas\\b/i.test(html)};
+ const visualSignals={navigationLinks:(html.match(/<nav\b/gi)||[]).length,heroSections:(html.match(/(?:class|id)\s*=\s*["'][^"']*(?:hero|banner|masthead)[^"']*["']/gi)||[]).length,imageCount:(html.match(/<img\b/gi)||[]).length,sectionCount:(html.match(/<section\b/gi)||[]).length,buttonCount:(html.match(/<button\b/gi)||[]).length,hasVideo:/<video\b/i.test(html),hasCanvas:/<canvas\b/i.test(html)};
 
  const headings=[...html.matchAll(/<h[12]\b[^>]*>([\s\S]*?)<\/h[12]>/gi)].slice(0,7).map(m=>clean(m[1])).filter(Boolean);
  return NextResponse.json({url:url.origin,title,description,headings,styleReference:{background,accent,fontFamily},styleFound:Boolean(background||accent||fontFamily),stylesheetsRead:externalCss.length,visualSignals,notice:'Public homepage metadata, embedded CSS and a limited number of same-host stylesheets. Scripts and imagery were not copied.'},{headers:{'Cache-Control':'no-store'}});
