@@ -24,14 +24,27 @@ export async function POST(req:NextRequest){
  let size=0;const parts:Buffer[]=[];response.on('data',(chunk:Buffer)=>{size+=chunk.length;if(size>450000){request.destroy(new Error('Homepage is too large'));return}parts.push(chunk)});response.on('end',()=>resolve(Buffer.concat(parts).toString('utf8')));response.on('error',reject);
  });request.on('timeout',()=>request.destroy(new Error('Website timed out')));request.on('error',reject);request.end();
  });
+ const stylesheetUrls=[...html.matchAll(/<link\\b[^>]*>/gi)].map(match=>match[0]).filter(tag=>/rel\\s*=\\s*["']?stylesheet/i.test(tag)).map(tag=>tag.match(/href\\s*=\\s*["']([^"']+)["']/i)?.[1]).filter((href):href is string=>Boolean(href)).slice(0,3);
+ const externalCss:string[]=[];
+ for(const href of stylesheetUrls){
+ try{
+ const cssUrl=new URL(href,url);if(cssUrl.protocol!=='https:'||cssUrl.hostname!==url.hostname||cssUrl.port&&cssUrl.port!=='443')continue;
+ const stylesheet=await new Promise<string>((resolve,reject)=>{
+ const request=httpsRequest(cssUrl,{method:'GET',timeout:3500,headers:{'User-Agent':'ForgeStudioSiteResearch/1.0','Accept':'text/css','Accept-Encoding':'identity'},lookup:(_host,_options,callback)=>callback(null,addresses.find(a=>a.family===4)?.address||addresses[0].address,addresses.find(a=>a.family===4)?.family||addresses[0].family)},response=>{
+ if(response.statusCode!==200){response.resume();reject(new Error('Stylesheet unavailable'));return}
+ let size=0;const chunks:Buffer[]=[];response.on('data',(chunk:Buffer)=>{size+=chunk.length;if(size>100000){request.destroy(new Error('Stylesheet too large'));return}chunks.push(chunk)});response.on('end',()=>resolve(Buffer.concat(chunks).toString('utf8')));response.on('error',reject);
+ });request.on('timeout',()=>request.destroy());request.on('error',reject);request.end();
+ });externalCss.push(stylesheet);
+ }catch{continue}
+ }
  const title=clean(html.match(/<title[^>]*>([\s\S]*?)<\/title>/i)?.[1]||'');
  const description=meta(html,'description')||meta(html,'og:description');
  const css=(html.match(/<style\b[^>]*>[\s\S]*?<\/style>/gi)||[]).join(' ').slice(0,70000);
- const styles=css+' '+(html.match(/<body[^>]*style=["'][^"']+["']/i)?.[0]||'');
+ const styles=css+' '+externalCss.join(' ')+' '+(html.match(/<body[^>]*style=["'][^"']+["']/i)?.[0]||'');
  const background=styles.match(/(?:--(?:background|bg|surface|brand-bg)|background(?:-color)?)\s*:\s*(#[a-f0-9]{3,8})/i)?.[1];
  const accent=styles.match(/(?:--(?:primary|accent|brand|brand-accent)|color)\s*:\s*(#[a-f0-9]{3,8})/i)?.[1];
  const fontFamily=styles.match(/font-family\s*:\s*['"]?(Georgia|Arial|Verdana|Tahoma|Trebuchet MS|Times New Roman|system-ui|sans-serif|serif)/i)?.[1];
  const headings=[...html.matchAll(/<h[12]\b[^>]*>([\s\S]*?)<\/h[12]>/gi)].slice(0,7).map(m=>clean(m[1])).filter(Boolean);
- return NextResponse.json({url:url.origin,title,description,headings,styleReference:{background,accent,fontFamily},styleFound:Boolean(background||accent||fontFamily),notice:'Public homepage metadata and embedded CSS only. External stylesheets, scripts and imagery were not copied.'},{headers:{'Cache-Control':'no-store'}});
+ return NextResponse.json({url:url.origin,title,description,headings,styleReference:{background,accent,fontFamily},styleFound:Boolean(background||accent||fontFamily),stylesheetsRead:externalCss.length,notice:'Public homepage metadata, embedded CSS and a limited number of same-host stylesheets. Scripts and imagery were not copied.'},{headers:{'Cache-Control':'no-store'}});
  }catch(error){return NextResponse.json({error:error instanceof Error?error.message:'Unable to inspect website'},{status:422})}
 }
