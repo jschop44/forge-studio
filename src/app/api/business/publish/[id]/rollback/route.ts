@@ -18,6 +18,7 @@ export async function POST(req:NextRequest,{params}:{params:Promise<{id:string}>
   const version=body?.version;
   const expectedVersion=body?.expectedVersion;
   if(!Number.isSafeInteger(expectedVersion)||expectedVersion<1)return NextResponse.json({error:'Expected current version required'},{status:400});
+  if(!body||typeof body!=='object'||Array.isArray(body)||Object.keys(body).some(key=>!['version','expectedVersion'].includes(key)))return NextResponse.json({error:'Unexpected rollback fields'},{status:400});
   if(!Number.isSafeInteger(version)||version<1)return NextResponse.json({error:'Invalid snapshot version'},{status:400});
   const sql=database();
   // Restore content only when the current page set exactly matches the snapshot.
