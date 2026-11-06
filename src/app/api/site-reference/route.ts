@@ -16,7 +16,7 @@ export async function POST(req:NextRequest){
  if(url.protocol!=='https:'||url.username||url.password||url.port&&url.port!=='443'||!url.hostname.includes('.')||isIP(url.hostname)||url.hostname.endsWith('.local'))return NextResponse.json({error:'Enter a public HTTPS website address'},{status:400});
  const addresses=await lookup(url.hostname,{all:true,verbatim:true});if(!addresses.length||addresses.some(a=>blocked(a.address)))return NextResponse.json({error:'Website address is not public'},{status:400});
  const html=await new Promise<string>((resolve,reject)=>{
- const pinned=addresses[0];
+ const pinned=addresses.find(a=>a.family===4)||addresses[0];
  const request=httpsRequest(url,{method:'GET',timeout:8000,headers:{'User-Agent':'ForgeStudioSiteResearch/1.0','Accept':'text/html','Accept-Encoding':'identity'},lookup:(_hostname,_options,callback)=>callback(null,pinned.address,pinned.family)},response=>{
  if(response.statusCode&&response.statusCode>=300&&response.statusCode<400){response.resume();reject(new Error('Website redirects. Enter the final HTTPS address.'));return}
  if(response.statusCode!==200){response.resume();reject(new Error('Website returned status '+response.statusCode));return}
@@ -32,6 +32,6 @@ export async function POST(req:NextRequest){
  const accent=styles.match(/(?:--(?:primary|accent|brand|brand-accent)|color)\s*:\s*(#[a-f0-9]{3,8})/i)?.[1];
  const fontFamily=styles.match(/font-family\s*:\s*['"]?(Georgia|Arial|Verdana|Tahoma|Trebuchet MS|Times New Roman|system-ui|sans-serif|serif)/i)?.[1];
  const headings=[...html.matchAll(/<h[12]\b[^>]*>([\s\S]*?)<\/h[12]>/gi)].slice(0,7).map(m=>clean(m[1])).filter(Boolean);
- return NextResponse.json({url:url.origin,title,description,headings,styleReference:{background,accent,fontFamily},notice:'Public homepage metadata and embedded CSS only. External stylesheets, scripts and imagery were not copied.'},{headers:{'Cache-Control':'no-store'}});
+ return NextResponse.json({url:url.origin,title,description,headings,styleReference:{background,accent,fontFamily},styleFound:Boolean(background||accent||fontFamily),notice:'Public homepage metadata and embedded CSS only. External stylesheets, scripts and imagery were not copied.'},{headers:{'Cache-Control':'no-store'}});
  }catch(error){return NextResponse.json({error:error instanceof Error?error.message:'Unable to inspect website'},{status:422})}
 }
