@@ -9,7 +9,8 @@ const hosts=(process.env.FORGE_CAPTURE_HOSTS||'').split(',').map(x=>x.trim());
 if(target.protocol!=='https:'||!hosts.includes(target.hostname)||unsafeHost(target.hostname)||target.port||target.username||target.password)throw Error('Host not allowlisted');
 const browser=await chromium.launch({headless:true});
 try{
- const context=await browser.newContext({viewport:{width:1280,height:800},serviceWorkers:'block'});
+ const context=await browser.newContext({viewport:{width:1280,height:800},serviceWorkers:'block',acceptDownloads:false,permissions:[]});
+ context.setDefaultTimeout(8000);
  await context.route('**/*',route=>{
   const url=new URL(route.request().url());
   const allowed=url.protocol==='https:'&&hosts.includes(url.hostname)&&!unsafeHost(url.hostname)&&!url.port&&!url.username&&!url.password;
@@ -18,6 +19,7 @@ try{
   return allowed&&(method==='GET'||method==='HEAD')?route.continue():route.abort();
  });
  const page=await context.newPage();
+ page.on('dialog',dialog=>void dialog.dismiss());
  await page.goto(target.href,{waitUntil:'domcontentloaded',timeout:15000});
  await page.screenshot({path:'browser-screenshot.png',fullPage:true,animations:'disabled'});
  const landmarks=await page.locator('h1,h2,nav,main').evaluateAll(nodes=>nodes.slice(0,30).map(n=>({role:n.tagName.toLowerCase(),text:(n.textContent||'').trim().slice(0,120)})));
@@ -44,6 +46,7 @@ try{
   seenPaths.add(url.pathname+url.search);
   // A separate isolated page verifies read-only navigation; no forms or buttons are executed.
   const probe=await context.newPage();
+  probe.on('dialog',dialog=>void dialog.dismiss());
   try{
    const response=await probe.goto(url.href,{waitUntil:'domcontentloaded',timeout:8000});
    navigationChecks.push({path:url.pathname+url.search,status:response?.status()??null,ok:Boolean(response?.ok()),verifiedBy:'navigation-get'});
