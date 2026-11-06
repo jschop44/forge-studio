@@ -9,6 +9,8 @@ on:
       - 'tests/public-network-policy.test.mjs'
       - 'workers/evidence-to-blueprint.mjs'
       - 'tests/evidence-to-blueprint.test.mjs'
+      - 'workers/blueprint-to-html.mjs'
+      - 'tests/blueprint-to-html.test.mjs'
       - '.github/workflows/browser-capture.yml'
   workflow_dispatch:
     inputs:
@@ -28,7 +30,7 @@ jobs:
         with:
           node-version: '22'
       - name: Validate navigation and network safety policies
-        run: node --test tests/navigation-probe-policy.test.mjs tests/public-network-policy.test.mjs tests/evidence-to-blueprint.test.mjs
+        run: node --test tests/navigation-probe-policy.test.mjs tests/public-network-policy.test.mjs tests/evidence-to-blueprint.test.mjs tests/blueprint-to-html.test.mjs
       - name: Install isolated browser runtime
         run: |
           npm install --no-save --no-package-lock playwright
@@ -43,6 +45,9 @@ jobs:
       - name: Convert capture to editable blueprint
         run: |
           node --input-type=module -e "import fs from 'node:fs';import {evidenceToBlueprint} from './workers/evidence-to-blueprint.mjs';const evidence=JSON.parse(fs.readFileSync('browser-evidence.json','utf8'));const blueprint=evidenceToBlueprint(evidence);if(!blueprint.sections.length||!blueprint.headline||blueprint.provenance.generatedContent!==false)process.exit(1);fs.writeFileSync('website-blueprint.json',JSON.stringify(blueprint,null,2));console.log(JSON.stringify({title:blueprint.title,sections:blueprint.sections.length,links:blueprint.navigation.length}));"
+      - name: Render safe website preview from blueprint
+        run: |
+          node --input-type=module -e "import fs from 'node:fs';import {blueprintToHtml} from './workers/blueprint-to-html.mjs';const blueprint=JSON.parse(fs.readFileSync('website-blueprint.json','utf8'));const html=blueprintToHtml(blueprint);if(!html.includes('<!doctype html>'))process.exit(1);fs.writeFileSync('website-preview.html',html);"
       - uses: actions/upload-artifact@v4
         with:
           name: browser-evidence
@@ -50,4 +55,5 @@ jobs:
             browser-evidence.json
             browser-screenshot.png
             website-blueprint.json
+            website-preview.html
           retention-days: 1
