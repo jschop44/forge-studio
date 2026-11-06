@@ -83,3 +83,10 @@ test('discloses viewport dimensions, warnings and publication limitations',()=>{
  assert.match(html,/Do not publish without review/);
  assert.match(html,/Interactive controls, fonts, colors and visual fidelity are not verified/);
 });
+
+test('optional preview depth respects reduced motion and hover capability',()=>{
+ const html=capturePreviewPages(evidence)[0].html;
+ assert.match(html,/@media\(hover:hover\) and \(prefers-reduced-motion:no-preference\)/);
+ assert.match(html,/@media\(prefers-reduced-motion:reduce\)/);
+ assert.match(html,/transition:none;transform:none!important/);
+});
