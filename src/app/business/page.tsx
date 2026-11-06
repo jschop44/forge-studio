@@ -4,7 +4,7 @@ import Link from 'next/link';
 import {generateBusinessWebsite,type GeneratedPage} from '../../lib/business-site';
 import {downloadText} from '../../lib/export';
 import {auditGeneratedSite,explainDiscoverability} from '../../lib/site-audit';
-import {createImmersiveShowcase} from '../../lib/immersive-showcase';
+import {createContextualShowcase} from '../../lib/immersive-showcase';
 type Brief={businessName:string;industry:string;description:string;services:string[];contactEmail?:string};
 function infer(name:string,brief:string):Brief{
  const text=(name+' '+brief).toLowerCase();
@@ -23,9 +23,9 @@ export default function BusinessGenerator(){
  try{
  const response=await fetch('/api/ai/business',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(input)});
  if(!response.ok)throw Error((await response.json()).error||'AI generation unavailable');
- const result=await response.json();setPages(result.pages);setActive('index');setStatus(result.provider==='ollama'?'Website created with local AI.':'Website created with automatic design and content. Local AI is optional.');
+ const result=await response.json();setPages([...createContextualShowcase(input),...result.pages.filter((p:GeneratedPage)=>p.slug!=='index')]);setActive('index');setStatus(result.provider==='ollama'?'Website created with local AI.':'Website created with automatic design and content. Local AI is optional.');
  }catch{
- try{const site=generateBusinessWebsite(input);setPages(site.pages);setActive('index');setStatus('Website created with the free automatic generator.')}catch{setStatus('Unable to generate. Check your business name and description.')}
+ try{const site=generateBusinessWebsite(input);setPages([...createContextualShowcase(input),...site.pages.filter(p=>p.slug!=='index')]);setActive('index');setStatus('Website created with the free automatic generator.')}catch{setStatus('Unable to generate. Check your business name and description.')}
  }finally{setBusy(false)}
  }
  return <div className="business-generator forge-auto">
@@ -36,7 +36,7 @@ export default function BusinessGenerator(){
  <label>What does your business do? <span className="optional">(optional)</span><textarea rows={5} value={brief} onChange={e=>setBrief(e.target.value)} placeholder="Describe what you offer, who you serve and what makes you different."/></label>
  <details className="forge-auto-advanced"><summary>Add contact information (recommended before publishing)</summary><label>Business email<input type="email" value={contactEmail} onChange={e=>setContactEmail(e.target.value)} placeholder="hello@yourbusiness.com"/></label></details>
  <button className="forge-auto-cta" onClick={()=>void generate()} disabled={busy}>{busy?'Creating your website…':'✦ Generate my website'}</button>
- <button className="forge-auto-demo" onClick={()=>{setPages(createImmersiveShowcase());setActive('index');setStatus('Showing a complete cinematic concept website with interactive sections.');setMobile(false)}}>✧ Explore an immersive demo</button>
+ <button className="forge-auto-demo" onClick={()=>{if(name.trim().length<2){setStatus('Enter a business name first to preview its own immersive design.');return}const input=infer(name,brief);const site=generateBusinessWebsite(input);setPages([...createContextualShowcase(input),...site.pages.filter(p=>p.slug!=='index')]);setActive('index');setStatus('Showing an industry-specific immersive concept based on the business details you provided.');setMobile(false)}}>✧ Preview my business immersive design</button>
  {status&&<p role="status" className="forge-auto-status">{status}</p>}
  <p className="forge-auto-note">For the best results, include your products, services and atmosphere. Business-specific visuals are selected automatically. Automatically generates Home, Services, About and Contact pages. Free generation remains available if an AI provider is offline.</p>
  {pages.length>0&&<div className="forge-auto-export"><button onClick={()=>pages.forEach(p=>downloadText(p.slug+'.html',p.html,'text/html'))}>↓ Download website pages</button><Link href="/cloud">Save & publish ↗</Link></div>}
