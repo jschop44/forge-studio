@@ -11,6 +11,8 @@ on:
       - 'tests/evidence-to-blueprint.test.mjs'
       - 'workers/blueprint-to-html.mjs'
       - 'tests/blueprint-to-html.test.mjs'
+      - 'workers/immersive-depth-scene.mjs'
+      - 'tests/immersive-depth-scene.test.mjs'
       - 'workers/blueprint-quality.mjs'
       - 'tests/blueprint-quality.test.mjs'
       - '.github/workflows/browser-capture.yml'
@@ -32,7 +34,7 @@ jobs:
         with:
           node-version: '22'
       - name: Validate navigation and network safety policies
-        run: node --test tests/navigation-probe-policy.test.mjs tests/public-network-policy.test.mjs tests/evidence-to-blueprint.test.mjs tests/blueprint-to-html.test.mjs tests/blueprint-quality.test.mjs
+        run: node --test tests/navigation-probe-policy.test.mjs tests/public-network-policy.test.mjs tests/evidence-to-blueprint.test.mjs tests/blueprint-to-html.test.mjs tests/blueprint-quality.test.mjs tests/immersive-depth-scene.test.mjs
       - name: Install isolated browser runtime
         run: |
           npm install --no-save --no-package-lock playwright
@@ -50,6 +52,9 @@ jobs:
       - name: Audit captured blueprint
         run: |
           node --input-type=module -e "import fs from 'node:fs';import {assessBlueprint} from './workers/blueprint-quality.mjs';const blueprint=JSON.parse(fs.readFileSync('website-blueprint.json','utf8'));const report=assessBlueprint(blueprint);if(!report.checks.pageCoverage||!report.checks.visualRegions||!report.checks.sourceProvenance)process.exit(1);fs.writeFileSync('website-quality.json',JSON.stringify(report,null,2));"
+      - name: Generate deterministic depth scene metadata
+        run: |
+          node --input-type=module -e "import fs from 'node:fs';import {buildDepthScene} from './workers/immersive-depth-scene.mjs';const blueprint=JSON.parse(fs.readFileSync('website-blueprint.json','utf8'));const scene=buildDepthScene(blueprint);if(scene.publicationReady!==false)process.exit(1);fs.writeFileSync('website-depth-scene.json',JSON.stringify(scene,null,2));"
       - name: Render safe website preview from blueprint
         run: |
           node --input-type=module -e "import fs from 'node:fs';import {blueprintToHtml,blueprintToPages} from './workers/blueprint-to-html.mjs';const blueprint=JSON.parse(fs.readFileSync('website-blueprint.json','utf8'));const html=blueprintToHtml(blueprint);if(!html.includes('<!doctype html>'))process.exit(1);fs.writeFileSync('website-preview.html',html);fs.mkdirSync('website-pages',{recursive:true});const pages=blueprintToPages(blueprint);for(const page of pages){if(!/^[a-zA-Z0-9_-]+\\.html$/.test(page.filename))throw Error('Unsafe output filename');fs.writeFileSync('website-pages/'+page.filename,page.html)}if(!pages.length)process.exit(1);"
@@ -61,6 +66,7 @@ jobs:
             browser-screenshot.png
             website-blueprint.json
             website-quality.json
+            website-depth-scene.json
             website-preview.html
             website-pages/
           retention-days: 1
