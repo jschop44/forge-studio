@@ -5,7 +5,7 @@ export function summarizeNavigationHealth(input:BrowserEvidence){
  const checks=input.pages.flatMap(page=>page.navigationChecks||[]);
  const passed=checks.filter(check=>check.ok&&check.status!==null&&check.status>=200&&check.status<400);
  const broken=checks.filter(check=>check.status!==null&&check.status>=400);
- const inconclusive=checks.filter(check=>check.status===null||!check.ok&&check.status<400);
+ const inconclusive=checks.filter(check=>check.status===null||(!check.ok&&check.status!==null&&check.status<400));
  const uniqueBroken=[...new Set(broken.map(check=>check.path))].slice(0,20);
  return {
   inspected:checks.length,passed:passed.length,broken:broken.length,inconclusive:inconclusive.length,
