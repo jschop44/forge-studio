@@ -5,7 +5,7 @@ import {generateBusinessWebsite,type GeneratedPage} from '../../lib/business-sit
 import {downloadText} from '../../lib/export';
 import {auditGeneratedSite} from '../../lib/site-audit';
 import {createImmersiveShowcase} from '../../lib/immersive-showcase';
-type Brief={businessName:string;industry:string;description:string;services:string[]};
+type Brief={businessName:string;industry:string;description:string;services:string[];contactEmail?:string};
 function infer(name:string,brief:string):Brief{
  const text=(name+' '+brief).toLowerCase();
  const industry=/coffee|espresso|roast|barista|café|cafe/.test(text)?'Coffee shop and cafe':/restaurant|pizza|food|bakery/.test(text)?'Restaurant and hospitality':/real estate|realtor|property/.test(text)?'Real estate':/gym|fitness|wellness|spa/.test(text)?'Health and wellness':/auto|car|vehicle/.test(text)?'Automotive':/fashion|jewelry|clothing/.test(text)?'Fashion and luxury':/software|tech|digital|ai /.test(text)?'Technology':'Professional services';
@@ -14,12 +14,12 @@ function infer(name:string,brief:string):Brief{
  return {businessName:name.trim(),industry,description,services};
 }
 export default function BusinessGenerator(){
- const [name,setName]=useState(''),[brief,setBrief]=useState(''),[busy,setBusy]=useState(false),[status,setStatus]=useState(''),[pages,setPages]=useState<GeneratedPage[]>([]),[active,setActive]=useState('index'),[mobile,setMobile]=useState(false);
+ const [name,setName]=useState(''),[brief,setBrief]=useState(''),[contactEmail,setContactEmail]=useState(''),[busy,setBusy]=useState(false),[status,setStatus]=useState(''),[pages,setPages]=useState<GeneratedPage[]>([]),[active,setActive]=useState('index'),[mobile,setMobile]=useState(false);
  const current=pages.find(p=>p.slug===active),quality=current?auditGeneratedSite({html:current.html}):null;
  async function generate(){
  if(name.trim().length<2){setStatus('Enter your business name to get started.');return}
  setBusy(true);setStatus('Building your website and choosing its design automatically…');
- const input=infer(name,brief);
+ const input={...infer(name,brief),...(contactEmail.trim()?{contactEmail:contactEmail.trim()}: {})};
  try{
  const response=await fetch('/api/ai/business',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(input)});
  if(!response.ok)throw Error((await response.json()).error||'AI generation unavailable');
@@ -34,6 +34,7 @@ export default function BusinessGenerator(){
  <aside className="forge-auto-panel"><div className="eyebrow">YOUR WEBSITE, AUTOMATICALLY</div><h1>Tell us about your business.<br/><em>We build the rest.</em></h1><p>Design, copy, page structure and visual direction are selected automatically. No complex settings required.</p>
  <label>Business name<input autoFocus value={name} onChange={e=>setName(e.target.value)} placeholder="e.g. Northstar Coffee"/></label>
  <label>What does your business do? <span className="optional">(optional)</span><textarea rows={5} value={brief} onChange={e=>setBrief(e.target.value)} placeholder="Describe what you offer, who you serve and what makes you different."/></label>
+ <details className="forge-auto-advanced"><summary>Add contact information (recommended before publishing)</summary><label>Business email<input type="email" value={contactEmail} onChange={e=>setContactEmail(e.target.value)} placeholder="hello@yourbusiness.com"/></label></details>
  <button className="forge-auto-cta" onClick={()=>void generate()} disabled={busy}>{busy?'Creating your website…':'✦ Generate my website'}</button>
  <button className="forge-auto-demo" onClick={()=>{setPages(createImmersiveShowcase());setActive('index');setStatus('Showing a complete cinematic concept website with interactive sections.');setMobile(false)}}>✧ Explore an immersive demo</button>
  {status&&<p role="status" className="forge-auto-status">{status}</p>}
