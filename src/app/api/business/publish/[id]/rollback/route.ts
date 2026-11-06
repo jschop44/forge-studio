@@ -25,21 +25,31 @@ export async function POST(req:NextRequest,{params}:{params:Promise<{id:string}>
   const rows=await sql`WITH snapshot AS (
     SELECT slug,html FROM forge_business_publication_snapshots
     WHERE publication_id=${id}::uuid AND owner_id=${owner}::uuid AND version=${version}
-   ), current_version AS (
-    SELECT MAX(version) AS version FROM forge_business_publication_snapshots
-    WHERE publication_id=${id}::uuid AND owner_id=${owner}::uuid
    ), current_pages AS (
     SELECT slug FROM forge_business_publications WHERE id=${id}::uuid AND owner_id=${owner}::uuid
    ), compatible AS (
-    SELECT EXISTS(SELECT 1 FROM snapshot) AND
-     NOT EXISTS((SELECT slug FROM snapshot EXCEPT SELECT slug FROM current_pages)) AND
-     NOT EXISTS((SELECT slug FROM current_pages EXCEPT SELECT slug FROM snapshot)) AS matches
-   )
-   UPDATE forge_business_publications p SET html=s.html
-   FROM snapshot s,compatible c
-   WHERE c.matches AND (SELECT version FROM current_version)=${expectedVersion} AND p.id=${id}::uuid AND p.owner_id=${owner}::uuid AND p.slug=s.slug
-   RETURNING p.slug`;
-  if(!rows.length)return NextResponse.json({error:'Publication, snapshot, or current version mismatch. Refresh before restoring.'},{status:409});
-  return NextResponse.json({restored:true,version,pageCount:rows.length});
- }catch{return NextResponse.json({error:'Rollback unavailable'},{status:503})}
+    SELECT EXISTS(SELECT 1 FROM snapshot)
+     AND NOT EXISTS(SELECT slug FROM snapshot EXCEPT SELECT slug FROM current_pages)
+     AND NOT EXISTS(SELECT slug FROM current_pages EXCEPT SELECT slug FROM snapshot) AS matches
+   ), next_version AS (
+    SELECT COALESCE(MAX(version),0)+1 AS version FROM forge_business_publication_snapshots
+    WHERE publication_id=${id}::uuid AND owner_id=${owner}::uuid
+   ), recorded AS (
+    INSERT INTO forge_business_publication_snapshots(publication_id,owner_id,version,slug,html)
+    SELECT ${id}::uuid,${owner}::uuid,n.version,s.slug,s.html
+    FROM snapshot s CROSS JOIN next_version n CROSS JOIN compatible c
+    WHERE c.matches AND n.version=${expectedVersion}+1
+    RETURNING slug,version
+   ), updated AS (
+    UPDATE forge_business_publications p SET html=s.html
+    FROM snapshot s WHERE p.id=${id}::uuid AND p.owner_id=${owner}::uuid AND p.slug=s.slug
+      AND EXISTS(SELECT 1 FROM recorded)
+    RETURNING p.slug
+   ) SELECT COUNT(*)::int AS page_count,MAX((SELECT MAX(version) FROM recorded)) AS new_version FROM updated`;
+  if(!rows.length||Number(rows[0].page_count)===0)return NextResponse.json({error:'Publication, snapshot, or current version mismatch. Refresh before restoring.'},{status:409});
+  return NextResponse.json({restored:true,version,versionCreated:Number(rows[0].new_version),pageCount:Number(rows[0].page_count)});
+ }catch(error){
+  if(error&&typeof error==='object'&&'code' in error&&error.code==='23505')return NextResponse.json({error:'Rollback conflict. Reload saved versions and retry.'},{status:409});
+  return NextResponse.json({error:'Rollback unavailable'},{status:503});
+ }
 }
