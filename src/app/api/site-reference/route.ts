@@ -1,5 +1,6 @@
 import {NextRequest,NextResponse} from 'next/server';
 import {sameOrigin} from '../../../lib/server/request-security';
+import {sitemapPages} from '../../../lib/sitemap-discovery';
 import {lookup} from 'node:dns/promises';
 import {isIP} from 'node:net';
 import {request as httpsRequest} from 'node:https';
@@ -48,6 +49,27 @@ export async function POST(req:NextRequest){
  const visualSignals={navigationLinks:(html.match(/<nav\b/gi)||[]).length,heroSections:(html.match(/(?:class|id)\s*=\s*["'][^"']*(?:hero|banner|masthead)[^"']*["']/gi)||[]).length,imageCount:(html.match(/<img\b/gi)||[]).length,sectionCount:(html.match(/<section\b/gi)||[]).length,buttonCount:(html.match(/<button\b/gi)||[]).length,hasVideo:/<video\b/i.test(html),hasCanvas:/<canvas\b/i.test(html)};
 
  const navigation=[...html.matchAll(/<a\b([^>]*?)href\s*=\s*["']([^"']+)["']([^>]*)>([\s\S]*?)<\/a>/gi)].slice(0,250).map(match=>{try{const link=new URL(match[2],url);if(link.origin!==url.origin||link.protocol!=='https:'||/\.(?:pdf|png|jpe?g|gif|svg|webp|mp4|zip)$/i.test(link.pathname))return null;const attrs=match[1]+' '+match[3];const aria=attrs.match(/aria-label\s*=\s*["']([^"']+)["']/i)?.[1]||'';const label=(clean(match[4])||clean(aria)||decodeURIComponent(link.pathname.split('/').filter(Boolean).pop()||'')).slice(0,60);return {label,path:link.pathname}}catch{return null}}).filter((item):item is {label:string;path:string}=>Boolean(item&&item.label.length>=2&&item.path!=='/'&&item.path.length<=140&&!/^(sign in|log in|logout|register|account|privacy|terms|cookies|accessibility)$/i.test(item.label))).filter((item,index,all)=>all.findIndex(other=>other.path===item.path)===index).slice(0,12);
+ if(navigation.length<3){
+  try{
+   const sitemapUrl=new URL('/sitemap.xml',url);
+   const pinned=addresses.find(a=>a.family===4)||addresses[0];
+   const xml=await new Promise<string>((resolve,reject)=>{
+    const request=httpsRequest(sitemapUrl,{method:'GET',timeout:3500,headers:{'User-Agent':'ForgeStudioSiteResearch/1.0','Accept':'application/xml,text/xml','Accept-Encoding':'identity'},lookup:pinnedLookup(pinned.address,pinned.family)},response=>{
+     if(response.statusCode!==200){response.resume();reject(new Error('Sitemap unavailable'));return}
+     let size=0;const chunks:Buffer[]=[];
+     response.on('data',(chunk:Buffer)=>{size+=chunk.length;if(size>200000){request.destroy(new Error('Sitemap too large'));return}chunks.push(chunk)});
+     response.on('end',()=>resolve(Buffer.concat(chunks).toString('utf8')));
+     response.on('error',reject);
+    });
+    request.on('timeout',()=>request.destroy(new Error('Sitemap timed out')));
+    request.on('error',reject);request.end();
+   });
+   for(const page of sitemapPages(xml,url.origin,12)){
+    if(navigation.length>=12)break;
+    if(!navigation.some(existing=>existing.path===page.path))navigation.push(page);
+   }
+  }catch{/* Optional sitemap discovery; retain homepage navigation on failure. */}
+ }
  const pageSummaries:{path:string;label:string;title:string;description:string;headings:string[]}[]=[];
  for(const item of navigation.slice(0,2)){
   try{
