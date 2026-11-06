@@ -15,3 +15,12 @@ test('reports missing source and rejects malformed blueprints',()=>{
  assert.equal(report.checks.sourceProvenance,false);
  assert.ok(report.warnings.length>=2);
 });
+
+test('flags duplicate captured routes and pages with missing visual coverage',()=>{
+ const report=assessBlueprint({version:1,pages:[{path:'/',regions:[{id:'a'}]},{path:'/',regions:[]}],provenance:{generatedContent:false}});
+ assert.equal(report.duplicatePaths,1);
+ assert.equal(report.emptyPages,1);
+ assert.equal(report.checks.uniquePagePaths,false);
+ assert.equal(report.checks.allPagesHaveRegions,false);
+ assert.equal(report.publicationReady,false);
+});
