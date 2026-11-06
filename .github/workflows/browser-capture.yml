@@ -35,5 +35,7 @@ jobs:
       - uses: actions/upload-artifact@v4
         with:
           name: browser-evidence
-          path: browser-evidence.json
+          path: |
+            browser-evidence.json
+            browser-screenshot.png
           retention-days: 1
