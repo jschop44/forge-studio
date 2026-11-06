@@ -73,3 +73,10 @@ test('exported previews offer hover depth without forcing motion',()=>{
  assert.match(html,/transform:none!important/);
  assert.match(html,/@media\(max-width:650px\)/);
 });
+
+test('resolves relative links using the captured page path',()=>{
+ const files=blueprintToPages({version:1,sourceUrl:'https://example.com',title:'Site',sections:[],pages:[
+  {path:'/services/',title:'Services',regions:[]},{path:'/services/details',title:'Details',regions:[]}
+ ],navigation:[{label:'Details',target:'details'}]});
+ assert.match(files[0].html,/href="services-details.html"/);
+});
