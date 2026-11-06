@@ -7,6 +7,8 @@ on:
       - 'workers/public-network-policy.mjs'
       - 'tests/navigation-probe-policy.test.mjs'
       - 'tests/public-network-policy.test.mjs'
+      - 'workers/evidence-to-blueprint.mjs'
+      - 'tests/evidence-to-blueprint.test.mjs'
       - '.github/workflows/browser-capture.yml'
   workflow_dispatch:
     inputs:
@@ -26,7 +28,7 @@ jobs:
         with:
           node-version: '22'
       - name: Validate navigation and network safety policies
-        run: node --test tests/navigation-probe-policy.test.mjs tests/public-network-policy.test.mjs
+        run: node --test tests/navigation-probe-policy.test.mjs tests/public-network-policy.test.mjs tests/evidence-to-blueprint.test.mjs
       - name: Install isolated browser runtime
         run: |
           npm install --no-save --no-package-lock playwright
