@@ -65,3 +65,17 @@ test("rejects oversized navigation and screenshot dimensions", () => {
   assert.equal(browserEvidenceSchema.safeParse({ ...sample, navigation: Array(31).fill(sample.navigation[0]) }).success, false);
   assert.equal(browserEvidenceSchema.safeParse({ ...sample, screenshot: { ...sample.screenshot, width: 100000 } }).success, false);
 });
+
+test("rejects alternate numeric and IPv6 host representations in client-safe validation", () => {
+  for (const href of [
+    "https://2130706433/",
+    "https://0x7f000001/",
+    "https://0177.0.0.1/",
+    "https://[2001:db8::1]/",
+    "https://[::ffff:127.0.0.1]/",
+  ]) {
+    const sample = valid();
+    sample.navigation[0].href = href;
+    assert.equal(browserEvidenceSchema.safeParse(sample).success, false, href);
+  }
+});
