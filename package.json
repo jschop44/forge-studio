@@ -8,8 +8,9 @@
     "start": "next start",
     "typecheck": "tsc --noEmit",
     "test": "tsx --test tests/*.test.ts src/lib/*.test.ts",
+    "test:workers": "node --test tests/*.test.mjs",
     "db:migrate": "tsx scripts/migrate.ts",
-    "verify": "npm test && npm run typecheck && npm run build",
+    "verify": "npm test && npm run test:workers && npm run typecheck && npm run build",
     "test:e2e": "playwright test"
   },
   "dependencies": {
