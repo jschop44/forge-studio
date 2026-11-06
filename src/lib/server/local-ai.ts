@@ -4,7 +4,7 @@ const DraftSchema=z.object({businessName:z.string().min(2).max(100),industry:z.s
 export type AiDraft=z.infer<typeof DraftSchema>;
 export type AiGenerationResult={draft:AiDraft;provider:'ollama'|'deterministic';pages:ReturnType<typeof generateBusinessWebsite>['pages']};
 function fallback(input:{businessName:string;industry:string;description:string;services:string[]}):AiDraft{return DraftSchema.parse({businessName:input.businessName,industry:input.industry,description:input.description.length>=15?input.description:'Professional services designed around your business goals.',services:input.services.length?input.services:['Consulting','Support']})}
-export async function generateWithLocalAi(input:{businessName:string;industry:string;description:string;services:string[]}):Promise<AiGenerationResult>{
+export async function generateWithLocalAi(input:{businessName:string;industry:string;description:string;services:string[];contactEmail?:string}):Promise<AiGenerationResult>{
  let draft=fallback(input),provider:'ollama'|'deterministic'='deterministic';
  if(process.env.ENABLE_LOCAL_AI==='true'){
  const endpoint=process.env.OLLAMA_URL||'http://127.0.0.1:11434';
@@ -14,5 +14,5 @@ export async function generateWithLocalAi(input:{businessName:string;industry:st
  if(response.ok){const payload=await response.json();const parsed=DraftSchema.safeParse(JSON.parse(String(payload.response||'{}')));if(parsed.success){draft=parsed.data;provider='ollama'}}
  }catch{}finally{clearTimeout(timeout)}
  }
- return {draft,provider,pages:generateBusinessWebsite(draft).pages};
+ return {draft,provider,pages:generateBusinessWebsite({...draft,contactEmail:input.contactEmail}).pages};
 }
