@@ -96,3 +96,13 @@ test('renders validated color tokens and rejects injected CSS token values',()=>
  assert.match(html,/--capture-bg:#fafafa/);
  assert.doesNotMatch(html,/display:none/);
 });
+
+test('applies observed heading and body typography without accepting CSS injection',()=>{
+ const html=blueprintToHtml({version:1,title:'Site',sections:[],pages:[{path:'/',regions:[],designTokens:{fontFamily:'Arial, sans-serif',headingFontFamily:'Georgia, serif',headingFontSize:'42px',baseFontSize:'17px'}}]});
+ assert.match(html,/--capture-font:Arial, sans-serif/);
+ assert.match(html,/--capture-heading-font:Georgia, serif/);
+ assert.match(html,/--capture-heading-size:42px/);
+ assert.match(html,/--capture-base-size:17px/);
+ const unsafe=blueprintToHtml({version:1,title:'Site',sections:[],pages:[{path:'/',regions:[],designTokens:{fontFamily:'Arial;body{display:none}',headingFontSize:'42px;display:none'}}]});
+ assert.doesNotMatch(unsafe,/display:none/);
+});
