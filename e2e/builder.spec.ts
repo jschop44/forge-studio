@@ -28,6 +28,8 @@ test("free generator produces preview pages and navigates tabs", async ({ page }
   await page.getByRole("button", { name: /generate my immersive website/i }).click();
   const tabs = page.getByRole("navigation", { name: "Website pages" });
   await expect(tabs).toBeVisible({ timeout: 30000 });
+  await expect(page.getByText(/Draft quality:/i)).toBeVisible();
+  await expect(page.getByText(/Publishing has not been verified/i)).toBeVisible();
   await expect(tabs.getByRole("button", { name: "Services" })).toBeVisible();
   await tabs.getByRole("button", { name: "Services" }).click();
   await expect(tabs.getByRole("button", { name: "Services" })).toHaveAttribute("aria-current", "page");
