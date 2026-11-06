@@ -48,7 +48,7 @@ export default function BusinessGenerator(){
    const target=revisionId.trim()?'/api/business/publish/'+revisionId.trim()+'/revisions':'/api/business/publish';
    const response=await fetch(target,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({ownerApproved:true,businessName:name.trim(),pages,...(revisionId.trim()?{expectedVersion:Number(revisionVersion)}:{})})});
    const data=await response.json();
-   if(!response.ok)throw Error(data.error||'Publishing unavailable');
+   if(!response.ok)throw Error([data.error,...(Array.isArray(data.details)?data.details:[])].filter(Boolean).join(': ')||'Publishing unavailable');
    setPublishedUrls(Array.isArray(data.urls)?data.urls:(data.id?pages.map(page=>'/business-sites/'+data.id+'/'+page.slug):[]));
    if(data.id)setRevisionId(data.id);
    if(data.version)setRevisionVersion(String(data.version));
