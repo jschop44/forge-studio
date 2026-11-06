@@ -1,5 +1,5 @@
 import {NextRequest,NextResponse} from 'next/server';
-import {sameOrigin} from '../../../../lib/server/request-security';
+import {sameOrigin} from '../../../lib/server/request-security';
 import {lookup} from 'node:dns/promises';
 import {isIP} from 'node:net';
 import {request as httpsRequest} from 'node:https';
