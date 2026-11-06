@@ -13,12 +13,16 @@ const browser=await chromium.launch({headless:true});
 try{
  const context=await browser.newContext({viewport:{width:1280,height:800},serviceWorkers:'block',acceptDownloads:false,permissions:[]});
  context.setDefaultTimeout(8000);
- await context.route('**/*',route=>{
+ await context.route('**/*',async route=>{
   const url=new URL(route.request().url());
   const allowed=url.protocol==='https:'&&hosts.includes(url.hostname)&&!unsafeHost(url.hostname)&&!url.port&&!url.username&&!url.password;
   const method=route.request().method();
   // Captures must never submit mutations, even if a page script attempts them.
-  return allowed&&(method==='GET'||method==='HEAD')?route.continue():route.abort();
+  if(!allowed||(method!=='GET'&&method!=='HEAD'))return route.abort();
+  // Recheck each requested host immediately before allowing the request.
+  // This reduces DNS-rebinding exposure but does not replace network egress isolation.
+  try{await assertPublicDns(url.hostname);}catch{return route.abort();}
+  return route.continue();
  });
  const page=await context.newPage();
  page.on('dialog',dialog=>void dialog.dismiss());
