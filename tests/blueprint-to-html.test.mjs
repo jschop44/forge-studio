@@ -90,3 +90,9 @@ test('uses page-specific observed navigation when exporting pages',()=>{
  assert.doesNotMatch(files[0].html,/>Home<\/a>/);
  assert.match(files[1].html,/href="index.html"/);
 });
+
+test('renders validated color tokens and rejects injected CSS token values',()=>{
+ const html=blueprintToHtml({version:1,title:'Site',sections:[],pages:[{path:'/',regions:[],designTokens:{backgroundColor:'#fafafa',textColor:'red;body{display:none}'}}]});
+ assert.match(html,/--capture-bg:#fafafa/);
+ assert.doesNotMatch(html,/display:none/);
+});
