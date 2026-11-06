@@ -9,6 +9,10 @@ export function assessBlueprint(blueprint){
  const probes=Array.isArray(blueprint.navigationChecks)?blueprint.navigationChecks.slice(0,96):[];
  const failedNavigation=probes.filter(p=>!p||p.ok!==true||!Number.isInteger(p.status)||p.status<200||p.status>=400);
  const warnings=[];
+ const totalPages=pages.length;
+ const pagesWithRegions=pages.filter(p=>Array.isArray(p?.regions)&&p.regions.length>0).length;
+ const pagesWithNavigation=pages.filter(p=>Array.isArray(p?.navigation)&&p.navigation.length>0).length;
+ const pagesWithDesignTokens=pages.filter(p=>p?.designTokens&&Object.values(p.designTokens).some(v=>typeof v==='string'&&v.length>0)).length;
  if(failedNavigation.length)warnings.push('Some read-only navigation probes failed');
  const pagePaths=new Set();
  let duplicatePaths=0;
@@ -22,5 +26,5 @@ export function assessBlueprint(blueprint){
  if(!links)warnings.push('No navigation links observed');
  if(!blueprint.provenance||blueprint.provenance.generatedContent!==false)warnings.push('Source provenance is missing or untrusted');
  const checks={pageCoverage:pages.length>0,visualRegions:regions>0,sourceProvenance:blueprint.provenance?.generatedContent===false,interactionVerification:buttons+forms===0,uniquePagePaths:duplicatePaths===0,allPagesHaveRegions:emptyPages===0,readOnlyNavigation:failedNavigation.length===0};
- return {version:1,pages:pages.length,regions,duplicatePaths,emptyPages,navigationProbes:probes.length,failedNavigation:failedNavigation.length,observed:{links,buttons,forms},checks,warnings,publicationReady:false,requiresHumanReview:true};
+ return {version:1,pages:pages.length,coverage:{visual:totalPages?pagesWithRegions/totalPages:0,navigation:totalPages?pagesWithNavigation/totalPages:0,designTokens:totalPages?pagesWithDesignTokens/totalPages:0},regions,duplicatePaths,emptyPages,navigationProbes:probes.length,failedNavigation:failedNavigation.length,observed:{links,buttons,forms},checks,warnings,publicationReady:false,requiresHumanReview:true};
 }
