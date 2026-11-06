@@ -16,7 +16,7 @@ export default function BusinessPublications(){
  async function rollback(id:string,version:number){
   if(!window.confirm('Restore snapshot version '+version+'? This replaces the current page content.'))return;
   setBusy(id);
-  try{const res=await fetch('/api/business/publish/'+id+'/rollback',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({version})});const data=await res.json();if(!res.ok)throw Error(data.error||'Rollback failed');setStatus('Restored version '+version+'. Verify every page.')}catch(error){setStatus(error instanceof Error?error.message:'Rollback failed')}finally{setBusy('')}
+  try{const res=await fetch('/api/business/publish/'+id+'/rollback',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({version,expectedVersion:Math.max(...(versions[id]||[]).map(v=>v.version))})});const data=await res.json();if(!res.ok)throw Error(data.error||'Rollback failed');setStatus('Restored version '+version+'. Verify every page.');await showVersions(id)}catch(error){setStatus(error instanceof Error?error.message:'Rollback failed')}finally{setBusy('')}
  }
  async function unpublish(id:string){
   if(!window.confirm('Permanently unpublish this website and delete its saved snapshots?'))return;
