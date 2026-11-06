@@ -1,7 +1,7 @@
 /** Deterministic, untrusted browser-evidence -> editable website blueprint adapter. */
 const clean=(value,max=240)=>typeof value==='string'?value.replace(/[\u0000-\u001f\u007f]/g,' ').replace(/\s+/g,' ').trim().slice(0,max):'';
 const allowedRoles=new Set(['hero','header','nav','main','section','footer']);
-const safeColor=value=>typeof value==='string'&&/^(?:#[0-9a-f]{3,8}|rgba?\\([0-9.,%\\s]+\\))$/i.test(value.trim())?value.trim().slice(0,64):undefined;
+const safeColor=value=>typeof value==='string'&&/^(?:#[0-9a-f]{3,8}|rgba?\([0-9.,%\s]+\))$/i.test(value.trim())?value.trim().slice(0,64):undefined;
 const safeFont=value=>typeof value==='string'&&/^[a-zA-Z0-9 ,\"'_-]{1,160}$/.test(value)?value:undefined;
 const safeSize=value=>typeof value==='string'&&/^(?:[0-9]{1,3}(?:\\.[0-9]{1,2})?px)$/.test(value)?value:undefined;
 const designTokens=page=>({backgroundColor:safeColor(page?.designTokens?.backgroundColor),textColor:safeColor(page?.designTokens?.textColor),fontFamily:safeFont(page?.designTokens?.fontFamily),headingFontFamily:safeFont(page?.designTokens?.headingFontFamily),headingFontSize:safeSize(page?.designTokens?.headingFontSize),baseFontSize:safeSize(page?.designTokens?.baseFontSize)});
@@ -9,7 +9,7 @@ const observedLinks=(page,source)=>{const base=new URL(typeof page.path==='strin
 export function evidenceToBlueprint(evidence){
  if(!evidence||evidence.version!==1||!Array.isArray(evidence.pages)||!evidence.pages.length)throw Error('Unsupported browser evidence');
  let source;try{source=new URL(evidence.sourceUrl)}catch{throw Error('Invalid evidence source')}
- if(source.protocol!=='https:'||source.username||source.password||source.port&&source.port!=='443'||source.hostname==='localhost'||source.hostname.endsWith('.local')||source.hostname.endsWith('.internal')||source.hostname.endsWith('.test')||/^\\d+(?:\\.\\d+){3}$/.test(source.hostname))throw Error('Invalid evidence source');
+ if(source.protocol!=='https:'||source.username||source.password||source.port&&source.port!=='443'||source.hostname==='localhost'||source.hostname.endsWith('.local')||source.hostname.endsWith('.internal')||source.hostname.endsWith('.test')||/^\d+(?:\\.\d+){3}$/.test(source.hostname))throw Error('Invalid evidence source');
  const page=evidence.pages[0];
  if(!page||!Array.isArray(page.visualRegions))throw Error('Missing visual regions');
  const regions=page.visualRegions.slice(0,100).filter(r=>r&&allowedRoles.has(r.role)&&[r.x,r.y,r.width,r.height].every(n=>Number.isFinite(n)&&n>=0)&&r.width>0&&r.height>0).map((r,i)=>({
