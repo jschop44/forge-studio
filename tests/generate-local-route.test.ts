@@ -90,4 +90,15 @@ describe('legacy website generation uses mandatory local AI',()=>{
    assert.equal(calls,0);
   }finally{globalThis.fetch=original}
  });
+ it('rejects whitespace-only services before contacting the local model',async()=>{
+  const original=globalThis.fetch;
+  let calls=0;
+  try{
+   globalThis.fetch=async()=>{calls++;throw Error('unexpected model call')};
+   const request=new NextRequest('http://localhost/api/generate',{method:'POST',headers:{'content-type':'application/json','origin':'http://localhost'},body:JSON.stringify({name:'Oak Studio',description:'An independent design studio serving local businesses and families.',template:'minimal',services:['  ']})});
+   const response=await POST(request);
+   assert.equal(response.status,400);
+   assert.equal(calls,0);
+  }finally{globalThis.fetch=original}
+ });
 });
