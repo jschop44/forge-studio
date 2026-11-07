@@ -144,3 +144,12 @@ test('WebGL animation pauses on pagehide and resumes after page restoration',()=
  assert.match(html,/addEventListener\('pageshow',resume\)/);
  assert.match(html,/if\(frame\)cancelAnimationFrame\(frame\);frame=0/);
 });
+
+test('interactive 3D scene responds to page presses without hijacking controls',()=>{
+ const html=enhanceImmersivePages([{slug:'services',html:'<!doctype html><html><head></head><body><main>Services</main></body></html>'}])[0].html;
+ assert.match(html,/uniform float pulse/);
+ assert.match(html,/addEventListener\('pointerdown'/);
+ assert.match(html,/closest\('a,button,input,textarea,select,\[role=button\]'\)/);
+ assert.match(html,/interactionPulse=1/);
+ assert.match(html,/gl\.uniform1f\(pulse,interactionPulse\)/);
+});
