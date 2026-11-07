@@ -29,10 +29,11 @@ jobs:
           echo '- Application, worker, typecheck, build, and Playwright steps are listed above with their individual results.' >> "$GITHUB_STEP_SUMMARY"
           echo '- A successful job means all required verification steps passed.' >> "$GITHUB_STEP_SUMMARY"
       - uses: actions/upload-artifact@v4
-        if: failure()
+        if: always()
         with:
-          name: playwright-failure-report
+          name: playwright-verification-report
           path: |
             playwright-report/
             test-results/
+          if-no-files-found: ignore
           retention-days: 7
