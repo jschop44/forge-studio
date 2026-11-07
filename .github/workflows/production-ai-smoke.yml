@@ -1,0 +1,37 @@
+name: Production AI smoke test
+on:
+  workflow_dispatch:
+    inputs:
+      deployment_url:
+        description: "Public Forge Studio origin to verify (e.g. https://forge-studio-free.onrender.com)"
+        required: true
+        default: "https://forge-studio-free.onrender.com"
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Validate deployment origin
+        env:
+          FORGE_BASE_URL: ${{ inputs.deployment_url }}
+        run: |
+          node --input-type=module -e '
+            const u=new URL(process.env.FORGE_BASE_URL);
+            if(u.protocol!=="https:"||u.username||u.password||u.pathname!=="/"||u.search||u.hash)throw Error("Expected an HTTPS deployment origin");
+          '
+      - name: Verify live local AI inference and generated pages
+        env:
+          FORGE_BASE_URL: ${{ inputs.deployment_url }}
+        run: npm run smoke:ai
+      - name: Explain results
+        if: always()
+        run: |
+          echo '## Production local AI smoke test' >> "$GITHUB_STEP_SUMMARY"
+          echo 'A passing run confirms model readiness and a real four-page AI generation response.' >> "$GITHUB_STEP_SUMMARY"
+          echo 'A failed run must not be reported as successful production generation.' >> "$GITHUB_STEP_SUMMARY"
