@@ -3,9 +3,14 @@ import {escapeHtml} from './export';
 import {industryPhotos,servicePhoto} from './industry-photos';
 const BriefSchema=z.object({businessName:z.string().trim().min(2).max(100),industry:z.string().trim().min(2).max(80),description:z.string().trim().min(15).max(1800),services:z.array(z.string().trim().min(2).max(100)).max(12),contactEmail:z.string().email().max(254).optional(),accent:z.string().regex(/^#[0-9a-fA-F]{6}$/).default('#b7a182'),improvements:z.array(z.enum(['relevance','conversion','content','mobile','seo','contact'])).optional()});
 export type BusinessBrief=z.infer<typeof BriefSchema>;
+export function isExcludedBusiness(input:{businessName:string;industry:string;description:string;services:string[]}):boolean{
+ const text=[input.businessName,input.industry,input.description,...input.services].join(' ').toLowerCase();
+ return /\b(?:porn(?:ography|ographic)?|xxx|adult entertainment|escort services?|sex shop|sex toys?|erotic massage|strip club|cannabis|marijuana|dispensary|recreational drugs?|illicit drugs?|drug dealer|psychedelic mushrooms?|cocaine|heroin|methamphetamine)\b/i.test(text);
+}
+
 export type GeneratedPage={slug:string;title:string;html:string};
 export function generateBusinessWebsite(input:unknown):{name:string;pages:GeneratedPage[]}{
- const b=BriefSchema.parse(input),s=escapeHtml;const enabled=(id:'relevance'|'conversion'|'content'|'mobile'|'seo'|'contact')=>!b.improvements||b.improvements.includes(id);
+ const b=BriefSchema.parse(input),s=escapeHtml;if(isExcludedBusiness(b))throw new Error('Unsupported business category');const enabled=(id:'relevance'|'conversion'|'content'|'mobile'|'seo'|'contact')=>!b.improvements||b.improvements.includes(id);
  const photos=industryPhotos(enabled('relevance')?b.industry:'general');const visual=(url:string,alt:string)=>'<figure class="editorial-photo"><img src="'+s(url)+'" alt="'+s(alt)+'" loading="lazy"></figure>';
  const brand=s(b.businessName),desc=s(b.description),industry=s(b.industry),accent=b.accent;
  const nav='<nav><a href="index.html">'+brand+'</a><div><a href="services.html">Services</a><a href="about.html">About</a><a href="contact.html">Contact</a></div></nav>';
