@@ -121,7 +121,7 @@ test('immersive pages remain interactive at narrow mobile viewport widths',async
   page.on('pageerror',onError);
   await page.setContent(generated.html);
   await expect(page.locator('main#main-content')).toBeVisible();
-  await page.evaluate(()=>window.scrollTo(0,document.body.scrollHeight));
+  await page.evaluate(()=>{document.body.style.minHeight='200vh';window.scrollTo(0,document.documentElement.scrollHeight)});
   await expect.poll(()=>page.evaluate(()=>window.scrollY)).toBeGreaterThan(0);
   expect(errors,generated.slug).toEqual([]);
   page.off('pageerror',onError);
