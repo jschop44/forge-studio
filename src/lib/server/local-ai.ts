@@ -9,7 +9,7 @@ function ollamaConfig(){
  const url=new URL(process.env.OLLAMA_URL||'http://127.0.0.1:11434');
  if(!['localhost','127.0.0.1','::1'].includes(url.hostname)||!['http:','https:'].includes(url.protocol))throw Error('OLLAMA_URL must be a loopback endpoint');
  const model=process.env.OLLAMA_MODEL||'llama3.2:3b';
- if(/(?:^|[:/])beam(?:$|[:/])|:cloud\b/i.test(model))throw Error('Paid/cloud models are disabled for free beta');
+ if(/beam|:cloud\b|\bcloud\b/i.test(model))throw Error('Paid/cloud models are disabled for free beta');
  return {url,model,headers:{} as Record<string,string>};
 }
 export async function checkLocalAiReadiness():Promise<{ready:boolean;reason:'ready'|'unreachable'|'model_missing'|'invalid_endpoint'}>{
