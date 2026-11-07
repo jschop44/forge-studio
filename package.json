@@ -7,6 +7,7 @@
     "build": "next build",
     "start": "next start",
     "typecheck": "tsc --noEmit",
+    "verify:free-ai": "node scripts/verify-free-ai.mjs",
     "test": "tsx --test tests/*.test.ts src/lib/*.test.ts",
     "test:workers": "node --test tests/*.test.mjs",
     "db:migrate": "tsx scripts/migrate.ts",
