@@ -12,6 +12,8 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:
+      - name: Start pipeline timing
+        run: echo "VERIFY_STARTED=$(date +%s)" >> "$GITHUB_ENV"
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
@@ -31,6 +33,7 @@ jobs:
         if: always()
         run: |
           echo '## Forge Studio application verification' >> "$GITHUB_STEP_SUMMARY"
+          echo "Elapsed job time: $(( $(date +%s) - VERIFY_STARTED )) seconds" >> "$GITHUB_STEP_SUMMARY"
           echo 'Review the individual policy, unit, worker, typecheck, and build steps above.' >> "$GITHUB_STEP_SUMMARY"
           echo 'A successful build alone does not establish that production Ollama inference is reachable.' >> "$GITHUB_STEP_SUMMARY"
 
@@ -39,6 +42,8 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:
+      - name: Start pipeline timing
+        run: echo "VERIFY_STARTED=$(date +%s)" >> "$GITHUB_ENV"
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
@@ -58,6 +63,7 @@ jobs:
         if: always()
         run: |
           echo '## Forge Studio browser verification' >> "$GITHUB_STEP_SUMMARY"
+          echo "Elapsed job time: $(( $(date +%s) - VERIFY_STARTED )) seconds" >> "$GITHUB_STEP_SUMMARY"
           echo '- Review the browser job results and attached Playwright report.' >> "$GITHUB_STEP_SUMMARY"
           echo '- Both application and browser jobs must pass before release.' >> "$GITHUB_STEP_SUMMARY"
       - uses: actions/upload-artifact@v4
