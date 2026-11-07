@@ -74,3 +74,15 @@ test('section depth uses viewport position and respects reduced-motion preferenc
  assert.match(html,/reduced\.addEventListener\('change'/);
  assert.match(html,/body>main>section\{transform:none!important/);
 });
+
+test('secondary pages include GPU spatial atmosphere with accessible fallback',()=>{
+ const source=[{slug:'services',html:'<!doctype html><html><head></head><body><main><section>Services</section></main></body></html>'}];
+ const html=enhanceImmersivePages(source)[0].html;
+ assert.match(html,/forge-webgl-atmosphere/);
+ assert.match(html,/getContext\('webgl'/);
+ assert.match(html,/gl\.drawArrays\(gl\.TRIANGLE_STRIP/);
+ assert.match(html,/webglcontextlost/);
+ assert.match(html,/aria-hidden/);
+ assert.match(html,/prefers-reduced-motion:reduce/);
+ assert.equal(enhanceImmersivePages(enhanceImmersivePages(source))[0].html,html);
+});
