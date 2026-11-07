@@ -127,3 +127,17 @@ test('immersive pages remain interactive at narrow mobile viewport widths',async
   page.off('pageerror',onError);
  }
 });
+
+test('immersive canvas scales down on mobile high-density screens',async({page})=>{
+ await page.setViewportSize({width:375,height:812});
+ await page.emulateMedia({reducedMotion:'no-preference'});
+ const html=enhanceImmersivePages([{slug:'services',html:source}])[0].html;
+ await page.setContent(html);
+ const canvas=page.locator('#forge-webgl-atmosphere');
+ if(await canvas.count()){
+  await expect.poll(()=>canvas.evaluate(el=>(el as HTMLCanvasElement).width)).toBeGreaterThan(0);
+  const dimensions=await canvas.evaluate(el=>({width:(el as HTMLCanvasElement).width,height:(el as HTMLCanvasElement).height}));
+  expect(dimensions.width).toBeLessThanOrEqual(375);
+  expect(dimensions.height).toBeLessThanOrEqual(812);
+ }
+});
