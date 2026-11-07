@@ -61,6 +61,7 @@ try{
    const sameOrigin=new URL(probe.url()).origin===target.origin;
    navigationChecks.push({path:url.pathname+url.search,status:response?.status()??null,ok:Boolean(response?.ok()&&sameOrigin),verifiedBy:'navigation-get'});
    if(response?.ok()&&sameOrigin&&additionalPages.length<3){
+    try{
     const snapshot=await probe.evaluate(()=>{
      const regions=[...document.querySelectorAll('header,nav,main,footer,h1,section')].slice(0,100).map(n=>{const r=n.getBoundingClientRect();return {role:n.tagName.toLowerCase()==='h1'?'hero':n.tagName.toLowerCase(),x:Math.max(0,r.left),y:Math.max(0,r.top),width:Math.max(0,Math.min(r.width,innerWidth-Math.max(0,r.left))),height:Math.max(0,Math.min(r.height,innerHeight-Math.max(0,r.top))),text:(n.textContent||'').trim().slice(0,200)}}).filter(r=>r.width>0&&r.height>0);
      const body=getComputedStyle(document.body);const heading=document.querySelector('h1,h2');const h=heading?getComputedStyle(heading):body;
@@ -68,6 +69,7 @@ try{
      return {title:document.title,visualRegions:regions,designTokens:{backgroundColor:body.backgroundColor,textColor:body.color,fontFamily:body.fontFamily,headingFontFamily:h.fontFamily,headingFontSize:h.fontSize,baseFontSize:body.fontSize},interactions:links,landmarks:[...document.querySelectorAll('h1,h2')].slice(0,30).map(n=>({role:n.tagName.toLowerCase(),text:(n.textContent||'').trim().slice(0,120)}))};
     });
     additionalPages.push({path:url.pathname+url.search,...snapshot,navigationChecks:[],interactionSummary:{observed:snapshot.interactions.length,links:snapshot.interactions.length,buttons:0,forms:0,unlabeledControls:snapshot.interactions.filter(i=>!i.label).length,linksWithoutTargets:snapshot.interactions.filter(i=>!i.target).length,interactionsExecuted:false}});
+    }catch{ /* Snapshot is best-effort; successful GET probe remains recorded. */ }
    }
   }catch{
    navigationChecks.push({path:url.pathname+url.search,status:null,ok:false,verifiedBy:'navigation-get'});
