@@ -132,3 +132,15 @@ test('rejects noninteger and out-of-bounds selected pages',()=>{
  const bp={version:1,sections:[],pages:[{title:'Home',regions:[]}]};
  for(const index of [-1,1,1.5,NaN])assert.throws(()=>blueprintToHtml(bp,index),/Invalid selected page/);
 });
+
+test('query routes produce stable and distinct safe preview filenames',()=>{
+ const blueprint={version:1,sourceUrl:'https://example.com',sections:[],pages:[
+  {path:'/catalog?type=a',title:'A',regions:[]},
+  {path:'/catalog?type=b',title:'B',regions:[]},
+  {path:'/catalog?type=a',title:'Duplicate A',regions:[]}
+ ]};
+ const filenames=blueprintToPages(blueprint).map(p=>p.filename);
+ assert.equal(new Set(filenames).size,3);
+ assert.ok(filenames.every(name=>/^[a-zA-Z0-9_-]+\.html$/.test(name)));
+ assert.deepEqual(blueprintToPages(blueprint).map(p=>p.filename),filenames);
+});
