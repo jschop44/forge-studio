@@ -13,7 +13,7 @@ export async function POST(req:NextRequest){
  const result=await generateWithLocalAi(input.data);return NextResponse.json(result,{headers:{'Cache-Control':'no-store'}});
  }catch(error){
   const detail=error instanceof Error?error.message:'';
-  const category=/HTTP 429/.test(detail)?'provider_rate_limited':/HTTP 40[13]/.test(detail)?'provider_auth':/HTTP 5\\d\\d/.test(detail)?'provider_server_error':/invalid draft|JSON/.test(detail)?'invalid_model_response':/abort|timeout/i.test(detail)?'provider_timeout':'provider_unavailable';
+  const category=/HTTP 429/.test(detail)?'provider_rate_limited':/HTTP 40[13]/.test(detail)?'provider_auth':/HTTP 5\d\d/.test(detail)?'provider_server_error':/invalid draft|JSON/.test(detail)?'invalid_model_response':/abort|timeout/i.test(detail)?'provider_timeout':'provider_unavailable';
   console.error('Forge AI generation failure category:',category);
   return NextResponse.json({error:'Generation unavailable'},{status:503,headers:{'Cache-Control':'no-store'}});
  }
