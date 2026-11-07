@@ -49,5 +49,6 @@ for(const slug of ['index','services','about','contact']){
  if(!page.html.includes('float boxHit(vec3 ro,vec3 rd')||!page.html.includes('structureAlpha')||!page.html.includes('hitDistance'))throw Error('Missing raycast 3D world portal geometry on '+slug+' page');
  if(!page.html.includes('float shadow=0.')||!page.html.includes('ground.xz-footprint'))throw Error('Missing raycast ground-contact shadows on '+slug+' page');
  if(!page.html.includes('portal.link.tabIndex=visible?0:-1')||!page.html.includes("if(reduced.matches||matchMedia('print').matches)movementPad.hidden=true"))throw Error('Missing accessible portal focus and reduced-motion handling on '+slug+' page');
+ if(!page.html.includes('Math.ceil(Math.hypot(dx,dy)/.2)')||!page.html.includes('for(let i=0;i<steps;i++)'))throw Error('Missing collision substeps to prevent spatial tunneling on '+slug+' page');
 }
 console.log('PASS: production Ollama generated and returned all four website pages.');
