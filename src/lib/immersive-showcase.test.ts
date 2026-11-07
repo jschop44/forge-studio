@@ -331,3 +331,24 @@ test('immersive camera recenters after the pointer leaves the browser viewport',
   assert.ok(page.html.includes("addEventListener('pointerout',event=>{if(!event.relatedTarget){pointerX=0;pointerY=0;dragging=false}},{passive:true})"),'Missing viewport pointer exit and drag recovery on '+page.slug);
  }
 });
+
+
+test('homepage standalone WebGL controller initializes all world navigation state',()=>{
+ const pages=generateBusinessWebsite({businessName:'Harbor Studio',industry:'Architecture',description:'Independent design practice.',services:['Architecture']}).pages;
+ const home=pages.find(page=>page.slug==='index');
+ assert.ok(home,'Missing homepage');
+ const script=home.html.split('<script id="forge-home-webgl-controller">')[1]?.split('</script>')[0];
+ assert.ok(script,'Missing standalone homepage WebGL controller');
+ for(const token of ["const beaconLink=document.createElement('a')",'const worldPortals=','let walkX=0,walkY=0','const moveWorld=(dx,dy)=>','float boxHit(vec3 ro,vec3 rd']){
+  assert.ok(script.includes(token),'Missing homepage world initialization: '+token);
+ }
+});
+
+test('all generated pages include world-space geometry and collision substeps',()=>{
+ const pages=generateBusinessWebsite({businessName:'Harbor Studio',industry:'Architecture',description:'Independent design practice.',services:['Architecture']}).pages;
+ for(const page of pages){
+  assert.ok(page.html.includes('float boxHit(vec3 ro,vec3 rd'),'Missing ray-box intersection on '+page.slug);
+  assert.ok(page.html.includes('Math.ceil(Math.hypot(dx,dy)/.2)'),'Missing collision substeps on '+page.slug);
+  assert.ok(page.html.includes('ground.xz-footprint'),'Missing world structure contact shadows on '+page.slug);
+ }
+});
