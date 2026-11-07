@@ -167,7 +167,7 @@ test('WebGL keyboard navigation preserves native links and form controls',()=>{
  assert.match(html,/event\.key==='ArrowUp'/);
  assert.match(html,/event\.key==='ArrowDown'/);
  assert.match(html,/\[contenteditable\]/);
- assert.match(html,/if\(reduced\.matches\|\|document\.hidden\|\|event\.altKey/);
+ assert.match(html,/if\(reduced\.matches\|\|document\.hidden\|\|printMedia\.matches\|\|event\.altKey/);
 });
 
 test('generated contextual homepage can receive shared WebGL without losing accessible navigation',()=>{
