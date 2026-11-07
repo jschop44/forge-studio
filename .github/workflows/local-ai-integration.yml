@@ -41,8 +41,18 @@ jobs:
           done
           cat /tmp/forge-ollama.log
           exit 1
+      - name: Restore downloaded open-weight model cache
+        uses: actions/cache@v4
+        with:
+          path: ~/.ollama/models
+          key: ollama-llama3.2-1b-linux-v1
       - name: Pull local open-weight model
-        run: ollama pull "$OLLAMA_MODEL"
+        run: |
+          if ollama list | grep -Fq "$OLLAMA_MODEL"; then
+            echo "Model already available from cache"
+          else
+            ollama pull "$OLLAMA_MODEL"
+          fi
       - name: Start Forge Studio
         run: |
           npm run dev -- -H 127.0.0.1 > /tmp/forge-next.log 2>&1 &
