@@ -65,3 +65,12 @@ test('spatial enhancement covers entire sections and suspends hidden-page motion
  assert.match(html,/prefers-reduced-motion: reduce/);
  assert.equal((html.match(/id="forge-spatial-controller"/g)||[]).length,1);
 });
+
+test('section depth uses viewport position and respects reduced-motion preference',()=>{
+ const html=enhanceImmersivePages([{slug:'about',html:'<!doctype html><html><head></head><body><main><section>About</section></main></body></html>'}])[0].html;
+ assert.match(html,/--forge-section-depth/);
+ assert.match(html,/function updateSections\(\)/);
+ assert.match(html,/requestAnimationFrame\(updateSections\)/);
+ assert.match(html,/reduced\.addEventListener\('change'/);
+ assert.match(html,/body>main>section\{transform:none!important/);
+});
