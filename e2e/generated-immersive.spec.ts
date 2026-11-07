@@ -22,6 +22,9 @@ test('mobile directional pad remains interactive on generated homepage',async({p
  await page.setContent(home!.html,{waitUntil:'domcontentloaded'});
  const move=page.getByRole('button',{name:'Move right in immersive world'});
  await expect(move).toBeVisible();
- await move.click();
- await expect(page.locator('#forge-world-beacon-link')).toBeVisible();
+ const beacon=page.locator('#forge-world-beacon-link');
+ await expect(beacon).toContainText('follow beacon');
+ for(let i=0;i<5;i++)await move.click();
+ await expect(beacon).toContainText('nearby');
+ await expect(beacon).toBeVisible();
 });
