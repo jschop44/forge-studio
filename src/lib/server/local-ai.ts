@@ -8,6 +8,7 @@ function ollamaConfig(){
  // Keep all requests on the loopback Ollama service to prevent token charges.
  const url=new URL(process.env.OLLAMA_URL||'http://127.0.0.1:11434');
  if(!['localhost','127.0.0.1','[::1]'].includes(url.hostname)||url.protocol!=='http:'||url.username||url.password||url.search||url.hash||url.pathname!=='/')throw Error('OLLAMA_URL must be a loopback endpoint');
+ if(['OPENAI_API_KEY','OPENAI_BASE_URL','OPENAI_MODEL'].some(name=>Boolean(process.env[name]?.trim())))throw Error('OpenAI API configuration is prohibited');
  const model=process.env.OLLAMA_MODEL||'llama3.2:3b';
  if(/beam|:cloud\b|\bcloud\b/i.test(model))throw Error('Paid/cloud models are disabled for free beta');
  return {url,model,headers:{} as Record<string,string>};
