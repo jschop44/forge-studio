@@ -279,7 +279,7 @@ test('immersive framebuffer limits total pixel count on large displays',()=>{
 test('immersive WebGL camera accepts touch pointer movement without blocking scrolling',()=>{
  const pages=generateBusinessWebsite({businessName:'Harbor Studio',industry:'Architecture',description:'Independent design practice.',services:['Architecture']}).pages;
  for(const page of pages){
-  assert.ok(page.html.includes("addEventListener('pointermove',e=>{if(reduced.matches||document.hidden)return;pointerX="),'Missing touch-aware camera on '+page.slug);
+  assert.ok(page.html.includes("addEventListener('pointermove',e=>{if(reduced.matches||document.hidden)return;")&&page.html.includes('pointerX=Math.max('),'Missing touch-aware camera on '+page.slug);
   assert.ok(page.html.includes("},{passive:true});addEventListener('pointerdown'"),'Pointer movement must remain passive on '+page.slug);
  }
 });
@@ -314,7 +314,7 @@ test('immersive renderer prevents default GPU context loss and stops animation',
 test('immersive camera recenters after canceled mobile pointer gestures',()=>{
  const pages=generateBusinessWebsite({businessName:'Harbor Studio',industry:'Architecture',description:'Independent design practice.',services:['Architecture']}).pages;
  for(const page of pages){
-  assert.ok(page.html.includes("addEventListener('pointercancel',()=>{pointerX=0;pointerY=0},{passive:true})"),'Missing passive pointer cancellation recovery on '+page.slug);
+  assert.ok(page.html.includes("addEventListener('pointercancel',()=>{pointerX=0;pointerY=0;dragging=false},{passive:true})"),'Missing passive pointer cancellation and drag recovery on '+page.slug);
  }
 });
 
@@ -328,6 +328,6 @@ test('immersive keyboard controls respect modifier keys and print mode',()=>{
 test('immersive camera recenters after the pointer leaves the browser viewport',()=>{
  const pages=generateBusinessWebsite({businessName:'Harbor Studio',industry:'Architecture',description:'Independent design practice.',services:['Architecture']}).pages;
  for(const page of pages){
-  assert.ok(page.html.includes("addEventListener('pointerout',event=>{if(!event.relatedTarget){pointerX=0;pointerY=0}},{passive:true})"),'Missing viewport pointer exit recovery on '+page.slug);
+  assert.ok(page.html.includes("addEventListener('pointerout',event=>{if(!event.relatedTarget){pointerX=0;pointerY=0;dragging=false}},{passive:true})"),'Missing viewport pointer exit and drag recovery on '+page.slug);
  }
 });
