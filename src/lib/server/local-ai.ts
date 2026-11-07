@@ -4,6 +4,24 @@ const DraftSchema=z.object({businessName:z.string().min(2).max(100),industry:z.s
 export type AiDraft=z.infer<typeof DraftSchema>;
 export type AiGenerationResult={draft:AiDraft;provider:'ollama';pages:ReturnType<typeof generateBusinessWebsite>['pages']};
 function fallback(input:{businessName:string;industry:string;description:string;services:string[]}):AiDraft{return DraftSchema.parse({businessName:input.businessName,industry:input.industry,description:input.description.length>=15?input.description:'Professional services designed around your business goals.',services:input.services.length?input.services:['Consulting','Support']})}
+export async function checkLocalAiReadiness():Promise<{ready:boolean;reason:'ready'|'unreachable'|'model_missing'|'invalid_endpoint'}>{
+ let url:URL;
+ try{
+  url=new URL(process.env.OLLAMA_URL||'http://127.0.0.1:11434');
+  if(!['localhost','127.0.0.1','::1'].includes(url.hostname)||!['http:','https:'].includes(url.protocol))return {ready:false,reason:'invalid_endpoint'};
+ }catch{return {ready:false,reason:'invalid_endpoint'}}
+ const controller=new AbortController();const timeout=setTimeout(()=>controller.abort(),3000);
+ try{
+  const response=await fetch(new URL('/api/tags',url),{signal:controller.signal,cache:'no-store'});
+  if(!response.ok)return {ready:false,reason:'unreachable'};
+  const payload:unknown=await response.json();
+  const models=(payload&&typeof payload==='object'&&'models' in payload)?(payload as {models:unknown}).models:null;
+  if(!Array.isArray(models))return {ready:false,reason:'unreachable'};
+  const desired=process.env.OLLAMA_MODEL||'llama3.2:3b';
+  const found=models.some((item:unknown)=>item&&typeof item==='object'&&'name' in item&&(item as {name:unknown}).name===desired);
+  return found?{ready:true,reason:'ready'}:{ready:false,reason:'model_missing'};
+ }catch{return {ready:false,reason:'unreachable'}}finally{clearTimeout(timeout)}
+}
 export async function generateWithLocalAi(input:{businessName:string;industry:string;description:string;services:string[];contactEmail?:string}):Promise<AiGenerationResult>{
  let draft=fallback(input);
  {
