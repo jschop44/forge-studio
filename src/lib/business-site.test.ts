@@ -30,7 +30,9 @@ for(const industry of industries){
   for(const page of site.pages){
    assert.match(page.html,/<html lang="en">/);
    assert.match(page.html,/<meta name="viewport"/);
-   assert.match(page.html,/<nav>/);
+   assert.match(page.html,/<nav\b[^>]*aria-label="Main navigation"[^>]*>/);
+   assert.match(page.html,/<a class="skip-link" href="#main-content">Skip to main content<\/a>/);
+   assert.match(page.html,/<main id="main-content" tabindex="-1">/);
    assert.match(page.html,/<h1>/);
    assert.doesNotMatch(page.html,/src="undefined"|url\("undefined"\)|<script(?! type="application\/ld\+json")[^>]*>/i);
    assert.doesNotMatch(page.html,/pornograph|erotic|graphic gore|illicit drugs/i);
