@@ -171,3 +171,17 @@ test('WebGL scene creates a drawable canvas when browser GPU support exists',asy
   await expect(canvas).toHaveCount(0);
  }
 });
+
+test('changing reduced-motion preference hides an active immersive canvas',async({page})=>{
+ await page.emulateMedia({reducedMotion:'no-preference'});
+ const generated=generateBusinessWebsite({businessName:'Harbor Studio',industry:'Architecture',description:'Independent design practice.',services:['Architecture']}).pages;
+ const home=generated.find(item=>item.slug==='index');
+ expect(home).toBeDefined();
+ await page.setContent(home!.html);
+ const canvas=page.locator('#forge-webgl-atmosphere');
+ await page.emulateMedia({reducedMotion:'reduce'});
+ if(await canvas.count())await expect(canvas).toBeHidden();
+ await expect(page.locator('main#main-content')).toBeVisible();
+ await page.emulateMedia({reducedMotion:'no-preference'});
+ if(await canvas.count())await expect(canvas).toBeVisible();
+});
