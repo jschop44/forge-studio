@@ -1,0 +1,51 @@
+name: Free local AI end-to-end integration
+on:
+  workflow_dispatch:
+jobs:
+  ollama-integration:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    permissions:
+      contents: read
+    env:
+      OLLAMA_URL: http://127.0.0.1:11434
+      OLLAMA_MODEL: llama3.2:1b
+      FORGE_BASE_URL: http://127.0.0.1:3000
+      NEXT_TELEMETRY_DISABLED: '1'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - name: Install dependencies
+        run: npm ci --no-audit --no-fund
+      - name: Install free local Ollama runtime
+        run: |
+          curl -fsSL https://ollama.com/install.sh -o /tmp/install-ollama.sh
+          sh /tmp/install-ollama.sh
+          ollama serve > /tmp/forge-ollama.log 2>&1 &
+          for i in $(seq 1 40); do
+            if curl -fsS http://127.0.0.1:11434/api/tags >/dev/null; then exit 0; fi
+            sleep 2
+          done
+          cat /tmp/forge-ollama.log
+          exit 1
+      - name: Pull local open-weight model
+        run: ollama pull "$OLLAMA_MODEL"
+      - name: Start Forge Studio
+        run: |
+          npm run dev -- -H 127.0.0.1 > /tmp/forge-next.log 2>&1 &
+          for i in $(seq 1 80); do
+            if curl -fsS http://127.0.0.1:3000/business >/dev/null; then exit 0; fi
+            sleep 2
+          done
+          cat /tmp/forge-next.log
+          exit 1
+      - name: Verify real inference and four immersive generated pages
+        run: npm run smoke:ai
+      - name: Print diagnostics on failure
+        if: failure()
+        run: |
+          tail -n 100 /tmp/forge-ollama.log || true
+          tail -n 100 /tmp/forge-next.log || true
