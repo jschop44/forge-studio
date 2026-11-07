@@ -53,7 +53,15 @@ jobs:
           cat /tmp/forge-next.log
           exit 1
       - name: Verify real inference and four immersive generated pages
+        id: smoke
         run: npm run smoke:ai
+      - name: Record integration outcome
+        if: always()
+        run: |
+          echo '## Free Ollama end-to-end integration' >> "$GITHUB_STEP_SUMMARY"
+          echo 'Model: `llama3.2:1b` (local GitHub-hosted runner; no paid inference)' >> "$GITHUB_STEP_SUMMARY"
+          echo 'Smoke test result: ${{ steps.smoke.outcome }}' >> "$GITHUB_STEP_SUMMARY"
+          echo 'This test does not establish permanent production inference availability.' >> "$GITHUB_STEP_SUMMARY"
       - name: Print diagnostics on failure
         if: failure()
         run: |
