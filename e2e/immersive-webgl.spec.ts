@@ -111,3 +111,19 @@ test('all four generated pages preserve navigation and keyboard focus with immer
   if(await canvas.count())await expect(canvas).toHaveCSS('pointer-events','none');
  }
 });
+
+test('immersive pages remain interactive at narrow mobile viewport widths',async({page})=>{
+ await page.setViewportSize({width:375,height:812});
+ const pages=generateBusinessWebsite({businessName:'Harbor Studio',industry:'Architecture',description:'Independent architecture and interior design practice.',services:['Architecture','Interior design']}).pages;
+ for(const generated of pages){
+  const errors:string[]=[];
+  const onError=(error:Error)=>errors.push(error.message);
+  page.on('pageerror',onError);
+  await page.setContent(generated.html);
+  await expect(page.locator('main#main-content')).toBeVisible();
+  await page.evaluate(()=>window.scrollTo(0,document.body.scrollHeight));
+  await expect.poll(()=>page.evaluate(()=>window.scrollY)).toBeGreaterThan(0);
+  expect(errors,generated.slug).toEqual([]);
+  page.off('pageerror',onError);
+ }
+});
