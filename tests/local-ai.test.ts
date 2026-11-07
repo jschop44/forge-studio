@@ -1,6 +1,6 @@
 import {describe,it} from 'node:test';
 import assert from 'node:assert/strict';
-import {generateWithLocalAi} from '../src/lib/server/local-ai';
+import {generateWithLocalAi,localAiCapacity} from '../src/lib/server/local-ai';
 describe('mandatory local AI generation',()=>{
  it('generates a complete business site from a valid local model response',async()=>{
   const previousFetch=globalThis.fetch;
@@ -13,6 +13,34 @@ describe('mandatory local AI generation',()=>{
    assert.equal(result.pages.length,4);
    assert.ok(result.pages[0].html.includes('application/ld+json'));
   }finally{
+   globalThis.fetch=previousFetch;
+   if(previousUrl===undefined)delete process.env.OLLAMA_URL;else process.env.OLLAMA_URL=previousUrl;
+  }
+ });
+ it('caps concurrent inference and releases all slots after completion',async()=>{
+  const previousFetch=globalThis.fetch;
+  const previousUrl=process.env.OLLAMA_URL;
+  let release!:()=>void;
+  const gate=new Promise<void>(resolve=>{release=resolve});
+  let started=0;
+  const input={businessName:'Cedar Studio',industry:'Design',description:'An independent studio helping local businesses improve their websites.',services:['Website design']};
+  try{
+   process.env.OLLAMA_URL='http://127.0.0.1:11434';
+   globalThis.fetch=async()=>{
+    started++;
+    await gate;
+    return new Response(JSON.stringify({response:JSON.stringify(input)}),{status:200});
+   };
+   const first=generateWithLocalAi(input);
+   const second=generateWithLocalAi(input);
+   assert.equal(localAiCapacity().active,2);
+   await assert.rejects(generateWithLocalAi(input),/capacity exceeded/);
+   assert.equal(started,2);
+   release();
+   await Promise.all([first,second]);
+   assert.equal(localAiCapacity().active,0);
+  }finally{
+   release();
    globalThis.fetch=previousFetch;
    if(previousUrl===undefined)delete process.env.OLLAMA_URL;else process.env.OLLAMA_URL=previousUrl;
   }
