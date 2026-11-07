@@ -57,3 +57,20 @@ Modular task planning lives in src/lib/agents. It is an execution plan, not a ba
 - `npm run db:migrate`: initialize dedicated database tables.
 
 The Growth Lens and LeadFlow repositories contain opt-in signed Forge Studio event adapters. See `docs/DEPLOYMENT_RUNBOOK.md` and `docs/ACCEPTANCE_REPORT.md` before enabling features. An estimated 85% source feature implementation does **not** mean the deployment or end-to-end integrations have passed verification. All paid API calls remain disabled by default.
+
+## Mandatory AI — free-beta billing protection (November 2026)
+
+Forge Studio's business-site AI generator requires a **locally hosted Ollama service**. The server intentionally ignores `OLLAMA_API_KEY` and rejects Beam, cloud-tagged models, remote `OLLAMA_URL` values, and HTTP redirects. This prevents the application from making direct paid Ollama Cloud inference requests. The default model is `llama3.2:3b`.
+
+For a machine that can run Ollama:
+
+```bash
+ollama pull llama3.2:3b
+ollama serve
+# In another terminal:
+OLLAMA_URL=http://127.0.0.1:11434 OLLAMA_MODEL=llama3.2:3b npm run dev
+```
+
+Use `GET /api/ai/readiness` to check whether the configured local model is available; a successful readiness response is not a substitute for a real generation test. No paid fallback is enabled. **Important deployment limitation:** On Render, `127.0.0.1` means the Render instance itself, not your personal computer. Unless Ollama runs in that same instance, AI generation will fail closed. The free Render instance is not confirmed to have sufficient RAM/CPU for `llama3.2:3b`. A working, no-cost production inference deployment has **not** been verified. Do not switch `OLLAMA_URL` to a hosted API to bypass this protection.
+
+The GitHub Actions production inference smoke workflow may fail while this hosting limitation is unresolved; its failure must not be interpreted as permission to enable paid models. Remove obsolete cloud credentials from the deployment environment after confirming no other service uses them. Code changes alone do not remove provider-side billing settings or credentials.
