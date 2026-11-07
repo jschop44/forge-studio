@@ -7,6 +7,7 @@ const limits=new Map<string,{count:number;reset:number}>();
 export async function POST(req:NextRequest){
  const ip=req.headers.get('x-forwarded-for')?.split(',')[0]?.trim()||'unknown';
  const now=Date.now();
+ if(limits.size>2000){for(const [address,entry] of limits){if(entry.reset<=now)limits.delete(address)}if(limits.size>2000)limits.clear()}
  const limit=limits.get(ip);
  if(limit&&limit.reset>now&&limit.count>=10)return NextResponse.json({error:'Rate limit exceeded. Try again later.'},{status:429});
  let body:unknown;
