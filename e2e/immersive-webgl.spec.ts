@@ -155,3 +155,19 @@ test('homepage WebGL controller executes without uncaught errors',async({page})=
  await page.waitForTimeout(150);
  expect(errors).toEqual([]);
 });
+
+test('WebGL scene creates a drawable canvas when browser GPU support exists',async({page})=>{
+ await page.emulateMedia({reducedMotion:'no-preference'});
+ const supported=await page.evaluate(()=>{const canvas=document.createElement('canvas');return Boolean(canvas.getContext('webgl'))});
+ const generated=generateBusinessWebsite({businessName:'Harbor Studio',industry:'Architecture',description:'Independent design practice.',services:['Architecture']}).pages;
+ const home=generated.find(item=>item.slug==='index');
+ expect(home).toBeDefined();
+ await page.setContent(home!.html);
+ const canvas=page.locator('#forge-webgl-atmosphere');
+ if(supported){
+  await expect(canvas).toHaveCount(1);
+  await expect.poll(()=>canvas.evaluate(el=>(el as HTMLCanvasElement).width)).toBeGreaterThan(0);
+ }else{
+  await expect(canvas).toHaveCount(0);
+ }
+});
