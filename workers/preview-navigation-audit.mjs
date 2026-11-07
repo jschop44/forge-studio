@@ -9,8 +9,9 @@ export function auditPreviewNavigation(blueprint){
   for(const href of hrefs){
    const external=/^https:\/\//i.test(href);
    const local=/^[a-zA-Z0-9_-]+\.html$/.test(href);
-   const ok=external||local&&filenames.has(href);
-   links.push({from:page.filename,href,kind:external?'external':local?'local':'unsafe',ok});
+   const safeExternal=external&&(()=>{try{const url=new URL(href.replace(/&amp;/g,'&'));return url.protocol==='https:'&&!url.username&&!url.password&&!url.port}catch{return false}})();
+   const ok=safeExternal||local&&filenames.has(href);
+   links.push({from:page.filename,href,kind:safeExternal?'external':local?'local':'unsafe',ok});
   }
  }
  const reachable=new Set();
