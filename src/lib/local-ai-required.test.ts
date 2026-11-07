@@ -34,3 +34,30 @@ test('local AI rejects an invalid model draft instead of using deterministic out
   if(previousUrl===undefined)delete process.env.OLLAMA_URL;else process.env.OLLAMA_URL=previousUrl;
  }
 });
+
+
+test('authenticated cloud AI generates website pages without deterministic fallback',async()=>{
+ const previousFetch=globalThis.fetch,previousKey=process.env.OLLAMA_API_KEY,previousModel=process.env.OLLAMA_MODEL;
+ try{
+  process.env.OLLAMA_API_KEY='test-only-token';process.env.OLLAMA_MODEL='gemma4:31b';
+  let requested=false;
+  globalThis.fetch=async(input,init)=>{
+   assert.equal(String(input),'https://ollama.com/api/generate');
+   assert.equal((init?.headers as Record<string,string>).Authorization,'Bearer test-only-token');
+   const body=JSON.parse(String(init?.body));
+   assert.equal(body.model,'gemma4:31b');
+   assert.equal(body.stream,false);
+   requested=true;
+   return new Response(JSON.stringify({response:JSON.stringify(brief)}),{status:200});
+  };
+  const result=await generateWithLocalAi(brief);
+  assert.equal(requested,true);
+  assert.equal(result.provider,'ollama');
+  assert.equal(result.draft.businessName,brief.businessName);
+  assert.ok(result.pages.length>0);
+ }finally{
+  globalThis.fetch=previousFetch;
+  if(previousKey===undefined)delete process.env.OLLAMA_API_KEY;else process.env.OLLAMA_API_KEY=previousKey;
+  if(previousModel===undefined)delete process.env.OLLAMA_MODEL;else process.env.OLLAMA_MODEL=previousModel;
+ }
+});
