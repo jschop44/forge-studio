@@ -40,5 +40,6 @@ for(const slug of ['index','services','about','contact']){
  if(!page.html.includes("event.key==='q'")||!page.html.includes("event.key==='e'")||!page.html.includes("gl.uniform1f(travelUniform,travel)"))throw Error('Missing camera depth controls on '+slug+' page');
  if(!page.html.includes("addEventListener('touchmove'")||!page.html.includes("addEventListener('wheel'"))throw Error('Missing touch pinch or wheel depth controls on '+slug+' page');
  if(!page.html.includes("gl.uniform2f(walkUniform,walkX,walkY)")||!page.html.includes('floorCoords'))throw Error('Missing navigable perspective ground plane on '+slug+' page');
+ if(!page.html.includes('beaconPosition')||!page.html.includes('gl.uniform2f(beaconUniform,beaconX,beaconY)'))throw Error('Missing world-anchored navigation beacon on '+slug+' page');
 }
 console.log('PASS: production Ollama generated and returned all four website pages.');
