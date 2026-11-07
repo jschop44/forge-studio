@@ -75,3 +75,17 @@ test('Beam and cloud-tagged models fail closed without a network request',async(
   if(previousUrl===undefined)delete process.env.OLLAMA_URL;else process.env.OLLAMA_URL=previousUrl;
  }
 });
+
+test('free beta rejects remote Ollama endpoints even with a legacy cloud key',async()=>{
+ const previousFetch=globalThis.fetch,previousUrl=process.env.OLLAMA_URL,previousKey=process.env.OLLAMA_API_KEY,previousModel=process.env.OLLAMA_MODEL;
+ try{
+  process.env.OLLAMA_URL='https://ollama.com';process.env.OLLAMA_API_KEY='test-only-token';process.env.OLLAMA_MODEL='llama3.2:3b';
+  globalThis.fetch=async()=>{throw new Error('remote request must not be sent')};
+  await assert.rejects(generateWithLocalAi(brief),/OLLAMA_URL must be a loopback endpoint/);
+ }finally{
+  globalThis.fetch=previousFetch;
+  if(previousUrl===undefined)delete process.env.OLLAMA_URL;else process.env.OLLAMA_URL=previousUrl;
+  if(previousKey===undefined)delete process.env.OLLAMA_API_KEY;else process.env.OLLAMA_API_KEY=previousKey;
+  if(previousModel===undefined)delete process.env.OLLAMA_MODEL;else process.env.OLLAMA_MODEL=previousModel;
+ }
+});
