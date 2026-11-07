@@ -105,3 +105,20 @@ test('free beta rejects URL credentials and remote tunneling addresses',async()=
   if(previousModel===undefined)delete process.env.OLLAMA_MODEL;else process.env.OLLAMA_MODEL=previousModel;
  }
 });
+
+test('local Ollama generation disables HTTP redirects',async()=>{
+ const previousFetch=globalThis.fetch,previousUrl=process.env.OLLAMA_URL,previousModel=process.env.OLLAMA_MODEL;
+ try{
+  process.env.OLLAMA_URL='http://127.0.0.1:11434';process.env.OLLAMA_MODEL='llama3.2:3b';
+  globalThis.fetch=async(_input,init)=>{
+   assert.equal(init?.redirect,'error');
+   return new Response(JSON.stringify({response:JSON.stringify(brief)}),{status:200});
+  };
+  const result=await generateWithLocalAi(brief);
+  assert.equal(result.provider,'ollama');
+ }finally{
+  globalThis.fetch=previousFetch;
+  if(previousUrl===undefined)delete process.env.OLLAMA_URL;else process.env.OLLAMA_URL=previousUrl;
+  if(previousModel===undefined)delete process.env.OLLAMA_MODEL;else process.env.OLLAMA_MODEL=previousModel;
+ }
+});
