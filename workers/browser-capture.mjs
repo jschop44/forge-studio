@@ -4,7 +4,7 @@ import { chromium } from 'playwright';
 import { isIP } from 'node:net';
 import { isSafeNavigationProbe } from './navigation-probe-policy.mjs';
 import { assertPublicDns } from './public-network-policy.mjs';
-const unsafeHost=host=>isIP(host.replace(/^\\[|\\]$/g,''))!==0||host==='localhost'||host.endsWith('.localhost')||host.endsWith('.local')||host.endsWith('.internal')||host.endsWith('.test');
+const unsafeHost=host=>isIP(host.replace(/^\[|\]$/g,''))!==0||host==='localhost'||host.endsWith('.localhost')||host.endsWith('.local')||host.endsWith('.internal')||host.endsWith('.test');
 const target=new URL(process.argv[2]);
 const hosts=(process.env.FORGE_CAPTURE_HOSTS||'').split(',').map(x=>x.trim());
 if(target.protocol!=='https:'||!hosts.includes(target.hostname)||unsafeHost(target.hostname)||target.port||target.username||target.password)throw Error('Host not allowlisted');
@@ -27,6 +27,7 @@ try{
  const page=await context.newPage();
  page.on('dialog',dialog=>void dialog.dismiss());
  await page.goto(target.href,{waitUntil:'domcontentloaded',timeout:15000});
+ if(new URL(page.url()).origin!==target.origin)throw Error('Capture redirected outside authorized origin');
  await page.screenshot({path:'browser-screenshot.png',fullPage:true,animations:'disabled'});
  const landmarks=await page.locator('h1,h2,nav,main').evaluateAll(nodes=>nodes.slice(0,30).map(n=>({role:n.tagName.toLowerCase(),text:(n.textContent||'').trim().slice(0,120)})));
  const visualRegions=await page.locator('header,nav,main,footer,h1,section').evaluateAll(nodes=>nodes.slice(0,100).map(n=>{
@@ -57,8 +58,9 @@ try{
   probe.on('dialog',dialog=>void dialog.dismiss());
   try{
    const response=await probe.goto(url.href,{waitUntil:'domcontentloaded',timeout:8000});
-   navigationChecks.push({path:url.pathname+url.search,status:response?.status()??null,ok:Boolean(response?.ok()),verifiedBy:'navigation-get'});
-   if(response?.ok()&&additionalPages.length<3){
+   const sameOrigin=new URL(probe.url()).origin===target.origin;
+   navigationChecks.push({path:url.pathname+url.search,status:response?.status()??null,ok:Boolean(response?.ok()&&sameOrigin),verifiedBy:'navigation-get'});
+   if(response?.ok()&&sameOrigin&&additionalPages.length<3){
     const snapshot=await probe.evaluate(()=>{
      const regions=[...document.querySelectorAll('header,nav,main,footer,h1,section')].slice(0,100).map(n=>{const r=n.getBoundingClientRect();return {role:n.tagName.toLowerCase()==='h1'?'hero':n.tagName.toLowerCase(),x:Math.max(0,r.left),y:Math.max(0,r.top),width:Math.max(0,Math.min(r.width,innerWidth-Math.max(0,r.left))),height:Math.max(0,Math.min(r.height,innerHeight-Math.max(0,r.top))),text:(n.textContent||'').trim().slice(0,200)}}).filter(r=>r.width>0&&r.height>0);
      const body=getComputedStyle(document.body);const heading=document.querySelector('h1,h2');const h=heading?getComputedStyle(heading):body;
