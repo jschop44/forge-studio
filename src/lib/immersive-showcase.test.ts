@@ -317,3 +317,10 @@ test('immersive camera recenters after canceled mobile pointer gestures',()=>{
   assert.ok(page.html.includes("addEventListener('pointercancel',()=>{pointerX=0;pointerY=0},{passive:true})"),'Missing passive pointer cancellation recovery on '+page.slug);
  }
 });
+
+test('immersive keyboard controls respect modifier keys and print mode',()=>{
+ const pages=generateBusinessWebsite({businessName:'Harbor Studio',industry:'Architecture',description:'Independent design practice.',services:['Architecture']}).pages;
+ for(const page of pages){
+  assert.ok(page.html.includes('printMedia.matches||event.altKey||event.ctrlKey||event.metaKey||event.shiftKey'),'Missing keyboard navigation safeguards on '+page.slug);
+ }
+});
