@@ -27,6 +27,6 @@ console.log('Parallel verification wall time '+elapsed.toFixed(1)+'s');
 console.log('Measured verification stage speedup vs sum of individual job durations: '+improvement.toFixed(1)+'%');
 if(process.env.GITHUB_STEP_SUMMARY){
  const {appendFileSync}=await import('node:fs');
- appendFileSync(process.env.GITHUB_STEP_SUMMARY,'\\n### Parallel verification timing\\n- Elapsed: '+elapsed.toFixed(1)+'s\\n- Sum of individual check durations: '+sequential.toFixed(1)+'s\\n- Stage time reduction: '+improvement.toFixed(1)+'%\\n');
+ appendFileSync(process.env.GITHUB_STEP_SUMMARY,'\n### Parallel verification timing\n- Elapsed: '+elapsed.toFixed(1)+'s\n- Sum of individual check durations: '+sequential.toFixed(1)+'s\n- Stage time reduction: '+improvement.toFixed(1)+'%\n');
 }
 if(results.some(result=>result.code!==0))process.exitCode=1;
