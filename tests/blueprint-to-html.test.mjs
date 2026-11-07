@@ -182,3 +182,8 @@ test('offline page directory marks exactly the current page for assistive techno
  assert.match(files[1].html,/href="about\.html" aria-current="page"/);
  for(const file of files)assert.equal((file.html.match(/aria-current="page"/g)||[]).length,1);
 });
+
+test('untrusted preview source with nonstandard port cannot create outbound links',()=>{
+ const html=blueprintToHtml({version:1,sourceUrl:'https://example.com:8443',sections:[],navigation:[{label:'Admin',target:'/admin'}],pages:[{path:'/',title:'Home',regions:[]}]});
+ assert.doesNotMatch(html,/href="https:\/\/example\.com:8443\/admin"/);
+});
