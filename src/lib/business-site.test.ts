@@ -43,4 +43,5 @@ test('rejects prohibited business categories without rejecting legitimate pharma
   assert.throws(()=>generateBusinessWebsite(brief(industry)),/Unsupported business category/);
  }
  assert.equal(generateBusinessWebsite(brief('Community pharmacy')).pages.length,4);
+ assert.equal(generateBusinessWebsite(brief('Hospital medication dispensary')).pages.length,4);
 });
