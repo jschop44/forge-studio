@@ -12,7 +12,7 @@
     "test": "tsx --test tests/*.test.ts src/lib/*.test.ts",
     "test:workers": "node --test tests/*.test.mjs",
     "db:migrate": "tsx scripts/migrate.ts",
-    "verify:fast": "npm run verify:free-ai && npm test && npm run test:workers && npm run typecheck",
+    "verify:fast": "node scripts/verify-parallel.mjs",
     "verify": "npm run verify:fast && npm run build",
     "test:e2e": "playwright test"
   },
