@@ -214,3 +214,9 @@ test('homepage WebGL remains visible above opaque layouts without intercepting i
  assert.ok(css.includes('mix-blend-mode:screen'));
  assert.ok(css.includes('prefers-reduced-motion:reduce'));
 });
+
+test('existing WebGL pages are not wrapped with duplicate immersive controllers',()=>{
+ const html='<!doctype html><html><head></head><body><canvas id="forge-webgl-atmosphere"></canvas><main>Existing scene</main></body></html>';
+ const result=enhanceImmersivePages([{slug:'index',html}]);
+ assert.equal(result[0].html,html);
+});
