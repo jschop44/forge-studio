@@ -161,5 +161,6 @@ test('WebGL keyboard navigation preserves native links and form controls',()=>{
  assert.match(html,/event\.key==='ArrowRight'/);
  assert.match(html,/event\.key==='ArrowUp'/);
  assert.match(html,/event\.key==='ArrowDown'/);
- assert.match(html,/\[contenteditable=true\]/);
+ assert.match(html,/\[contenteditable\]/);
+ assert.match(html,/if\(reduced\.matches\|\|document\.hidden\|\|event\.altKey/);
 });
