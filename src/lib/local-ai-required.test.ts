@@ -89,3 +89,19 @@ test('free beta rejects remote Ollama endpoints even with a legacy cloud key',as
   if(previousModel===undefined)delete process.env.OLLAMA_MODEL;else process.env.OLLAMA_MODEL=previousModel;
  }
 });
+
+test('free beta rejects URL credentials and remote tunneling addresses',async()=>{
+ const previousFetch=globalThis.fetch,previousUrl=process.env.OLLAMA_URL,previousModel=process.env.OLLAMA_MODEL;
+ try{
+  process.env.OLLAMA_MODEL='llama3.2:3b';
+  globalThis.fetch=async()=>{throw new Error('unexpected network request')};
+  for(const endpoint of ['https://ollama.com','http://example.com:11434','http://user:pass@127.0.0.1:11434','http://127.0.0.1:11434/forward']){
+   process.env.OLLAMA_URL=endpoint;
+   await assert.rejects(generateWithLocalAi(brief),/OLLAMA_URL must be a loopback endpoint/);
+  }
+ }finally{
+  globalThis.fetch=previousFetch;
+  if(previousUrl===undefined)delete process.env.OLLAMA_URL;else process.env.OLLAMA_URL=previousUrl;
+  if(previousModel===undefined)delete process.env.OLLAMA_MODEL;else process.env.OLLAMA_MODEL=previousModel;
+ }
+});
