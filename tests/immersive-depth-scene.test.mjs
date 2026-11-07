@@ -47,3 +47,14 @@ test('rejects excessive depth coordinates and invalid camera settings',()=>{
  assert.throws(()=>projectDepthScene({...valid,camera:{perspective:Infinity,tiltDegrees:0}},500),/Invalid depth camera/);
  assert.throws(()=>projectDepthScene({...valid,camera:{perspective:1000,tiltDegrees:100}},500),/Invalid depth camera/);
 });
+
+test('depth scene builder tolerates missing pages and skips unbounded observations',()=>{
+ const blueprint={version:1,pages:[null,{regions:[
+  {type:'hero',bounds:{x:0,y:0,width:900,height:300}},
+  {type:'section',bounds:{x:0,y:25000,width:900,height:300}}
+ ]}]};
+ assert.deepEqual(buildDepthScene(blueprint,0).layers,[]);
+ const scene=buildDepthScene(blueprint,1);
+ assert.equal(scene.layers.length,1);
+ assert.equal(scene.layers[0].role,'hero');
+});
