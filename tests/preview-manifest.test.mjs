@@ -1,3 +1,4 @@
+import {createHash} from 'node:crypto';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {buildPreviewManifest} from '../workers/preview-manifest.mjs';
@@ -15,4 +16,12 @@ test('exports deterministic bounded offline preview manifest',()=>{
 });
 test('manifest rejects invalid blueprint',()=>{
  assert.throws(()=>buildPreviewManifest({version:2,sections:[]}),/Invalid blueprint/);
+});
+
+test('manifest hashes match exact UTF-8 exported HTML bytes',()=>{
+ const blueprint={version:1,sections:[],pages:[{path:'/',title:'Résumé & Café',regions:[]}]};
+ const manifest=buildPreviewManifest(blueprint);
+ const html=blueprintToPages(blueprint)[0].html;
+ assert.equal(manifest.pages[0].sha256,createHash('sha256').update(html,'utf8').digest('hex'));
+ assert.match(manifest.pages[0].sha256,/^[a-f0-9]{64}$/);
 });
