@@ -57,7 +57,7 @@ describe('legacy website generation uses mandatory local AI',()=>{
    const payload=JSON.stringify({name:'Oak Studio',description:'An independent design studio serving local businesses and families.',template:'minimal'});
    const statuses:number[]=[];
    for(let index=0;index<11;index++){
-    const request=new NextRequest('http://localhost/api/generate',{method:'POST',headers:{'content-type':'application/json','origin':'http://localhost','x-forwarded-for':'192.0.2.'+index,'x-real-ip':'198.51.100.20'},body:payload});
+    const request=new NextRequest('http://localhost/api/generate',{method:'POST',headers:{'content-type':'application/json','origin':'http://localhost','x-forwarded-for':'192.0.2.'+index,'x-real-ip':'198.51.100.'+index},body:payload});
     statuses.push((await POST(request)).status);
    }
    assert.equal(statuses.filter(status=>status===200).length,10);
