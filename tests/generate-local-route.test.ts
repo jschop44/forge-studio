@@ -44,4 +44,28 @@ describe('legacy website generation uses mandatory local AI',()=>{
    if(previousModel===undefined)delete process.env.OLLAMA_MODEL;else process.env.OLLAMA_MODEL=previousModel;
   }
  });
+ it('does not let spoofed forwarded-for headers reset the generation limit',async()=>{
+  const original=globalThis.fetch;
+  const previousUrl=process.env.OLLAMA_URL;
+  let calls=0;
+  try{
+   process.env.OLLAMA_URL='http://127.0.0.1:11434';
+   globalThis.fetch=async()=>{
+    calls++;
+    return new Response(JSON.stringify({response:JSON.stringify({businessName:'Oak Studio',industry:'Design',description:'An independent design studio serving local businesses and families.',services:['Website design']})}),{status:200});
+   };
+   const payload=JSON.stringify({name:'Oak Studio',description:'An independent design studio serving local businesses and families.',template:'minimal'});
+   const statuses:number[]=[];
+   for(let index=0;index<11;index++){
+    const request=new NextRequest('http://localhost/api/generate',{method:'POST',headers:{'content-type':'application/json','x-forwarded-for':'192.0.2.'+index,'x-real-ip':'198.51.100.20'},body:payload});
+    statuses.push((await POST(request)).status);
+   }
+   assert.equal(statuses.filter(status=>status===200).length,10);
+   assert.equal(statuses[10],429);
+   assert.equal(calls,10);
+  }finally{
+   globalThis.fetch=original;
+   if(previousUrl===undefined)delete process.env.OLLAMA_URL;else process.env.OLLAMA_URL=previousUrl;
+  }
+ });
 });
