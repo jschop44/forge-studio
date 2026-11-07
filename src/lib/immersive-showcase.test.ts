@@ -324,3 +324,10 @@ test('immersive keyboard controls respect modifier keys and print mode',()=>{
   assert.ok(page.html.includes('printMedia.matches||event.altKey||event.ctrlKey||event.metaKey||event.shiftKey'),'Missing keyboard navigation safeguards on '+page.slug);
  }
 });
+
+test('immersive camera recenters after the pointer leaves the browser viewport',()=>{
+ const pages=generateBusinessWebsite({businessName:'Harbor Studio',industry:'Architecture',description:'Independent design practice.',services:['Architecture']}).pages;
+ for(const page of pages){
+  assert.ok(page.html.includes("addEventListener('pointerout',event=>{if(!event.relatedTarget){pointerX=0;pointerY=0}},{passive:true})"),'Missing viewport pointer exit recovery on '+page.slug);
+ }
+});
