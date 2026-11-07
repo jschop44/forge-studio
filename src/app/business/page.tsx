@@ -75,6 +75,20 @@ export default function BusinessGenerator(){
    setStatus('Publication saved. Open each page and verify navigation and content.');
   }catch(error){setStatus(error instanceof Error?error.message:'Publishing unavailable')}finally{setPublishBusy(false)}
  }
+ const [paragraphEdit,setParagraphEdit]=useState('');
+ useEffect(()=>{const page=pages.find(p=>p.slug===active);if(!page){setParagraphEdit('');return}const doc=new DOMParser().parseFromString(page.html,'text/html');setParagraphEdit(doc.querySelector('main p')?.textContent||'')},[pages,active]);
+ function saveParagraph(){
+  const value=paragraphEdit.trim().slice(0,600);
+  if(!value){setStatus('Enter paragraph text before applying.');return}
+  const page=pages.find(p=>p.slug===active);if(!page)return;
+  const doc=new DOMParser().parseFromString(page.html,'text/html');
+  const paragraph=doc.querySelector('main p');
+  if(!paragraph){setStatus('This page has no editable main paragraph.');return}
+  paragraph.textContent=value;
+  setUndoPages(pages);
+  setPages(previous=>previous.map(item=>item.slug===active?{...item,html:'<!doctype html>\\n'+doc.documentElement.outerHTML}:item));
+  setStatus('Website paragraph updated. Review before publishing.');
+ }
  const [subheadingEdit,setSubheadingEdit]=useState('');
  useEffect(()=>{const page=pages.find(p=>p.slug===active);if(!page){setSubheadingEdit('');return}const doc=new DOMParser().parseFromString(page.html,'text/html');setSubheadingEdit(doc.querySelector('h2')?.textContent||'')},[pages,active]);
  function saveSubheading(){
@@ -194,6 +208,6 @@ export default function BusinessGenerator(){
  <details className="forge-auto-advanced"><summary>Advanced editing and intelligence tools</summary><div><Link href="/editor">Visual editor</Link><Link href="/intelligence">Intelligence</Link><Link href="/assets">Asset library</Link></div></details>
  </aside>
  <main className="forge-auto-preview"><div className="forge-auto-toolbar"><span>● LIVE WEBSITE PREVIEW · {mobile?"390px mobile":"Full-width desktop"}</span><div><button type="button" onClick={()=>setMobile(false)} aria-pressed={!mobile} aria-label="Switch to full-width desktop website preview">Desktop</button><button type="button" onClick={()=>setMobile(true)} aria-pressed={mobile} aria-label="Switch to 390 pixel mobile website preview">Mobile</button></div></div>
- {pages.length>0?<><div className="forge-auto-quick-edit"><label>Page headline <input aria-label="Edit current page headline" value={headingEdit} onChange={e=>setHeadingEdit(e.target.value)} maxLength={120}/></label><button type="button" onClick={saveHeading}>Apply headline</button><label>Section heading <input aria-label="Edit current page section heading" value={subheadingEdit} onChange={e=>setSubheadingEdit(e.target.value)} maxLength={160}/></label><button type="button" onClick={saveSubheading} disabled={!subheadingEdit.trim()}>Apply section heading</button><label>Brand accent <input type="color" aria-label="Choose brand accent" value={quickAccent} onChange={e=>setQuickAccent(e.target.value)}/></label><button type="button" onClick={applyAccent}>Apply brand color to all pages</button><button type="button" disabled={!undoPages} onClick={undoLastEdit}>Undo last edit</button></div><nav className="forge-auto-tabs" aria-label="Website pages">{pages.map(p=><button key={p.slug} aria-current={active===p.slug?'page':undefined} onClick={()=>setActive(p.slug)}>{p.title}</button>)}</nav><div className={'forge-auto-frame '+(mobile?'mobile':'')}><iframe ref={frameRef} title={'Website preview: '+(current?.title||'Home')} sandbox="allow-scripts" srcDoc={previewHtml}/></div></>:<div className="forge-auto-placeholder"><div className="forge-auto-orb">✦</div><span>THE NEXT GENERATION OF WEBSITES</span><h2>Beautiful by default.<br/>Built around your brand.</h2><p>Your website preview will appear here, ready to explore.</p></div>}
+ {pages.length>0?<><div className="forge-auto-quick-edit"><label>Page headline <input aria-label="Edit current page headline" value={headingEdit} onChange={e=>setHeadingEdit(e.target.value)} maxLength={120}/></label><button type="button" onClick={saveHeading}>Apply headline</button><label>Section heading <input aria-label="Edit current page section heading" value={subheadingEdit} onChange={e=>setSubheadingEdit(e.target.value)} maxLength={160}/></label><button type="button" onClick={saveSubheading} disabled={!subheadingEdit.trim()}>Apply section heading</button><label>Page description <textarea aria-label="Edit current page description" rows={2} value={paragraphEdit} onChange={e=>setParagraphEdit(e.target.value)} maxLength={600}/></label><button type="button" onClick={saveParagraph} disabled={!paragraphEdit.trim()}>Apply description</button><label>Brand accent <input type="color" aria-label="Choose brand accent" value={quickAccent} onChange={e=>setQuickAccent(e.target.value)}/></label><button type="button" onClick={applyAccent}>Apply brand color to all pages</button><button type="button" disabled={!undoPages} onClick={undoLastEdit}>Undo last edit</button></div><nav className="forge-auto-tabs" aria-label="Website pages">{pages.map(p=><button key={p.slug} aria-current={active===p.slug?'page':undefined} onClick={()=>setActive(p.slug)}>{p.title}</button>)}</nav><div className={'forge-auto-frame '+(mobile?'mobile':'')}><iframe ref={frameRef} title={'Website preview: '+(current?.title||'Home')} sandbox="allow-scripts" srcDoc={previewHtml}/></div></>:<div className="forge-auto-placeholder"><div className="forge-auto-orb">✦</div><span>THE NEXT GENERATION OF WEBSITES</span><h2>Beautiful by default.<br/>Built around your brand.</h2><p>Your website preview will appear here, ready to explore.</p></div>}
  </main></div></div>
 }
