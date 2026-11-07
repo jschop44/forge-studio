@@ -108,3 +108,9 @@ test('WebGL scene includes ray-intersected 3D surface shading and directional li
  assert.match(html,/dot\(normal,light\)/);
  assert.match(html,/uniform float s/);
 });
+
+test('WebGL context loss stops rendering and removes the invalid canvas',()=>{
+ const html=enhanceImmersivePages([{slug:'services',html:'<!doctype html><html><head></head><body><main>Services</main></body></html>'}])[0].html;
+ assert.match(html,/canvas\.addEventListener\('webglcontextlost'/);
+ assert.match(html,/active=false;if\(frame\)cancelAnimationFrame\(frame\);frame=0;canvas\.remove\(\)/);
+});
