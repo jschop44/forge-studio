@@ -15,3 +15,14 @@ test('audits generated local links without network access',()=>{
 test('invalid blueprint fails navigation audit',()=>{
  assert.throws(()=>auditPreviewNavigation({version:2,sections:[]}),/Invalid blueprint/);
 });
+
+test('all exported pages are reachable from offline entrypoint',()=>{
+ const report=auditPreviewNavigation({version:1,sourceUrl:'https://example.com',sections:[],pages:[
+  {path:'/',title:'Home',regions:[]},
+  {path:'/products',title:'Products',regions:[]},
+  {path:'/contact',title:'Contact',regions:[]}
+ ]});
+ assert.equal(report.allPagesReachable,true);
+ assert.deepEqual(report.unreachablePages,[]);
+ assert.ok(report.localLinks>=6);
+});
