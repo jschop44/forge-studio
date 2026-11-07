@@ -16,7 +16,18 @@ const categories=[
  {industry:'Health and wellness',pattern:/fitness|wellness|gym|yoga|spa|personal training/i,services:['Programs','Membership','Contact']},
  {industry:'Automotive',pattern:/automotive|car dealership|vehicles|auto repair/i,services:['Vehicles','Services','Contact']},
  {industry:'Fashion and luxury',pattern:/fashion|jewelry|clothing|apparel|luxury goods/i,services:['Collections','About','Contact']},
- {industry:'Technology',pattern:/software|technology|cloud computing|saas|digital platform/i,services:['Solutions','Products','Contact']}
+ {industry:'Technology',pattern:/software|technology|cloud computing|saas|digital platform/i,services:['Solutions','Products','Contact']},
+ {industry:'Sporting goods retail',pattern:/baseball|softball|sporting goods|sports equipment|baseball bats?|baseball gloves?|batting cages?/i,services:['Shop equipment','Product categories','Contact']},
+ {industry:'Healthcare and medical services',pattern:/medical clinic|healthcare|physician|doctor|pediatric|dental|dentist|physical therapy|urgent care/i,services:['Care services','Patient information','Contact']},
+ {industry:'Pharmacy',pattern:/pharmacy|pharmacist|prescriptions?|medication refill/i,services:['Pharmacy services','Refill information','Contact']},
+ {industry:'Education and tutoring',pattern:/school|tutoring|education|learning center|training academy|lessons/i,services:['Programs','Enrollment information','Contact']},
+ {industry:'Home and trade services',pattern:/plumbing|electrician|roofing|landscaping|hvac|heating and cooling|home renovation|contractor/i,services:['Our services','Request an estimate','Contact']},
+ {industry:'Legal services',pattern:/law firm|attorney|legal services|lawyer|litigation/i,services:['Practice areas','Our team','Contact']},
+ {industry:'Financial services',pattern:/accounting|bookkeeping|financial advisor|tax preparation|insurance agency|wealth management/i,services:['Financial services','About our team','Contact']},
+ {industry:'Beauty and personal care',pattern:/hair salon|barbershop|nail salon|beauty studio|skincare|cosmetology/i,services:['Services','Appointments','Contact']},
+ {industry:'Arts and creative services',pattern:/photography|photographer|design studio|art gallery|creative agency|videography/i,services:['Portfolio','Services','Contact']},
+ {industry:'Pet and animal care',pattern:/veterinar|pet grooming|dog daycare|pet boarding|animal hospital/i,services:['Pet care','Appointments','Contact']},
+ {industry:'Events and seasonal attractions',pattern:/halloween|pumpkin patch|holiday event|festival|seasonal attraction|family entertainment/i,services:['Activities','Visitor information','Contact']}
 ];
 export function analyzeSiteEvidence(input:SiteEvidence):IntelligenceFinding{
  const primary=[input.title,input.description,...input.headings].join(' ');
