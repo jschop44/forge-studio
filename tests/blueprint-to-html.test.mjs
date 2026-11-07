@@ -162,3 +162,14 @@ test('filename collisions with existing numeric slugs still preserve all navigat
  assert.deepEqual(pages.map(p=>p.filename),['a.html','a-2.html','a-3.html']);
  assert.match(pages[0].html,/href="a-2\.html"/);
 });
+
+test('offline captured-page directory links to every generated HTML page',()=>{
+ const files=blueprintToPages({version:1,sourceUrl:'https://example.com',sections:[],pages:[
+  {path:'/',title:'Home',regions:[]},
+  {path:'/about',title:'About',regions:[]},
+  {path:'/contact',title:'Contact',regions:[]}
+ ]});
+ for(const file of files){
+  for(const destination of files)assert.ok(file.html.includes('href="'+destination.filename+'"'),destination.filename);
+ }
+});
