@@ -1,0 +1,50 @@
+name: Cloudflare alternative deployment
+on:
+  workflow_dispatch:
+    inputs:
+      publish:
+        description: "Publish to Cloudflare (requires configured GitHub secrets)"
+        required: true
+        type: boolean
+        default: false
+jobs:
+  cloudflare:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - uses: actions/cache@v4
+        with:
+          path: ~/.npm
+          key: cloudflare-npm-${{ runner.os }}-${{ hashFiles('package.json') }}
+          restore-keys: |
+            cloudflare-npm-${{ runner.os }}-
+      - run: npm install --no-audit --no-fund
+      - name: Build Next.js for Cloudflare Workers
+        run: npm run build:cloudflare
+      - name: Upload build diagnostics
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: cloudflare-build-diagnostics
+          path: |
+            .open-next/
+          if-no-files-found: ignore
+          retention-days: 1
+      - name: Verify Cloudflare credentials exist
+        if: ${{ inputs.publish }}
+        env:
+          CF_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CF_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          test -n "$CF_API_TOKEN" || { echo "::error::CLOUDFLARE_API_TOKEN secret is missing"; exit 1; }
+          test -n "$CF_ACCOUNT_ID" || { echo "::error::CLOUDFLARE_ACCOUNT_ID secret is missing"; exit 1; }
+      - name: Deploy isolated preview Worker
+        if: ${{ inputs.publish }}
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: npm run deploy:cloudflare
