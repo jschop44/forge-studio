@@ -21,6 +21,12 @@ jobs:
       - run: npm run build
       - run: npx playwright install --with-deps chromium
       - run: npm run test:e2e
+      - name: Publish verification summary
+        if: always()
+        run: |
+          echo '## Forge Studio verification' >> "$GITHUB_STEP_SUMMARY"
+          echo '- Application, worker, typecheck, build, and Playwright steps are listed above with their individual results.' >> "$GITHUB_STEP_SUMMARY"
+          echo '- A successful job means all required verification steps passed.' >> "$GITHUB_STEP_SUMMARY"
       - uses: actions/upload-artifact@v4
         if: failure()
         with:
