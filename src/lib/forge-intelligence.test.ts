@@ -11,3 +11,7 @@ test('marks competing industry signals as ambiguous rather than high confidence'
  const result=analyzeSiteEvidence({url:'https://example.com',title:'Coffee restaurant pizza cafe',description:'Coffee espresso pizza bakery dining restaurant',headings:['Coffee shop restaurant','Coffee pizza menu']});
  assert.notEqual(result.confidence,'high');
 });
+
+test('recognizes pharmacy without conflating legitimate medicine with recreational drugs',()=>{const result=analyzeSiteEvidence({url:'https://example.com',title:'Community Pharmacy',description:'Prescription refills and pharmacist consultations',headings:['Pharmacy services']});assert.equal(result.industry,'Pharmacy');assert.notEqual(result.confidence,'low')});
+test('recognizes seasonal family attractions',()=>{const result=analyzeSiteEvidence({url:'https://example.com',title:'Family Pumpkin Patch',description:'Halloween festival and seasonal attraction',headings:['Holiday event activities']});assert.equal(result.industry,'Events and seasonal attractions')});
+test('recognizes trade services from specific business evidence',()=>{const result=analyzeSiteEvidence({url:'https://example.com',title:'Reliable Roofing Contractors',description:'Roofing and home renovation services',headings:['Roofing estimates']});assert.equal(result.industry,'Home and trade services')});
