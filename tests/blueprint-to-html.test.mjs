@@ -217,3 +217,13 @@ test('measured desktop regions preserve vertical separation and shared rows',()=
  assert.match(html,/top:330px;left:0%;width:50%/);
  assert.match(html,/top:330px;left:50%;width:50%/);
 });
+
+test('captured hero uses semantic heading and escapes malicious markup',()=>{
+ const html=blueprintToHtml({version:1,title:'Brand',sections:[
+  {type:'hero',headline:'A better <script>alert(1)</script> future'},
+  {type:'content',headline:'Supporting details'}
+ ]});
+ assert.match(html,/<section class="region hero"[^>]*><h2>A better &lt;script&gt;alert\(1\)&lt;\/script&gt; future<\/h2><\/section>/);
+ assert.match(html,/<section class="region content"[^>]*><p>Supporting details<\/p><\/section>/);
+ assert.doesNotMatch(html,/<script>/);
+});
