@@ -74,3 +74,15 @@ test('malformed pages and interaction counts cannot crash or inflate quality met
  assert.equal(report.geometryCoverage,1);
  assert.equal(report.publicationReady,false);
 });
+
+test('measured-page coverage distinguishes pages with and without valid geometry',()=>{
+ const report=assessBlueprint({version:1,pages:[
+  {path:'/',regions:[{bounds:{x:0,y:0,width:200,height:100}}]},
+  {path:'/about',regions:[{bounds:{x:0,y:0,width:0,height:100}}]},
+  {path:'/contact',regions:[]}
+ ]});
+ assert.equal(report.coverage.visual,2/3);
+ assert.equal(report.coverage.measuredPages,1/3);
+ assert.equal(report.geometryCoverage,0.5);
+ assert.equal(report.checks.measuredGeometry,false);
+});
