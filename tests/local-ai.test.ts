@@ -62,4 +62,22 @@ describe('mandatory local AI generation',()=>{
    if(previousUrl===undefined)delete process.env.OLLAMA_URL;else process.env.OLLAMA_URL=previousUrl;
   }
  });
+ it('releases capacity after a malformed local-model response',async()=>{
+  const previousFetch=globalThis.fetch;
+  const previousUrl=process.env.OLLAMA_URL;
+  const input={businessName:'Oak Architects',industry:'Architecture',description:'A residential architecture practice creating thoughtful spaces for local homeowners.',services:['Residential planning']};
+  try{
+   process.env.OLLAMA_URL='http://127.0.0.1:11434';
+   globalThis.fetch=async()=>new Response(JSON.stringify({response:'not json'}),{status:200});
+   await assert.rejects(generateWithLocalAi(input),/Local AI unavailable/);
+   assert.equal(localAiCapacity().active,0);
+   globalThis.fetch=async()=>new Response(JSON.stringify({response:JSON.stringify({description:'Thoughtful residential architecture and planning for local homeowners.'})}),{status:200});
+   const result=await generateWithLocalAi(input);
+   assert.equal(result.pages.length,4);
+   assert.equal(localAiCapacity().active,0);
+  }finally{
+   globalThis.fetch=previousFetch;
+   if(previousUrl===undefined)delete process.env.OLLAMA_URL;else process.env.OLLAMA_URL=previousUrl;
+  }
+ });
 });
