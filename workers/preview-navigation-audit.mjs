@@ -19,5 +19,8 @@ export function auditPreviewNavigation(blueprint){
  while(queue.length){const filename=queue.shift();if(reachable.has(filename))continue;reachable.add(filename);for(const link of links){if(link.from===filename&&link.kind==='local'&&link.ok&&!reachable.has(link.href))queue.push(link.href)}}
  const unreachablePages=pages.map(p=>p.filename).filter(filename=>!reachable.has(filename));
  const broken=links.filter(link=>!link.ok);
- return {version:1,pages:pages.length,links:links.length,localLinks:links.filter(l=>l.kind==='local').length,externalLinks:links.filter(l=>l.kind==='external').length,broken,unreachablePages,allPagesReachable:unreachablePages.length===0,allLinksValid:broken.length===0,publicationReady:false};
+ const unsafeLinks=links.filter(link=>link.kind==='unsafe');
+ const localTargets=new Set(links.filter(link=>link.kind==='local'&&link.ok).map(link=>link.href));
+ const orphanedPages=pages.slice(1).map(page=>page.filename).filter(filename=>!localTargets.has(filename));
+ return {version:1,pages:pages.length,links:links.length,localLinks:links.filter(l=>l.kind==='local').length,externalLinks:links.filter(l=>l.kind==='external').length,broken,unsafeLinks,orphanedPages,unreachablePages,allPagesReachable:unreachablePages.length===0,allLinksValid:broken.length===0,publicationReady:false};
 }
