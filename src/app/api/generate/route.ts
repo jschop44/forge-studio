@@ -20,7 +20,6 @@ export async function POST(req:NextRequest){
  const now=Date.now();
  if(limits.size>2000){for(const [address,entry] of limits){if(entry.reset<=now)limits.delete(address)}}
  const limit=limits.get(ip);
- if(limit&&limit.reset>now&&limit.count>=10)return NextResponse.json({error:'Rate limit exceeded. Try again later.'},{status:429});
  let body:unknown;
  try{const raw=await req.text();if(raw.length>8000)return NextResponse.json({error:'Brief too large'},{status:413});body=JSON.parse(raw)}catch{return NextResponse.json({error:'Invalid JSON'},{status:400})}
  if(!body||typeof body!=='object')return NextResponse.json({error:'Invalid request'},{status:400});
@@ -29,6 +28,7 @@ export async function POST(req:NextRequest){
  const {name,description,template,industry,services}=parsed.data;
  const brief={businessName:name,industry:industry||'Business',description,services:services||['General services']};
  if(isExcludedBusiness(brief))return NextResponse.json({error:'This business category is not supported'},{status:422});
+ if(limit&&limit.reset>now&&limit.count>=10)return NextResponse.json({error:'Rate limit exceeded. Try again later.'},{status:429});
  limits.set(ip,{count:limit&&limit.reset>now?limit.count+1:1,reset:limit&&limit.reset>now?limit.reset:now+3600000});
  try{
   const result=await generateWithLocalAi(brief);
