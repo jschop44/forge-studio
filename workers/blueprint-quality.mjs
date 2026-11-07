@@ -2,10 +2,11 @@
 export function assessBlueprint(blueprint){
  if(!blueprint||blueprint.version!==1||!Array.isArray(blueprint.pages))throw Error('Invalid blueprint');
  const pages=blueprint.pages.slice(0,12);
- const regions=pages.reduce((n,p)=>n+(Array.isArray(p.regions)?p.regions.length:0),0);
- const links=blueprint.interactionCoverage?.links||0;
- const buttons=blueprint.interactionCoverage?.buttons||0;
- const forms=blueprint.interactionCoverage?.forms||0;
+ const regions=pages.reduce((n,p)=>n+(Array.isArray(p?.regions)?p.regions.length:0),0);
+ const safeCount=n=>Number.isSafeInteger(n)&&n>=0?n:0;
+ const links=safeCount(blueprint.interactionCoverage?.links);
+ const buttons=safeCount(blueprint.interactionCoverage?.buttons);
+ const forms=safeCount(blueprint.interactionCoverage?.forms);
  const probes=Array.isArray(blueprint.navigationChecks)?blueprint.navigationChecks.slice(0,96):[];
  const failedNavigation=probes.filter(p=>!p||p.ok!==true||!Number.isInteger(p.status)||p.status<200||p.status>=400);
  const warnings=[];
