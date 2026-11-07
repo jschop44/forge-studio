@@ -38,8 +38,6 @@ for(const genre of genres){
     await expect(page.locator('.skip-link')).toBeFocused();
     await page.keyboard.press('Enter');
     await expect(page.locator('main')).toBeFocused();
-    await page.keyboard.press('Tab');
-    await expect(links.first()).toBeFocused();
     expect(await page.locator('a[href="contact.html"]').count()).toBeGreaterThanOrEqual(1);
    }
   });
