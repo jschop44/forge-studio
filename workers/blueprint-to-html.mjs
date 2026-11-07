@@ -17,7 +17,7 @@ export function blueprintToHtml(blueprint,selectedPage=0,localNavigation=false){
  const pageSections=currentPage&&Array.isArray(currentPage.regions)?currentPage.regions:blueprint.sections;
  const maxRight=Math.max(1,...pageSections.filter(s=>s?.bounds&&Number.isFinite(s.bounds.x)&&Number.isFinite(s.bounds.width)).map(s=>s.bounds.x+s.bounds.width));
  const measured=pageSections.filter(s=>s?.bounds&&[s.bounds.x,s.bounds.y,s.bounds.width,s.bounds.height].every(Number.isFinite)&&s.bounds.x>=0&&s.bounds.y>=0&&s.bounds.width>0&&s.bounds.height>0);
- const positioned=measured.length>0;
+ const positioned=measured.length>0&&measured.length===pageSections.length;
  const topY=measured.length?Math.min(...measured.map(s=>s.bounds.y)):0;
  const canvasHeight=measured.length?Math.min(12000,Math.max(200,...measured.map(s=>s.bounds.y+s.bounds.height-topY))):0;
  const sections=pageSections.slice(0,100).map(section=>{
@@ -27,7 +27,7 @@ export function blueprintToHtml(blueprint,selectedPage=0,localNavigation=false){
   const valid=b&&[b.x,b.y,b.width,b.height].every(Number.isFinite)&&b.x>=0&&b.y>=0&&b.width>0&&b.height>0;
   const width=valid?Math.max(15,Math.min(100,Math.round(b.width/maxRight*100))):100;
   const left=valid?Math.max(0,Math.min(100-width,Math.round(b.x/maxRight*100))):0;
-  const bg=safeColor(section?.backgroundColor);const fg=safeColor(section?.textColor);const style=(valid||bg||fg)?' style="'+(valid?'position:absolute;top:'+Math.max(0,Math.round(b.y-topY))+'px;left:'+left+'%;width:'+width+'%;min-height:'+Math.min(1200,Math.max(30,Math.round(b.height)))+'px;':'')+(bg?'background:'+bg+';':'')+(fg?'color:'+fg+';':'')+'"':'';
+  const bg=safeColor(section?.backgroundColor);const fg=safeColor(section?.textColor);const style=(valid||bg||fg)?' style="'+(valid&&positioned?'position:absolute;top:+Math.max(0,Math.round(b.y-topY))+'px;left:'+left+'%;width:'+width+'%;min-height:'+Math.min(1200,Math.max(30,Math.round(b.height)))+'px;':'')+(bg?'background:'+bg+';':'')+(fg?'color:'+fg+';':'')+'"':'';
   return '<section class="region '+type+'"'+style+' aria-label="'+escapeHtml(type+' section')+'">'+(type==='hero'?'<h2>':'<p>')+text+(type==='hero'?'</h2>':'</p>')+'</section>';
  }).join('\n');
  const localPaths=new Map();
