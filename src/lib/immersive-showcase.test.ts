@@ -253,3 +253,17 @@ test('every generated route includes layered camera-responsive WebGL depth',()=>
   assert.ok(page.html.includes('distantAlpha'),'Missing distant scene compositing on '+page.slug);
  }
 });
+
+test('all generated routes composite immersive WebGL above content without blocking clicks',()=>{
+ const pages=generateBusinessWebsite({businessName:'Harbor Studio',industry:'Architecture',description:'Independent design studio.',services:['Architecture']}).pages;
+ for(const page of pages){
+  const styleId=page.slug==='index'?'forge-home-webgl':'forge-spatial-layer';
+  const css=page.html.split('<style id="'+styleId+'">')[1]?.split('</style>')[0];
+  assert.ok(css,'Missing immersive stylesheet on '+page.slug);
+  const overlay=css.match(/#forge-webgl-atmosphere\{([^}]*)\}/)?.[1];
+  assert.ok(overlay,'Missing canvas styling on '+page.slug);
+  for(const declaration of ['z-index:2','pointer-events:none','mix-blend-mode:screen']){
+   assert.ok(overlay.includes(declaration),'Missing '+declaration+' on '+page.slug);
+  }
+ }
+});
