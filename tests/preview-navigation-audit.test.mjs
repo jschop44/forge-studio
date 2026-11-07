@@ -26,3 +26,14 @@ test('all exported pages are reachable from offline entrypoint',()=>{
  assert.deepEqual(report.unreachablePages,[]);
  assert.ok(report.localLinks>=6);
 });
+
+test('external preview links must have safe HTTPS origins',()=>{
+ const report=auditPreviewNavigation({version:1,sourceUrl:'https://example.com',sections:[],navigation:[
+  {label:'Safe',target:'https://example.com/ok?x=1&y=2'},
+  {label:'Unsafe credentials',target:'https://user@example.com/private'},
+  {label:'Unsafe port',target:'https://example.com:8443/admin'}
+ ],pages:[{path:'/',title:'Home',regions:[]}]});
+ assert.equal(report.allLinksValid,true);
+ assert.equal(report.externalLinks,1);
+ assert.equal(report.broken.length,0);
+});
