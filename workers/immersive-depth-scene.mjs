@@ -5,10 +5,10 @@ export function buildDepthScene(blueprint,pageIndex=0){
  if(!blueprint||blueprint.version!==1||!Array.isArray(blueprint.pages))throw Error('Invalid blueprint');
  if(!Number.isInteger(pageIndex)||pageIndex<0||pageIndex>=blueprint.pages.length)throw Error('Invalid page index');
  const page=blueprint.pages[pageIndex];
- const regions=Array.isArray(page.regions)?page.regions.slice(0,100):[];
+ const regions=Array.isArray(page?.regions)?page.regions.slice(0,100):[];
  const layers=regions.flatMap((region,index)=>{
   const b=region?.bounds;
-  if(!b||![b.x,b.y,b.width,b.height].every(finite)||b.width<=0||b.height<=0||b.x<0||b.y<0)return [];
+  if(!b||![b.x,b.y,b.width,b.height].every(finite)||b.width<=0||b.height<=0||b.x<0||b.y<0||b.x>10000||b.y>10000||b.width>10000||b.height>10000)return [];
   const role=['hero','navigation','footer','section','content','header','main','nav'].includes(region.type)?region.type:'content';
   const depth=role==='hero'?24:role==='navigation'?8:role==='footer'?2:12;
   return [{id:'layer-'+index,role,x:clamp(b.x,0,10000),y:clamp(b.y,0,10000),width:clamp(b.width,1,10000),height:clamp(b.height,1,10000),depth,interactive:false}];
