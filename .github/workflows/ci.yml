@@ -1,7 +1,9 @@
 name: Verify
 on:
   push:
+    branches: [main]
   pull_request:
+    branches: [main]
   workflow_dispatch:
 concurrency:
   group: verify-${{ github.workflow }}-${{ github.head_ref || github.ref_name }}
