@@ -34,7 +34,7 @@ jobs:
         with:
           node-version: '22'
       - name: Validate navigation and network safety policies
-        run: node --test tests/navigation-probe-policy.test.mjs tests/public-network-policy.test.mjs tests/evidence-to-blueprint.test.mjs tests/blueprint-to-html.test.mjs tests/blueprint-quality.test.mjs tests/immersive-depth-scene.test.mjs tests/preview-manifest.test.mjs tests/preview-navigation-audit.test.mjs
+        run: node --test tests/navigation-probe-policy.test.mjs tests/public-network-policy.test.mjs tests/evidence-to-blueprint.test.mjs tests/blueprint-to-html.test.mjs tests/blueprint-quality.test.mjs tests/immersive-depth-scene.test.mjs tests/preview-manifest.test.mjs tests/preview-navigation-audit.test.mjs tests/depth-scene-svg.test.mjs
       - name: Install isolated browser runtime
         run: |
           npm install --no-save --no-package-lock playwright
@@ -55,6 +55,9 @@ jobs:
       - name: Generate deterministic depth scene metadata
         run: |
           node --input-type=module -e "import fs from 'node:fs';import {buildDepthScene,projectDepthScene} from './workers/immersive-depth-scene.mjs';const blueprint=JSON.parse(fs.readFileSync('website-blueprint.json','utf8'));const scene=buildDepthScene(blueprint);if(scene.publicationReady!==false)process.exit(1);fs.writeFileSync('website-depth-scene.json',JSON.stringify(scene,null,2));const mobile=projectDepthScene(scene,375,{reducedMotion:true});if(mobile.animationEnabled||mobile.layers.some(l=>l.depth!==0))process.exit(1);fs.writeFileSync('website-mobile-depth-scene.json',JSON.stringify(mobile,null,2));"
+      - name: Render accessible depth visualization
+        run: |
+          node --input-type=module -e "import fs from 'node:fs';import {buildDepthScene} from './workers/immersive-depth-scene.mjs';import {renderDepthSceneSvg} from './workers/depth-scene-svg.mjs';const blueprint=JSON.parse(fs.readFileSync('website-blueprint.json','utf8'));const svg=renderDepthSceneSvg(buildDepthScene(blueprint),960,{reducedMotion:true});if(!svg.startsWith('<svg ')||svg.includes('<script'))process.exit(1);fs.writeFileSync('website-depth-preview.svg',svg);"
       - name: Render safe website preview from blueprint
         run: |
           node --input-type=module -e "import fs from 'node:fs';import {blueprintToHtml,blueprintToPages} from './workers/blueprint-to-html.mjs';const blueprint=JSON.parse(fs.readFileSync('website-blueprint.json','utf8'));const html=blueprintToHtml(blueprint);if(!html.includes('<!doctype html>'))process.exit(1);fs.writeFileSync('website-preview.html',html);fs.mkdirSync('website-pages',{recursive:true});const pages=blueprintToPages(blueprint);for(const page of pages){if(!/^[a-zA-Z0-9_-]+\\.html$/.test(page.filename))throw Error('Unsafe output filename');fs.writeFileSync('website-pages/'+page.filename,page.html)}if(!pages.length)process.exit(1);"
@@ -74,6 +77,7 @@ jobs:
             website-quality.json
             website-depth-scene.json
             website-mobile-depth-scene.json
+            website-depth-preview.svg
             website-preview.html
             website-pages/
             website-preview-manifest.json
