@@ -30,7 +30,7 @@ for(const slug of ['index','services','about','contact']){
  const page=pages.get(slug);
  if(!page||typeof page.html!=='string'||!page.html.includes('<html')||!page.html.includes('</html>'))throw Error('Missing valid '+slug+' page');
  if(!page.html.includes('forge-home-webgl-controller')&&!page.html.includes('forge-spatial-controller'))throw Error('Missing immersive WebGL controller on '+slug+' page');
- if(!page.html.includes('getContext(\\'webgl\\')'))throw Error('Missing WebGL initialization on '+slug+' page');
+ if(!page.html.includes("getContext('webgl'"))throw Error('Missing WebGL initialization on '+slug+' page');
  if(!page.html.includes('prefers-reduced-motion'))throw Error('Missing reduced-motion safeguard on '+slug+' page');
 }
 console.log('PASS: production Ollama generated and returned all four website pages.');
