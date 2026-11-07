@@ -7,7 +7,7 @@ function ollamaConfig(){
  // Free beta: cloud inference is disabled even when a legacy cloud key is configured.
  // Keep all requests on the loopback Ollama service to prevent token charges.
  const url=new URL(process.env.OLLAMA_URL||'http://127.0.0.1:11434');
- if(!['localhost','127.0.0.1','::1'].includes(url.hostname)||!['http:','https:'].includes(url.protocol))throw Error('OLLAMA_URL must be a loopback endpoint');
+ if(!['localhost','127.0.0.1','[::1]'].includes(url.hostname)||url.protocol!=='http:'||url.username||url.password||url.search||url.hash||url.pathname!=='/')throw Error('OLLAMA_URL must be a loopback endpoint');
  const model=process.env.OLLAMA_MODEL||'llama3.2:3b';
  if(/beam|:cloud\b|\bcloud\b/i.test(model))throw Error('Paid/cloud models are disabled for free beta');
  return {url,model,headers:{} as Record<string,string>};
