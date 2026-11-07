@@ -244,3 +244,12 @@ test('immersive WebGL uses lower resolution on narrow mobile viewports',()=>{
   assert.ok(page.html.includes('now-lastPaint<33'),'Missing frame rate cap on '+page.slug);
  }
 });
+
+test('every generated route includes layered camera-responsive WebGL depth',()=>{
+ const pages=generateBusinessWebsite({businessName:'Harbor Studio',industry:'Architecture',description:'Design studio creating distinctive spaces and interiors.',services:['Architecture','Interiors']}).pages;
+ for(const page of pages){
+  assert.ok(page.html.includes('distantRadius=.14'),'Missing secondary depth layer on '+page.slug);
+  assert.ok(page.html.includes('distant=p+camera*.45'),'Missing independent camera parallax on '+page.slug);
+  assert.ok(page.html.includes('distantAlpha'),'Missing distant scene compositing on '+page.slug);
+ }
+});
