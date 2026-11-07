@@ -227,3 +227,12 @@ test('captured hero uses semantic heading and escapes malicious markup',()=>{
  assert.match(html,/<section class="region content"[^>]*><p>Supporting details<\/p><\/section>/);
  assert.doesNotMatch(html,/<script>/);
 });
+
+test('captured region colors survive rendering without CSS injection',()=>{
+ const html=blueprintToHtml({version:1,title:'Color',sections:[
+  {type:'hero',headline:'Brand',backgroundColor:'rgb(12, 34, 56)',textColor:'#ffffff',bounds:{x:0,y:0,width:900,height:300}},
+  {type:'content',headline:'Unsafe',backgroundColor:'red;body{display:none}',textColor:'blue;position:fixed'}
+ ]});
+ assert.match(html,/background:rgb\(12, 34, 56\);color:#ffffff;/);
+ assert.doesNotMatch(html,/display:none|position:fixed/);
+});
