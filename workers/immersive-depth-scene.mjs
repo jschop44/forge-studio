@@ -8,10 +8,10 @@ export function buildDepthScene(blueprint,pageIndex=0){
  const regions=Array.isArray(page?.regions)?page.regions.slice(0,100):[];
  const layers=regions.flatMap((region,index)=>{
   const b=region?.bounds;
-  if(!b||![b.x,b.y,b.width,b.height].every(finite)||b.width<=0||b.height<=0||b.x<0||b.y<0||b.x>10000||b.y>10000||b.width>10000||b.height>10000)return [];
+  if(!b||![b.x,b.y,b.width,b.height].every(finite)||b.width<=0||b.height<=0||b.x<0||b.y<0||b.x>10000||b.y>20000||b.width>10000||b.height>20000)return [];
   const role=['hero','navigation','footer','section','content','header','main','nav'].includes(region.type)?region.type:'content';
   const depth=role==='hero'?24:role==='navigation'?8:role==='footer'?2:12;
-  return [{id:'layer-'+index,role,x:clamp(b.x,0,10000),y:clamp(b.y,0,10000),width:clamp(b.width,1,10000),height:clamp(b.height,1,10000),depth,interactive:false}];
+  return [{id:'layer-'+index,role,x:clamp(b.x,0,10000),y:clamp(b.y,0,20000),width:clamp(b.width,1,10000),height:clamp(b.height,1,20000),depth,interactive:false}];
  });
  return {version:1,pageIndex,layers,camera:{perspective:1000,tiltDegrees:0},accessibility:{reducedMotion:'disable-depth-animation',keyboardNavigation:'document-order'},source:'observed-regions',publicationReady:false};
 }
@@ -21,7 +21,7 @@ export function buildDepthScene(blueprint,pageIndex=0){
  * Geometry is derived from observed bounds; no browser scripts or network access.
  */
 export function projectDepthScene(scene,viewportWidth,{reducedMotion=false,maxTilt=8}={}){
- if(!scene||scene.version!==1||!Array.isArray(scene.layers)||scene.layers.length>100||scene.layers.some(l=>!l||![l.x,l.y,l.width,l.height,l.depth].every(finite)||l.x<0||l.y<0||l.width<=0||l.height<=0||l.depth<0||l.depth>100||l.x>10000||l.y>10000||l.width>10000||l.height>10000))throw Error('Invalid depth scene');
+ if(!scene||scene.version!==1||!Array.isArray(scene.layers)||scene.layers.length>100||scene.layers.some(l=>!l||![l.x,l.y,l.width,l.height,l.depth].every(finite)||l.x<0||l.y<0||l.width<=0||l.height<=0||l.depth<0||l.depth>100||l.x>10000||l.y>20000||l.width>10000||l.height>20000))throw Error('Invalid depth scene');
  if(!finite(viewportWidth)||viewportWidth<240||viewportWidth>10000)throw Error('Invalid viewport width');
  if(typeof reducedMotion!=='boolean'||!finite(maxTilt)||maxTilt<0||maxTilt>15)throw Error('Invalid projection settings');
  if(scene.camera&&(!finite(scene.camera.perspective)||scene.camera.perspective<100||scene.camera.perspective>10000||!finite(scene.camera.tiltDegrees)||Math.abs(scene.camera.tiltDegrees)>90))throw Error('Invalid depth camera');
