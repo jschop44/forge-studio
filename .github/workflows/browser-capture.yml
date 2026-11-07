@@ -34,7 +34,7 @@ jobs:
         with:
           node-version: '22'
       - name: Validate navigation and network safety policies
-        run: node --test tests/navigation-probe-policy.test.mjs tests/public-network-policy.test.mjs tests/evidence-to-blueprint.test.mjs tests/blueprint-to-html.test.mjs tests/blueprint-quality.test.mjs tests/immersive-depth-scene.test.mjs tests/preview-manifest.test.mjs
+        run: node --test tests/navigation-probe-policy.test.mjs tests/public-network-policy.test.mjs tests/evidence-to-blueprint.test.mjs tests/blueprint-to-html.test.mjs tests/blueprint-quality.test.mjs tests/immersive-depth-scene.test.mjs tests/preview-manifest.test.mjs tests/preview-navigation-audit.test.mjs
       - name: Install isolated browser runtime
         run: |
           npm install --no-save --no-package-lock playwright
@@ -61,6 +61,9 @@ jobs:
       - name: Generate offline preview manifest
         run: |
           node --input-type=module -e "import fs from 'node:fs';import {buildPreviewManifest} from './workers/preview-manifest.mjs';const blueprint=JSON.parse(fs.readFileSync('website-blueprint.json','utf8'));const manifest=buildPreviewManifest(blueprint);for(const page of manifest.pages){const actual=fs.statSync('website-pages/'+page.filename).size;if(actual!==page.bytes)throw Error('Preview manifest byte count mismatch')}fs.writeFileSync('website-preview-manifest.json',JSON.stringify(manifest,null,2));"
+      - name: Audit exported preview navigation
+        run: |
+          node --input-type=module -e "import fs from 'node:fs';import {auditPreviewNavigation} from './workers/preview-navigation-audit.mjs';const blueprint=JSON.parse(fs.readFileSync('website-blueprint.json','utf8'));const report=auditPreviewNavigation(blueprint);if(!report.allLinksValid)process.exit(1);fs.writeFileSync('website-navigation-audit.json',JSON.stringify(report,null,2));"
       - uses: actions/upload-artifact@v4
         with:
           name: browser-evidence
@@ -74,4 +77,5 @@ jobs:
             website-preview.html
             website-pages/
             website-preview-manifest.json
+            website-navigation-audit.json
           retention-days: 1
