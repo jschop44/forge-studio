@@ -1,6 +1,7 @@
 import {z} from 'zod';
 import {escapeHtml} from './export';
 import {industryPhotos,servicePhoto} from './industry-photos';
+import {enhanceImmersivePages} from './immersive-showcase';
 const BriefSchema=z.object({businessName:z.string().trim().min(2).max(100),industry:z.string().trim().min(2).max(80),description:z.string().trim().min(15).max(1800),services:z.array(z.string().trim().min(2).max(100)).max(12),contactEmail:z.string().email().max(254).optional(),accent:z.string().regex(/^#[0-9a-fA-F]{6}$/).default('#b7a182'),improvements:z.array(z.enum(['relevance','conversion','content','mobile','seo','contact'])).optional()});
 export type BusinessBrief=z.infer<typeof BriefSchema>;
 export function isExcludedBusiness(input:{businessName:string;industry:string;description:string;services:string[]}):boolean{
@@ -25,10 +26,10 @@ export function generateBusinessWebsite(input:unknown):{name:string;pages:Genera
  const restaurant=/restaurant|pizza|bakery|food/i.test(b.industry+' '+b.description);
  const feature=(!enabled('relevance'))?'':coffee?'<section class="immersive-feature coffee-feature"><span class="eyebrow">The ritual</span><h2>From bean to cup.</h2><p>Explore our coffee experience, from carefully selected beans to the final pour.</p><div class="coffee-cup" aria-label="Animated steaming cup of coffee"><div class="steam"><i></i><i></i><i></i></div><div class="cup"><div class="coffee-surface"></div></div><div class="saucer"></div></div><a class="button" href="services.html">Explore our coffee →</a></section>':realestate?'<section class="immersive-feature property-feature"><span class="eyebrow">Explore the possibilities</span><h2>Find a place to belong.</h2><p>Discover spaces that match the way you want to live.</p>'+visual(photos[1],'Featured property interior')+'<a class="button" href="services.html">Explore property services →</a></section>':restaurant?'<section class="immersive-feature dining-feature"><span class="eyebrow">Made with care</span><h2>Experience every flavor.</h2><p>Discover our food, our atmosphere and the people behind every dish.</p>'+visual(photos[1],'Restaurant dining experience')+'<a class="button" href="services.html">Explore the menu →</a></section>':'<section class="immersive-feature"><span class="eyebrow">Discover the experience</span><h2>Made around you.</h2><p>'+desc+'</p>'+visual(photos[1],b.industry+' experience')+'<a class="button" href="services.html">Explore our services →</a></section>';
  const email=enabled('contact')&&b.contactEmail?'<p>Reach out to our team using the supplied email address below.</p><p><a class="button" href="mailto:'+s(b.contactEmail)+'?subject='+encodeURIComponent('Inquiry for '+b.businessName)+'">Email '+brand+' →</a></p><p>Email: <a href="mailto:'+s(b.contactEmail)+'">'+s(b.contactEmail)+'</a></p>':'<p>Contact information has not been supplied. Add a verified business email before publishing this website.</p>';
- return {name:b.businessName,pages:[
+ return {name:b.businessName,pages:enhanceImmersivePages([
  {slug:'index',title:'Home',html:wrap('Home','<p class="eyebrow">'+industry+'</p><h1>'+brand+'</h1><p>'+desc+'</p><a class="button" href="services.html">'+s(actionLabel)+'</a>'+visual(photos[0],b.industry+' photography')+(enabled('content')?'<div class="cards">'+cards+'</div>':'')+feature)},
  {slug:'services',title:offeringLabel,html:wrap(offeringLabel,'<p class="eyebrow">What we offer</p><h1>'+s(offeringLabel)+'</h1>'+visual(photos[1],b.industry+' services')+(enabled('content')?'<div class="cards">'+cards+'</div>':'') )},
  {slug:'about',title:'About',html:wrap('About','<p class="eyebrow">Our story</p><h1>About '+brand+'</h1><p>'+desc+'</p>')},
  {slug:'contact',title:'Contact',html:wrap('Contact','<p class="eyebrow">Start a conversation</p><h1>Contact us</h1>'+email)}
- ]};
+ ])};
 }
