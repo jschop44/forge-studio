@@ -144,3 +144,11 @@ test('query routes produce stable and distinct safe preview filenames',()=>{
  assert.ok(filenames.every(name=>/^[a-zA-Z0-9_-]+\.html$/.test(name)));
  assert.deepEqual(blueprintToPages(blueprint).map(p=>p.filename),filenames);
 });
+
+test('secondary pages without observed links inherit safe global navigation',()=>{
+ const pages=blueprintToPages({version:1,sourceUrl:'https://example.com',title:'Site',sections:[],
+  navigation:[{label:'Home',target:'/'},{label:'Contact',target:'/contact'}],
+  pages:[{path:'/',title:'Home',regions:[],navigation:[]},{path:'/contact',title:'Contact',regions:[],navigation:[]}]});
+ assert.match(pages[1].html,/href="index\.html"/);
+ assert.match(pages[1].html,/href="contact\.html"/);
+});
