@@ -205,9 +205,8 @@ export default function BusinessGenerator(){
  try{
  const response=await fetch('/api/ai/business',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(input)});
  if(!response.ok)throw Error((await response.json()).error||'AI generation unavailable');
- const result=await response.json();setPages(automaticallyOptimizeMetadata(automaticallyApplyBrand([...createContextualShowcase(input),...enhanceImmersivePages([...result.pages.filter((p:GeneratedPage)=>p.slug!=='index'),...additionalPages()])])));setActive('index');setStatus(designMode==='inspired'?'Style-inspired website generated using available reference colors and typography.':designMode==='redesign'?'New website generated from extracted homepage details. Review accuracy and design.':result.provider==='ollama'?'Website created with local AI.':'Website created with automatic design and content. Local AI is optional.');
- }catch{
- try{const site=generateBusinessWebsite(input);setPages(automaticallyOptimizeMetadata(automaticallyApplyBrand([...createContextualShowcase(input),...enhanceImmersivePages([...site.pages.filter(p=>p.slug!=='index'),...additionalPages()])])));setActive('index');setStatus('Website created with the free automatic generator after the AI endpoint was unavailable. Review all generated content before publishing.')}catch{setStatus('Unable to generate. Check your business name and description.')}
+ const result=await response.json();setPages(automaticallyOptimizeMetadata(automaticallyApplyBrand([...createContextualShowcase(input),...enhanceImmersivePages([...result.pages.filter((p:GeneratedPage)=>p.slug!=='index'),...additionalPages()])])));setActive('index');setStatus('Website draft generated. Review its content and design before publishing.');
+ }catch{setStatus('Website generation is temporarily unavailable. Please try again when the generation service is ready.');
  }finally{setBusy(false)}
  }
  return <div className="business-generator forge-auto">
