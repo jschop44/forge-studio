@@ -267,3 +267,11 @@ test('all generated routes composite immersive WebGL above content without block
   }
  }
 });
+
+test('immersive framebuffer limits total pixel count on large displays',()=>{
+ const pages=generateBusinessWebsite({businessName:'Harbor Studio',industry:'Architecture',description:'Independent design practice.',services:['Architecture']}).pages;
+ for(const page of pages){
+  assert.ok(page.html.includes('Math.sqrt(2200000/Math.max(1,innerWidth*innerHeight*density*density))'),'Missing framebuffer budget on '+page.slug);
+  assert.ok(page.html.includes('const pixelRatio=density*budgetScale'),'Missing budget scaling on '+page.slug);
+ }
+});
