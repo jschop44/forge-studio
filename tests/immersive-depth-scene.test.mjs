@@ -58,3 +58,13 @@ test('depth scene builder tolerates missing pages and skips unbounded observatio
  assert.equal(scene.layers.length,1);
  assert.equal(scene.layers[0].role,'hero');
 });
+
+test('3D projection preserves deep-page regions within capture height limit',()=>{
+ const scene=buildDepthScene({version:1,pages:[{regions:[
+  {type:'footer',bounds:{x:0,y:15000,width:900,height:200}}
+ ]}]});
+ assert.equal(scene.layers.length,1);
+ const projected=projectDepthScene(scene,375,{reducedMotion:true});
+ assert.ok(projected.layers[0].y>0);
+ assert.equal(projected.layers[0].depth,0);
+});
