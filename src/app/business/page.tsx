@@ -130,6 +130,17 @@ export default function BusinessGenerator(){
   }catch{setStatus('Unable to create the reviewed draft. Check the source and supplied business facts.')}
  }
  function additionalPages(){if(designMode==='new'||!inspected)return [] as GeneratedPage[];const used=new Set(['index','services','about','contact']);return (inspected.pageSummaries||[]).map(page=>{const segments=page.path.split('/').filter(Boolean);const slug=segments.join('-').toLowerCase().replace(/[^a-z0-9-]/g,'-').slice(0,48)||'';if(!slug||used.has(slug))return null;used.add(slug);const safe=(v:string)=>v.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');const title=safe(page.title||page.label);const summary=safe(page.description||'Content extracted from a public page; verify before publishing.');const headings=page.headings.slice(0,5).map(h=>'<li>'+safe(h)+'</li>').join('');const pageNav=(inspected.pageSummaries||[]).map(other=>{const otherSlug=other.path.split('/').filter(Boolean).join('-').toLowerCase().replace(/[^a-z0-9-]/g,'-').slice(0,48);return otherSlug&&otherSlug!==slug?'<a href="'+safe(otherSlug)+'.html">'+safe(other.label)+'</a>':''}).join('');return {slug,title:page.label,html:'<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>'+title+'</title><style>body{margin:0;background:#151923;color:#f7f5ef;font:18px system-ui,sans-serif}nav{padding:25px 7%;display:flex;gap:24px;flex-wrap:wrap}a{color:#d9c7a4}main{max-width:900px;margin:10vh auto;padding:0 7%}h1{font-size:clamp(36px,7vw,80px)}p{line-height:1.7}li{margin:16px 0}</style></head><body><nav><a href="index.html">Home</a><a href="services.html">Services</a><a href="about.html">About</a><a href="contact.html">Contact</a>'+pageNav+'</nav><main><h1>'+title+'</h1><p>'+summary+'</p><ul>'+headings+'</ul><p>Reconstructed content summary, not a copy of the original page or its functionality.</p></main></body></html>'} as GeneratedPage}).filter((page):page is GeneratedPage=>page!==null)}
+ function automaticallyApplyBrand(pagesToStyle:GeneratedPage[]):GeneratedPage[]{
+  const accent=designMode==='inspired'&&/^#[0-9a-fA-F]{3,8}$/.test(referenceStyle.accent||'')?referenceStyle.accent:null;
+  if(!accent)return pagesToStyle;
+  return pagesToStyle.map(page=>{
+   const doc=new DOMParser().parseFromString(page.html,'text/html');
+   const style=doc.createElement('style');
+   style.textContent=':root{--forge-auto-accent:'+accent+'}a{color:var(--forge-auto-accent)}';
+   doc.head.appendChild(style);
+   return {...page,html:'<!doctype html>\\n'+doc.documentElement.outerHTML};
+  });
+ }
  async function generate(){
  if(name.trim().length<2){setStatus('Enter your business name to get started.');return}if(designMode!=='new'&&!inspected&&!referenceMarkup.trim()){setStatus('Click Extract website appearance/details before generating, or paste saved HTML.');return}
  setBusy(true);setStatus('Building your website and choosing its design automatically…');
@@ -137,9 +148,9 @@ export default function BusinessGenerator(){
  try{
  const response=await fetch('/api/ai/business',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(input)});
  if(!response.ok)throw Error((await response.json()).error||'AI generation unavailable');
- const result=await response.json();setPages([...createContextualShowcase(input),...result.pages.filter((p:GeneratedPage)=>p.slug!=='index'),...additionalPages()]);setActive('index');setStatus(designMode==='inspired'?'Style-inspired website generated using available reference colors and typography.':designMode==='redesign'?'New website generated from extracted homepage details. Review accuracy and design.':result.provider==='ollama'?'Website created with local AI.':'Website created with automatic design and content. Local AI is optional.');
+ const result=await response.json();setPages(automaticallyApplyBrand([...createContextualShowcase(input),...result.pages.filter((p:GeneratedPage)=>p.slug!=='index'),...additionalPages()]));setActive('index');setStatus(designMode==='inspired'?'Style-inspired website generated using available reference colors and typography.':designMode==='redesign'?'New website generated from extracted homepage details. Review accuracy and design.':result.provider==='ollama'?'Website created with local AI.':'Website created with automatic design and content. Local AI is optional.');
  }catch{
- try{const site=generateBusinessWebsite(input);setPages([...createContextualShowcase(input),...site.pages.filter(p=>p.slug!=='index'),...additionalPages()]);setActive('index');setStatus('Website created with the free automatic generator after the AI endpoint was unavailable. Review all generated content before publishing.')}catch{setStatus('Unable to generate. Check your business name and description.')}
+ try{const site=generateBusinessWebsite(input);setPages(automaticallyApplyBrand([...createContextualShowcase(input),...site.pages.filter(p=>p.slug!=='index'),...additionalPages()]));setActive('index');setStatus('Website created with the free automatic generator after the AI endpoint was unavailable. Review all generated content before publishing.')}catch{setStatus('Unable to generate. Check your business name and description.')}
  }finally{setBusy(false)}
  }
  return <div className="business-generator forge-auto">
