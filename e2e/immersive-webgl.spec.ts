@@ -68,7 +68,8 @@ test('production generator exports immersive Home Services About and Contact pag
   page.on('pageerror',onError);
   await page.setContent(generated.html);
   await expect(page.locator('main#main-content')).toHaveCount(1);
-  await expect(page.locator('#forge-webgl-atmosphere')).toHaveCount(1);
+  const webglSupported=await page.evaluate(()=>{const probe=document.createElement('canvas');return !!probe.getContext('webgl')});
+  await expect(page.locator('#forge-webgl-atmosphere')).toHaveCount(webglSupported?1:0);
   await expect(page.locator('nav[aria-label="Main navigation"]')).toHaveCount(1);
   expect(errors,generated.slug).toEqual([]);
   page.off('pageerror',onError);
