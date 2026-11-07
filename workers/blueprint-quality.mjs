@@ -16,6 +16,7 @@ export function assessBlueprint(blueprint){
  const totalPages=pages.length;
  const pagesWithRegions=pages.filter(p=>Array.isArray(p?.regions)&&p.regions.length>0).length;
  const pagesWithNavigation=pages.filter(p=>Array.isArray(p?.navigation)&&p.navigation.length>0).length;
+ const pagesWithMeasuredRegions=pages.filter(p=>Array.isArray(p?.regions)&&p.regions.some(r=>validBounds(r?.bounds))).length;
  const pagesWithDesignTokens=pages.filter(p=>p?.designTokens&&Object.values(p.designTokens).some(v=>typeof v==='string'&&v.length>0)).length;
  if(failedNavigation.length)warnings.push('Some read-only navigation probes failed');
  const pagePaths=new Set();
@@ -31,5 +32,5 @@ export function assessBlueprint(blueprint){
  if(!links)warnings.push('No navigation links observed');
  if(!blueprint.provenance||blueprint.provenance.generatedContent!==false)warnings.push('Source provenance is missing or untrusted');
  const checks={measuredGeometry:regions>0&&unmeasuredRegions===0,pageCoverage:pages.length>0,visualRegions:regions>0,sourceProvenance:blueprint.provenance?.generatedContent===false,interactionVerification:buttons+forms===0,uniquePagePaths:duplicatePaths===0,allPagesHaveRegions:emptyPages===0,readOnlyNavigation:failedNavigation.length===0};
- return {version:1,pages:pages.length,coverage:{visual:totalPages?pagesWithRegions/totalPages:0,navigation:totalPages?pagesWithNavigation/totalPages:0,designTokens:totalPages?pagesWithDesignTokens/totalPages:0},regions,measuredRegions,unmeasuredRegions,geometryCoverage:regions?measuredRegions/regions:0,duplicatePaths,emptyPages,navigationProbes:probes.length,failedNavigation:failedNavigation.length,observed:{links,buttons,forms},checks,warnings,publicationReady:false,requiresHumanReview:true};
+ return {version:1,pages:pages.length,coverage:{visual:totalPages?pagesWithRegions/totalPages:0,measuredPages:totalPages?pagesWithMeasuredRegions/totalPages:0,navigation:totalPages?pagesWithNavigation/totalPages:0,designTokens:totalPages?pagesWithDesignTokens/totalPages:0},regions,measuredRegions,unmeasuredRegions,geometryCoverage:regions?measuredRegions/regions:0,duplicatePaths,emptyPages,navigationProbes:probes.length,failedNavigation:failedNavigation.length,observed:{links,buttons,forms},checks,warnings,publicationReady:false,requiresHumanReview:true};
 }
