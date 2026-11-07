@@ -152,3 +152,13 @@ test('secondary pages without observed links inherit safe global navigation',()=
  assert.match(pages[1].html,/href="index\.html"/);
  assert.match(pages[1].html,/href="contact\.html"/);
 });
+
+test('filename collisions with existing numeric slugs still preserve all navigation targets',()=>{
+ const pages=blueprintToPages({version:1,sourceUrl:'https://example.com',sections:[],pages:[
+  {path:'/a',title:'A',regions:[],navigation:[{label:'Second',target:'/a-2'}]},
+  {path:'/a-2',title:'A-2',regions:[]},
+  {path:'/a',title:'Duplicate A',regions:[]}
+ ]});
+ assert.deepEqual(pages.map(p=>p.filename),['a.html','a-2.html','a-3.html']);
+ assert.match(pages[0].html,/href="a-2\.html"/);
+});
