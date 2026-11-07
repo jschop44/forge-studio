@@ -204,3 +204,13 @@ test('homepage WebGL controller includes a complete renderer lifecycle',()=>{
  }
  assert.equal((html.match(/id="forge-home-webgl-controller"/g)||[]).length,1);
 });
+
+test('homepage WebGL remains visible above opaque layouts without intercepting interactions',()=>{
+ const page=generateBusinessWebsite({businessName:'Northstar Coffee',industry:'Coffee shop',description:'Fresh coffee and pastries for the neighborhood.',services:['Espresso']}).pages[0];
+ const css=page.html.split('<style id="forge-home-webgl">')[1]?.split('</style>')[0];
+ assert.ok(css);
+ assert.ok(css.includes('z-index:2'));
+ assert.ok(css.includes('pointer-events:none'));
+ assert.ok(css.includes('mix-blend-mode:screen'));
+ assert.ok(css.includes('prefers-reduced-motion:reduce'));
+});
