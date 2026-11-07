@@ -47,3 +47,12 @@ test('spatial enhancement skips incomplete HTML documents safely',()=>{
  const pages=[{slug:'about',html:'<h1>fragment</h1>'}];
  assert.deepEqual(enhanceImmersivePages(pages),pages);
 });
+
+test('secondary-page depth responds to pointer input without duplicating the layer',()=>{
+ const original=[{slug:'services',html:'<!doctype html><html><head></head><body><main><div class="card">Service</div></main></body></html>'}];
+ const enhanced=enhanceImmersivePages(original);
+ assert.match(enhanced[0].html,/--forge-tilt-x/);
+ assert.match(enhanced[0].html,/pointerleave/);
+ assert.match(enhanced[0].html,/hover:hover/);
+ assert.equal(enhanceImmersivePages(enhanced)[0].html,enhanced[0].html);
+});
