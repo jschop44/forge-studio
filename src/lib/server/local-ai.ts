@@ -23,7 +23,7 @@ export async function checkLocalAiReadiness():Promise<{ready:boolean;reason:'rea
   const models=(payload&&typeof payload==='object'&&'models' in payload)?(payload as {models:unknown}).models:null;
   if(!Array.isArray(models))return {ready:false,reason:'unreachable'};
   const desired=ollamaConfig().model;
-  const found=models.some((item:unknown)=>item&&typeof item==='object'&&'name' in item&&(item as {name:unknown}).name===desired);
+  const found=models.some((item:unknown)=>item&&typeof item==='object'&&(('name' in item&&(item as {name:unknown}).name===desired)||('model' in item&&(item as {model:unknown}).model===desired)));
   return found?{ready:true,reason:'ready'}:{ready:false,reason:'model_missing'};
  }catch{return {ready:false,reason:'unreachable'}}finally{clearTimeout(timeout)}
 }
@@ -31,7 +31,7 @@ export async function generateWithLocalAi(input:{businessName:string;industry:st
  let draft!:AiDraft;
  {
  const config=ollamaConfig();const url=config.url;
- const controller=new AbortController();const timeout=setTimeout(()=>controller.abort(),18000);
+ const controller=new AbortController();const timeout=setTimeout(()=>controller.abort(),60000);
  try{const response=await fetch(new URL('/api/generate',url),{method:'POST',signal:controller.signal,headers:{'Content-Type':'application/json',...config.headers},body:JSON.stringify({model:config.model,stream:false,format:'json',prompt:'Return ONLY JSON with keys businessName, industry, description, services. Write concise accurate marketing copy using only facts supplied by user. Do not invent credentials, customer testimonials, pricing or performance claims. Keep all copy professional and family-friendly, including Halloween and seasonal topics: no graphic horror, gore, sexual content, drug promotion, or disturbing imagery descriptions. Input: '+JSON.stringify(input)})});
  if(!response.ok)throw Error('Local AI returned HTTP '+response.status);
  if(response.ok){const payload=await response.json();const parsed=DraftSchema.safeParse(JSON.parse(String(payload.response||'{}')));if(parsed.success){draft=parsed.data}else throw Error('Local AI returned an invalid draft')}
