@@ -5,9 +5,12 @@ import {generateWithLocalAi} from '../../../lib/server/local-ai';
 export const runtime='nodejs';
 const limits=new Map<string,{count:number;reset:number}>();
 export async function POST(req:NextRequest){
- const ip=req.headers.get('x-forwarded-for')?.split(',')[0]?.trim()||'unknown';
+ // A client-supplied X-Forwarded-For value is not an authenticated identity.
+ // Use the platform-provided connecting address where available, and a
+ // conservative shared bucket otherwise to prevent header-based limit bypass.
+ const ip=req.headers.get('x-real-ip')?.trim()||'shared';
  const now=Date.now();
- if(limits.size>2000){for(const [address,entry] of limits){if(entry.reset<=now)limits.delete(address)}if(limits.size>2000)limits.clear()}
+ if(limits.size>2000){for(const [address,entry] of limits){if(entry.reset<=now)limits.delete(address)}}
  const limit=limits.get(ip);
  if(limit&&limit.reset>now&&limit.count>=10)return NextResponse.json({error:'Rate limit exceeded. Try again later.'},{status:429});
  let body:unknown;
