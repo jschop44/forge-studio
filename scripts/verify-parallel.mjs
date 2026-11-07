@@ -20,5 +20,13 @@ for(const result of results){
  console.log('['+result.name+'] '+(result.code===0?'PASS':'FAIL')+' '+result.seconds.toFixed(1)+'s');
  if(result.code!==0)console.error(result.output.slice(-12000));
 }
-console.log('Parallel verification wall time '+((performance.now()-start)/1000).toFixed(1)+'s');
+const elapsed=(performance.now()-start)/1000;
+const sequential=results.reduce((sum,result)=>sum+result.seconds,0);
+const improvement=sequential>0?100*(1-elapsed/sequential):0;
+console.log('Parallel verification wall time '+elapsed.toFixed(1)+'s');
+console.log('Measured verification stage speedup vs sum of individual job durations: '+improvement.toFixed(1)+'%');
+if(process.env.GITHUB_STEP_SUMMARY){
+ const {appendFileSync}=await import('node:fs');
+ appendFileSync(process.env.GITHUB_STEP_SUMMARY,'\\n### Parallel verification timing\\n- Elapsed: '+elapsed.toFixed(1)+'s\\n- Sum of individual check durations: '+sequential.toFixed(1)+'s\\n- Stage time reduction: '+improvement.toFixed(1)+'%\\n');
+}
 if(results.some(result=>result.code!==0))process.exitCode=1;
