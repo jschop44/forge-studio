@@ -4,11 +4,13 @@ const DraftSchema=z.object({businessName:z.string().min(2).max(100),industry:z.s
 export type AiDraft=z.infer<typeof DraftSchema>;
 export type AiGenerationResult={draft:AiDraft;provider:'ollama';pages:ReturnType<typeof generateBusinessWebsite>['pages']};
 function ollamaConfig(){
- const key=process.env.OLLAMA_API_KEY?.trim();
- if(key)return {url:new URL('https://ollama.com'),model:process.env.OLLAMA_MODEL||'gemma4:31b',headers:{Authorization:'Bearer '+key}};
+ // Free beta: cloud inference is disabled even when a legacy cloud key is configured.
+ // Keep all requests on the loopback Ollama service to prevent token charges.
  const url=new URL(process.env.OLLAMA_URL||'http://127.0.0.1:11434');
  if(!['localhost','127.0.0.1','::1'].includes(url.hostname)||!['http:','https:'].includes(url.protocol))throw Error('OLLAMA_URL must be a loopback endpoint');
- return {url,model:process.env.OLLAMA_MODEL||'llama3.2:3b',headers:{} as Record<string,string>};
+ const model=process.env.OLLAMA_MODEL||'llama3.2:3b';
+ if(/(?:^|[:/])beam(?:$|[:/])|:cloud\b/i.test(model))throw Error('Paid/cloud models are disabled for free beta');
+ return {url,model,headers:{} as Record<string,string>};
 }
 export async function checkLocalAiReadiness():Promise<{ready:boolean;reason:'ready'|'unreachable'|'model_missing'|'invalid_endpoint'}>{
  let url:URL;
