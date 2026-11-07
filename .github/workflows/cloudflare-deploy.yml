@@ -48,3 +48,18 @@ jobs:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
         run: npm run deploy:cloudflare
+
+      - name: Smoke test deployed Cloudflare preview
+        if: ${{ inputs.publish }}
+        env:
+          PREVIEW_URL: https://forge-studio-preview.stands-old-3h.workers.dev
+        run: |
+          set -euo pipefail
+          echo "Checking preview homepage"
+          curl --fail --silent --show-error --location --retry 4 --retry-delay 3 --retry-all-errors --max-time 30 --output /tmp/forge-home.html "$PREVIEW_URL/"
+          test -s /tmp/forge-home.html || { echo "::error::Preview homepage returned an empty response"; exit 1; }
+          echo "Homepage returned nonempty HTTP success response"
+          echo "Checking readiness endpoint (diagnostic; external database secrets may not yet be configured)"
+          curl --silent --show-error --max-time 20 --output /tmp/forge-ready.json --write-out 'Readiness HTTP status: %{http_code}\\n' "$PREVIEW_URL/api/health/ready" || true
+          head -c 500 /tmp/forge-ready.json || true
+          echo
