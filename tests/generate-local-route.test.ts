@@ -9,7 +9,7 @@ describe('legacy website generation uses mandatory local AI',()=>{
   let calls=0;
   try{
    globalThis.fetch=async()=>{calls++;throw Error('unexpected model call')};
-   const request=new NextRequest('http://localhost/api/generate',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({name:'A',description:'short',template:'ember'})});
+   const request=new NextRequest('http://localhost/api/generate',{method:'POST',headers:{'content-type':'application/json','origin':'http://localhost'},body:JSON.stringify({name:'A',description:'short',template:'ember'})});
    const response=await POST(request);
    assert.equal(response.status,400);
    assert.equal(calls,0);
@@ -30,7 +30,7 @@ describe('legacy website generation uses mandatory local AI',()=>{
     assert.match(prompt,/Residential planning/);
     return new Response(JSON.stringify({response:JSON.stringify({businessName:'Cedar Studio',industry:'Creative studio',description:'A small creative studio creating distinctive websites for independent brands.',services:['Website design']})}),{status:200});
    };
-   const request=new NextRequest('http://localhost/api/generate',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({name:'Cedar Studio',description:'A small creative studio creating distinctive websites for independent brands.',template:'ember',industry:'Architecture',services:['Residential planning']})});
+   const request=new NextRequest('http://localhost/api/generate',{method:'POST',headers:{'content-type':'application/json','origin':'http://localhost'},body:JSON.stringify({name:'Cedar Studio',description:'A small creative studio creating distinctive websites for independent brands.',template:'ember',industry:'Architecture',services:['Residential planning']})});
    const response=await POST(request);
    assert.equal(response.status,200);
    const result=await response.json();
@@ -57,7 +57,7 @@ describe('legacy website generation uses mandatory local AI',()=>{
    const payload=JSON.stringify({name:'Oak Studio',description:'An independent design studio serving local businesses and families.',template:'minimal'});
    const statuses:number[]=[];
    for(let index=0;index<11;index++){
-    const request=new NextRequest('http://localhost/api/generate',{method:'POST',headers:{'content-type':'application/json','x-forwarded-for':'192.0.2.'+index,'x-real-ip':'198.51.100.20'},body:payload});
+    const request=new NextRequest('http://localhost/api/generate',{method:'POST',headers:{'content-type':'application/json','origin':'http://localhost','x-forwarded-for':'192.0.2.'+index,'x-real-ip':'198.51.100.20'},body:payload});
     statuses.push((await POST(request)).status);
    }
    assert.equal(statuses.filter(status=>status===200).length,10);
@@ -67,5 +67,27 @@ describe('legacy website generation uses mandatory local AI',()=>{
    globalThis.fetch=original;
    if(previousUrl===undefined)delete process.env.OLLAMA_URL;else process.env.OLLAMA_URL=previousUrl;
   }
+ });
+ it('rejects cross-origin requests before model inference',async()=>{
+  const original=globalThis.fetch;
+  let calls=0;
+  try{
+   globalThis.fetch=async()=>{calls++;throw Error('unexpected model call')};
+   const request=new NextRequest('http://localhost/api/generate',{method:'POST',headers:{'content-type':'application/json','origin':'https://untrusted.example'},body:JSON.stringify({name:'Oak Studio',description:'An independent design studio serving local businesses and families.',template:'minimal'})});
+   const response=await POST(request);
+   assert.equal(response.status,403);
+   assert.equal(calls,0);
+  }finally{globalThis.fetch=original}
+ });
+ it('rejects oversized requests before model inference',async()=>{
+  const original=globalThis.fetch;
+  let calls=0;
+  try{
+   globalThis.fetch=async()=>{calls++;throw Error('unexpected model call')};
+   const request=new NextRequest('http://localhost/api/generate',{method:'POST',headers:{'content-type':'application/json','origin':'http://localhost'},body:JSON.stringify({name:'Oak Studio',description:'X'.repeat(9000),template:'minimal'})});
+   const response=await POST(request);
+   assert.equal(response.status,413);
+   assert.equal(calls,0);
+  }finally{globalThis.fetch=original}
  });
 });
