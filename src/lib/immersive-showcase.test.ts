@@ -236,3 +236,11 @@ test('immersive enhancement leaves incomplete HTML documents untouched',()=>{
   assert.equal(enhanceImmersivePages([{slug:'services',html}])[0].html,html);
  }
 });
+
+test('immersive WebGL uses lower resolution on narrow mobile viewports',()=>{
+ const pages=generateBusinessWebsite({businessName:'Northstar Coffee',industry:'Coffee shop',description:'Independent cafe offering coffee and pastries.',services:['Coffee']}).pages;
+ for(const page of pages){
+  assert.ok(page.html.includes('innerWidth<600?1:1.5'),'Missing mobile GPU cap on '+page.slug);
+  assert.ok(page.html.includes('now-lastPaint<33'),'Missing frame rate cap on '+page.slug);
+ }
+});
