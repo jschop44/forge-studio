@@ -75,3 +75,23 @@ test('production generator exports immersive Home Services About and Contact pag
   page.off('pageerror',onError);
  }
 });
+
+test('homepage WebGL overlay never blocks navigation or form interaction',async({page})=>{
+ const html=enhanceImmersivePages([{slug:'index',html:source.replace('<main>','<nav><a href="#contact">Contact</a></nav><main><input aria-label="Visitor name"><section id="contact">Contact</section>')}])[0].html;
+ await page.setContent(html);
+ const input=page.getByRole('textbox',{name:'Visitor name'});
+ await input.fill('Alex');
+ await expect(input).toHaveValue('Alex');
+ await page.getByRole('link',{name:'Contact'}).click();
+ await expect(page).toHaveURL(/#contact$/);
+ const overlay=page.locator('#forge-webgl-atmosphere');
+ if(await overlay.count())await expect(overlay).toHaveCSS('pointer-events','none');
+});
+
+test('homepage WebGL is absent with reduced motion enabled',async({page})=>{
+ await page.emulateMedia({reducedMotion:'reduce'});
+ await page.setContent(enhanceImmersivePages([{slug:'index',html:source}])[0].html);
+ await expect(page.locator('#forge-home-webgl-controller')).toHaveCount(1);
+ await expect(page.locator('#forge-webgl-atmosphere')).toHaveCount(0);
+ await expect(page.locator('main section')).toHaveCount(2);
+});
