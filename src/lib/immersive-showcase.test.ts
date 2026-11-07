@@ -122,3 +122,12 @@ test('WebGL camera eases pointer and scroll movement instead of snapping',()=>{
  assert.match(html,/cameraScroll\+=\(scrollY-cameraScroll\)\*\.1/);
  assert.match(html,/gl\.uniform1f\(scroll,cameraScroll\)/);
 });
+
+test('failed GPU program setup cleans up shaders and removes unused canvas',()=>{
+ const html=enhanceImmersivePages([{slug:'services',html:'<!doctype html><html><head></head><body><main>Services</main></body></html>'}])[0].html;
+ assert.match(html,/gl\.deleteProgram\(program\)/);
+ assert.match(html,/gl\.deleteShader\(vs\)/);
+ assert.match(html,/gl\.deleteShader\(fs\)/);
+ assert.match(html,/if\(vs\)gl\.deleteShader\(vs\)/);
+ assert.match(html,/if\(fs\)gl\.deleteShader\(fs\)/);
+});
