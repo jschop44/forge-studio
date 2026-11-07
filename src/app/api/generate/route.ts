@@ -12,10 +12,11 @@ export async function POST(req:NextRequest){
  if(!sameOrigin(req))return NextResponse.json({error:'Origin rejected'},{status:403});
  const length=Number(req.headers.get('content-length')||0);
  if(length>8000)return NextResponse.json({error:'Brief too large'},{status:413});
- // A client-supplied X-Forwarded-For value is not an authenticated identity.
- // Use the platform-provided connecting address where available, and a
- // conservative shared bucket otherwise to prevent header-based limit bypass.
- const ip=req.headers.get('x-real-ip')?.trim()||'shared';
+ // Without a trusted reverse-proxy identity contract, both X-Forwarded-For
+ // and X-Real-IP can be client-controlled. Use one conservative shared bucket
+ // rather than falsely trusting either header. Replace with an authenticated
+ // principal or trusted edge rate limiter before public multi-user launch.
+ const ip='shared';
  const now=Date.now();
  if(limits.size>2000){for(const [address,entry] of limits){if(entry.reset<=now)limits.delete(address)}}
  const limit=limits.get(ip);
