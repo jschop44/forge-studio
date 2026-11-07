@@ -86,3 +86,14 @@ test('measured-page coverage distinguishes pages with and without valid geometry
  assert.equal(report.geometryCoverage,0.5);
  assert.equal(report.checks.measuredGeometry,false);
 });
+
+test('unbounded or off-document coordinates fail measured geometry checks',()=>{
+ const report=assessBlueprint({version:1,pages:[{regions:[
+  {bounds:{x:0,y:0,width:500,height:300}},
+  {bounds:{x:0,y:25000,width:500,height:300}},
+  {bounds:{x:0,y:0,width:Infinity,height:300}}
+ ]}]});
+ assert.equal(report.measuredRegions,1);
+ assert.equal(report.unmeasuredRegions,2);
+ assert.equal(report.checks.measuredGeometry,false);
+});
