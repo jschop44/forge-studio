@@ -30,7 +30,15 @@ export async function checkLocalAiReadiness():Promise<{ready:boolean;reason:'rea
   return found?{ready:true,reason:'ready'}:{ready:false,reason:'model_missing'};
  }catch{return {ready:false,reason:'unreachable'}}finally{clearTimeout(timeout)}
 }
+// Free-tier CPU inference cannot safely process unlimited simultaneous prompts.
+// Reject excess work promptly instead of building an unbounded in-memory queue.
+const MAX_ACTIVE_GENERATIONS=2;
+let activeGenerations=0;
+export function localAiCapacity(){return {active:activeGenerations,capacity:MAX_ACTIVE_GENERATIONS}}
 export async function generateWithLocalAi(input:{businessName:string;industry:string;description:string;services:string[];contactEmail?:string}):Promise<AiGenerationResult>{
+ if(activeGenerations>=MAX_ACTIVE_GENERATIONS)throw Error('Local AI capacity exceeded');
+ activeGenerations++;
+ try {
  let draft!:AiDraft;
  {
  const config=ollamaConfig();const url=config.url;
@@ -50,4 +58,5 @@ export async function generateWithLocalAi(input:{businessName:string;industry:st
  };
  const validated=DraftSchema.parse(verifiedDraft);
  return {draft:validated,provider:'ollama',pages:generateBusinessWebsite({...validated,contactEmail:input.contactEmail}).pages};
+ } finally {activeGenerations--}
 }
