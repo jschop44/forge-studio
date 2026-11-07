@@ -66,8 +66,7 @@ jobs:
           key: playwright-${{ runner.os }}-${{ hashFiles('package.json') }}
           restore-keys: |
             playwright-${{ runner.os }}-
-      - run: npx playwright install chromium
-      - run: npx playwright install-deps chromium
+      - run: npx playwright install --with-deps chromium
       - run: npm run test:e2e
       - name: Publish browser verification summary
         if: always()
