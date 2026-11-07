@@ -14,7 +14,9 @@
     "db:migrate": "tsx scripts/migrate.ts",
     "verify:fast": "node scripts/verify-parallel.mjs",
     "verify": "npm run verify:fast && npm run build",
-    "test:e2e": "playwright test"
+    "test:e2e": "playwright test",
+    "build:cloudflare": "opennextjs-cloudflare build",
+    "deploy:cloudflare": "opennextjs-cloudflare deploy"
   },
   "dependencies": {
     "next": "^15.3.0",
@@ -35,6 +37,8 @@
     "@types/react-dom": "^19.0.0",
     "@types/three": "^0.175.0",
     "tsx": "^4.20.0",
-    "@playwright/test": "^1.56.0"
+    "@playwright/test": "^1.56.0",
+    "@opennextjs/cloudflare": "^1.20.16",
+    "wrangler": "^4.68.0"
   }
 }
