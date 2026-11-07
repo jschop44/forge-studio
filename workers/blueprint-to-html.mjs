@@ -53,5 +53,5 @@ export function blueprintToPages(blueprint){
  if(!blueprint||blueprint.version!==1||!Array.isArray(blueprint.sections))throw Error('Invalid blueprint');
  const pages=Array.isArray(blueprint.pages)&&blueprint.pages.length?blueprint.pages.slice(0,12):[null];
  const filenames=previewFileNames(pages);
- return pages.map((page,index)=>({filename:filenames[index],title:typeof page?.title==='string'?page.title:blueprint.title||'Website',html:blueprintToHtml(blueprint,index,true)});
+ return pages.map((page,index)=>({filename:filenames[index],title:typeof page?.title==='string'?page.title:blueprint.title||'Website',html:blueprintToHtml(blueprint,index,true)}));
 }
