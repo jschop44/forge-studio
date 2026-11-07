@@ -7,10 +7,12 @@ const brief={businessName:'Northstar Coffee',industry:'Coffee shop',description:
 test('local AI is mandatory even when legacy ENABLE_LOCAL_AI is unset',async()=>{
  const previous=process.env.ENABLE_LOCAL_AI;
  const previousUrl=process.env.OLLAMA_URL;
+ const previousKey=process.env.OLLAMA_API_KEY;
  const previousFetch=globalThis.fetch;
  let requested=false;
  try{
   delete process.env.ENABLE_LOCAL_AI;
+  delete process.env.OLLAMA_API_KEY;
   process.env.OLLAMA_URL='http://127.0.0.1:11434';
   globalThis.fetch=async()=>{requested=true;throw new Error('model offline')};
   await assert.rejects(generateWithLocalAi(brief),/Local AI unavailable/);
@@ -19,6 +21,7 @@ test('local AI is mandatory even when legacy ENABLE_LOCAL_AI is unset',async()=>
   globalThis.fetch=previousFetch;
   if(previous===undefined)delete process.env.ENABLE_LOCAL_AI;else process.env.ENABLE_LOCAL_AI=previous;
   if(previousUrl===undefined)delete process.env.OLLAMA_URL;else process.env.OLLAMA_URL=previousUrl;
+  if(previousKey===undefined)delete process.env.OLLAMA_API_KEY;else process.env.OLLAMA_API_KEY=previousKey;
  }
 });
 
