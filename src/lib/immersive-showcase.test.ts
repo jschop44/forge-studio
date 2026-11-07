@@ -220,3 +220,19 @@ test('existing WebGL pages are not wrapped with duplicate immersive controllers'
  const result=enhanceImmersivePages([{slug:'index',html}]);
  assert.equal(result[0].html,html);
 });
+
+test('immersive enhancement is idempotent for every generated route',()=>{
+ const pages=generateBusinessWebsite({businessName:'Harbor Design',industry:'Architecture',description:'Independent design practice with immersive digital spaces.',services:['Architecture','Interiors']}).pages;
+ const again=enhanceImmersivePages(pages);
+ assert.deepEqual(again,pages);
+ for(const page of again){
+  const scripts=(page.html.match(/id="forge-(?:home-webgl-controller|spatial-controller)"/g)||[]);
+  assert.equal(scripts.length,1,'Exactly one immersive controller expected on '+page.slug);
+ }
+});
+
+test('immersive enhancement leaves incomplete HTML documents untouched',()=>{
+ for(const html of ['<main>Unclosed document','<html><head></head><body>Missing body end','<html><body>Missing head</body></html>']){
+  assert.equal(enhanceImmersivePages([{slug:'services',html}])[0].html,html);
+ }
+});
