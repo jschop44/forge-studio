@@ -13,8 +13,10 @@ const results=await Promise.all(jobs.map(([name,command,args])=>new Promise(reso
  const child=spawn(command,args,{stdio:['ignore','pipe','pipe'],env:process.env});
  let output='';
  for(const stream of [child.stdout,child.stderr])stream.on('data',chunk=>{output+=chunk.toString();if(output.length>1000000)output=output.slice(-1000000)});
- child.on('error',error=>resolve({name,code:1,seconds:(performance.now()-began)/1000,output:String(error)}));
- child.on('close',code=>resolve({name,code:code??1,seconds:(performance.now()-began)/1000,output}));
+ let settled=false;
+ const finish=(code,extra='')=>{if(settled)return;settled=true;resolve({name,code,seconds:(performance.now()-began)/1000,output:output+extra})};
+ child.on('error',error=>finish(1,String(error)));
+ child.on('close',code=>finish(code??1));
 })));
 for(const result of results){
  console.log('['+result.name+'] '+(result.code===0?'PASS':'FAIL')+' '+result.seconds.toFixed(1)+'s');
