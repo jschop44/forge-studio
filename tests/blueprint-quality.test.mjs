@@ -42,3 +42,23 @@ test('reports coverage of captured visual regions, navigation and design tokens'
  assert.equal(report.coverage.navigation,0.5);
  assert.equal(report.coverage.designTokens,0.5);
 });
+
+test('reports actual measured geometry coverage rather than assuming every region is positioned',()=>{
+ const report=assessBlueprint({version:1,pages:[{path:'/',regions:[
+  {type:'hero',bounds:{x:0,y:0,width:1200,height:400}},
+  {type:'section',bounds:{x:0,y:400,width:NaN,height:200}},
+  {type:'footer'}
+ ]}],provenance:{generatedContent:false}});
+ assert.equal(report.regions,3);
+ assert.equal(report.measuredRegions,1);
+ assert.equal(report.unmeasuredRegions,2);
+ assert.equal(report.geometryCoverage,1/3);
+ assert.equal(report.checks.measuredGeometry,false);
+ assert.ok(report.warnings.some(w=>w.includes('measured geometry')));
+});
+test('full measured geometry is explicitly reported without publication claims',()=>{
+ const report=assessBlueprint({version:1,pages:[{regions:[{bounds:{x:0,y:0,width:100,height:100}}]}]});
+ assert.equal(report.geometryCoverage,1);
+ assert.equal(report.checks.measuredGeometry,true);
+ assert.equal(report.publicationReady,false);
+});
