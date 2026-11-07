@@ -131,3 +131,9 @@ test('failed GPU program setup cleans up shaders and removes unused canvas',()=>
  assert.match(html,/if\(vs\)gl\.deleteShader\(vs\)/);
  assert.match(html,/if\(fs\)gl\.deleteShader\(fs\)/);
 });
+
+test('WebGL initialization guards missing vertex attributes and GPU buffer allocation',()=>{
+ const html=enhanceImmersivePages([{slug:'about',html:'<!doctype html><html><head></head><body><main>About</main></body></html>'}])[0].html;
+ assert.match(html,/gl\.getAttribLocation\(program,'p'\)>=0/);
+ assert.match(html,/if\(!buffer\)\{canvas\.remove\(\);gl\.deleteProgram\(program\)/);
+});
