@@ -59,6 +59,8 @@ test('verified business contact email is escaped and linked',()=>{
  const site=generateBusinessWebsite({...brief('Accounting and bookkeeping'),contactEmail:'hello@example.com'});
  const contact=site.pages.find(p=>p.slug==='contact')!.html;
  assert.match(contact,/href="mailto:hello@example\.com"/);
+ assert.match(contact,/href="mailto:hello@example\.com\?subject=Inquiry%20for%20Example%20Business"/);
+ assert.match(contact,/>Email Example Business →<\/a>/);
  assert.doesNotMatch(contact,/Contact information has not been supplied/);
 });
 test('untrusted business content is escaped before appearing in generated HTML',()=>{
