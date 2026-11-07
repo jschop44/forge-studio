@@ -90,7 +90,8 @@ jobs:
           restore-keys: |
             playwright-${{ runner.os }}-
       - run: npx playwright install --with-deps chromium
-      - run: npm run test:e2e
+      - name: Run Chromium browser tests
+        run: npm run test:e2e -- --project=chromium --workers=2
       - name: Publish browser verification summary
         if: always()
         run: |
