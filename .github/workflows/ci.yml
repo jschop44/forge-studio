@@ -27,6 +27,30 @@ jobs:
       - run: npm install --prefer-offline --no-audit --no-fund
       - name: Fast policy, unit, worker, and TypeScript checks
         run: npm run verify:fast
+      - name: Verification summary
+        if: always()
+        run: |
+          echo '## Forge Studio policy, unit, worker and type checks' >> "$GITHUB_STEP_SUMMARY"
+          echo "Elapsed job time: $(( $(date +%s) - VERIFY_STARTED )) seconds" >> "$GITHUB_STEP_SUMMARY"
+
+  build:
+    name: Production build
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Start build timing
+        run: echo "VERIFY_STARTED=$(date +%s)" >> "$GITHUB_ENV"
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - uses: actions/cache@v4
+        with:
+          path: ~/.npm
+          key: npm-${{ runner.os }}-node22-${{ hashFiles('package.json') }}
+          restore-keys: |
+            npm-${{ runner.os }}-node22-
+      - run: npm install --prefer-offline --no-audit --no-fund
       - uses: actions/cache@v4
         with:
           path: .next/cache
@@ -34,13 +58,12 @@ jobs:
           restore-keys: |
             next-${{ runner.os }}-
       - run: npm run build
-      - name: Application verification summary
+      - name: Build summary
         if: always()
         run: |
-          echo '## Forge Studio application verification' >> "$GITHUB_STEP_SUMMARY"
+          echo '## Forge Studio production build' >> "$GITHUB_STEP_SUMMARY"
           echo "Elapsed job time: $(( $(date +%s) - VERIFY_STARTED )) seconds" >> "$GITHUB_STEP_SUMMARY"
-          echo 'Review the individual policy, unit, worker, typecheck, and build steps above.' >> "$GITHUB_STEP_SUMMARY"
-          echo 'A successful build alone does not establish that production Ollama inference is reachable.' >> "$GITHUB_STEP_SUMMARY"
+          echo 'Production compilation does not establish that live AI inference is available.' >> "$GITHUB_STEP_SUMMARY"
 
   browser:
     name: Browser checks
@@ -74,7 +97,7 @@ jobs:
           echo '## Forge Studio browser verification' >> "$GITHUB_STEP_SUMMARY"
           echo "Elapsed job time: $(( $(date +%s) - VERIFY_STARTED )) seconds" >> "$GITHUB_STEP_SUMMARY"
           echo '- Review the browser job results and attached Playwright report.' >> "$GITHUB_STEP_SUMMARY"
-          echo '- Both application and browser jobs must pass before release.' >> "$GITHUB_STEP_SUMMARY"
+          echo '- Verification, production build, and browser jobs must all pass before release.' >> "$GITHUB_STEP_SUMMARY"
       - uses: actions/upload-artifact@v4
         if: always()
         with:
