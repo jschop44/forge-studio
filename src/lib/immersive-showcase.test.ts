@@ -283,3 +283,12 @@ test('immersive WebGL camera accepts touch pointer movement without blocking scr
   assert.ok(page.html.includes("},{passive:true});addEventListener('pointerdown'"),'Pointer movement must remain passive on '+page.slug);
  }
 });
+
+test('immersive WebGL suspends its animation loop during print preview',()=>{
+ const pages=generateBusinessWebsite({businessName:'Harbor Studio',industry:'Architecture',description:'Independent design practice.',services:['Architecture']}).pages;
+ for(const page of pages){
+  assert.ok(page.html.includes("const printMedia=matchMedia('print')"),'Missing print media observer on '+page.slug);
+  assert.ok(page.html.includes('reduced.matches||printMedia.matches)return'),'Missing print pause in render loop on '+page.slug);
+  assert.ok(page.html.includes("printMedia.addEventListener('change',resume)"),'Missing print resume listener on '+page.slug);
+ }
+});
