@@ -57,7 +57,8 @@ test('authenticated cloud AI generates website pages without deterministic fallb
   assert.equal(requested,true);
   assert.equal(result.provider,'ollama');
   assert.equal(result.draft.businessName,brief.businessName);
-  assert.ok(result.pages.length>0);
+  assert.deepEqual(result.pages.map(page=>page.slug),['index','services','about','contact']);
+  for(const page of result.pages){assert.match(page.html,/getContext\('webgl'/));assert.match(page.html,/canvas\.id='forge-webgl-atmosphere'/)}
  }finally{
   globalThis.fetch=previousFetch;
   if(previousKey===undefined)delete process.env.OLLAMA_API_KEY;else process.env.OLLAMA_API_KEY=previousKey;
