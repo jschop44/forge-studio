@@ -10,7 +10,7 @@ const jobs=[
 const start=performance.now();
 const results=await Promise.all(jobs.map(([name,command,args])=>new Promise(resolve=>{
  const began=performance.now();
- const child=spawn(command,args,{stdio:['ignore','pipe','pipe'],env:{...process.env,CI:'true'}});
+ const child=spawn(command,args,{stdio:['ignore','pipe','pipe'],env:process.env});
  let output='';
  for(const stream of [child.stdout,child.stderr])stream.on('data',chunk=>{output+=chunk.toString();if(output.length>1000000)output=output.slice(-1000000)});
  child.on('error',error=>resolve({name,code:1,seconds:(performance.now()-began)/1000,output:String(error)}));
