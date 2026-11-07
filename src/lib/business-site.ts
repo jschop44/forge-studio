@@ -5,7 +5,7 @@ const BriefSchema=z.object({businessName:z.string().trim().min(2).max(100),indus
 export type BusinessBrief=z.infer<typeof BriefSchema>;
 export function isExcludedBusiness(input:{businessName:string;industry:string;description:string;services:string[]}):boolean{
  const text=[input.businessName,input.industry,input.description,...input.services].join(' ').toLowerCase();
- return /\b(?:porn(?:ography|ographic)?|xxx|adult entertainment|escort services?|sex shop|sex toys?|erotic massage|strip club|cannabis|marijuana|dispensary|recreational drugs?|illicit drugs?|drug dealer|psychedelic mushrooms?|cocaine|heroin|methamphetamine)\b/i.test(text);
+ return /\b(?:porn(?:ography|ographic)?|xxx|adult entertainment|escort services?|sex shop|sex toys?|erotic massage|strip club|cannabis|marijuana|recreational drugs?|illicit drugs?|drug dealer|psychedelic mushrooms?|cocaine|heroin|methamphetamine)\b/i.test(text);
 }
 
 export type GeneratedPage={slug:string;title:string;html:string};
