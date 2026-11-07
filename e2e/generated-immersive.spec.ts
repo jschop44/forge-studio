@@ -30,3 +30,18 @@ test('mobile directional pad remains interactive on generated homepage',async({p
  await expect(beacon).toContainText('nearby');
  await expect(beacon).toBeVisible();
 });
+
+test('immersive navigation remains accessible when reduced motion is enabled',async({page})=>{
+ const home=pages.find(p=>p.slug==='index');
+ expect(home).toBeTruthy();
+ await page.emulateMedia({reducedMotion:'reduce'});
+ const failures:string[]=[];
+ page.on('pageerror',error=>failures.push(error.message));
+ await page.setContent(home!.html,{waitUntil:'domcontentloaded'});
+ const beacon=page.locator('#forge-world-beacon-link');
+ await expect(beacon).toHaveAttribute('href','services.html');
+ await expect(beacon).toBeVisible();
+ await expect(page.locator('#forge-webgl-atmosphere')).toHaveCount(1);
+ await expect(page.locator('[aria-label="Immersive world movement"]')).toBeHidden();
+ expect(failures).toEqual([]);
+});
