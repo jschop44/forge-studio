@@ -8,7 +8,7 @@ import {capturePreviewPages} from '../../lib/capture-preview';
 import {navigationQualityRecommendations} from '../../lib/navigation-quality-recommendations';
 import type {BrowserEvidence} from '../../lib/browser-evidence';
 import {downloadText} from '../../lib/export';
-import {createContextualShowcase} from '../../lib/immersive-showcase';
+import {createContextualShowcase,enhanceImmersivePages} from '../../lib/immersive-showcase';
 import {analyzeSiteEvidence,inspectionCoverage} from '../../lib/forge-intelligence';
 import {inspectionToBrowserEvidence} from '../../lib/inspection-evidence-adapter';
 import {proposeBusinessSiteFromCapture,generateReviewedCaptureSite} from '../../lib/capture-business-proposal';
@@ -205,9 +205,9 @@ export default function BusinessGenerator(){
  try{
  const response=await fetch('/api/ai/business',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(input)});
  if(!response.ok)throw Error((await response.json()).error||'AI generation unavailable');
- const result=await response.json();setPages(automaticallyOptimizeMetadata(automaticallyApplyBrand([...createContextualShowcase(input),...result.pages.filter((p:GeneratedPage)=>p.slug!=='index'),...additionalPages()])));setActive('index');setStatus(designMode==='inspired'?'Style-inspired website generated using available reference colors and typography.':designMode==='redesign'?'New website generated from extracted homepage details. Review accuracy and design.':result.provider==='ollama'?'Website created with local AI.':'Website created with automatic design and content. Local AI is optional.');
+ const result=await response.json();setPages(automaticallyOptimizeMetadata(automaticallyApplyBrand([...createContextualShowcase(input),...enhanceImmersivePages([...result.pages.filter((p:GeneratedPage)=>p.slug!=='index'),...additionalPages()])])));setActive('index');setStatus(designMode==='inspired'?'Style-inspired website generated using available reference colors and typography.':designMode==='redesign'?'New website generated from extracted homepage details. Review accuracy and design.':result.provider==='ollama'?'Website created with local AI.':'Website created with automatic design and content. Local AI is optional.');
  }catch{
- try{const site=generateBusinessWebsite(input);setPages(automaticallyOptimizeMetadata(automaticallyApplyBrand([...createContextualShowcase(input),...site.pages.filter(p=>p.slug!=='index'),...additionalPages()])));setActive('index');setStatus('Website created with the free automatic generator after the AI endpoint was unavailable. Review all generated content before publishing.')}catch{setStatus('Unable to generate. Check your business name and description.')}
+ try{const site=generateBusinessWebsite(input);setPages(automaticallyOptimizeMetadata(automaticallyApplyBrand([...createContextualShowcase(input),...enhanceImmersivePages([...site.pages.filter(p=>p.slug!=='index'),...additionalPages()])])));setActive('index');setStatus('Website created with the free automatic generator after the AI endpoint was unavailable. Review all generated content before publishing.')}catch{setStatus('Unable to generate. Check your business name and description.')}
  }finally{setBusy(false)}
  }
  return <div className="business-generator forge-auto">
