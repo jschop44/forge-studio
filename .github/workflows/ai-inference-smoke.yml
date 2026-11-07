@@ -4,13 +4,25 @@ on:
   push:
     paths:
       - '.github/workflows/ai-inference-smoke.yml'
+      - 'src/lib/server/local-ai.ts'
+      - 'src/app/api/ai/business/route.ts'
+      - 'src/lib/local-ai-required.test.ts'
 jobs:
   inference:
     runs-on: ubuntu-latest
     timeout-minutes: 8
     steps:
-      - name: Wait for Render deployment
-        run: sleep 150
+      - name: Wait for Render deployment and model readiness
+        shell: bash
+        run: |
+          for attempt in $(seq 1 20); do
+            status=$(curl --silent --show-error --max-time 15 -o /tmp/readiness.json -w '%{http_code}' 'https://forge-studio-free.onrender.com/api/ai/readiness') || status=000
+            if [ "$status" = 200 ] && node -e 'const d=require("/tmp/readiness.json");process.exit(d.ready===true?0:1)'; then
+              echo 'Production AI readiness confirmed'; exit 0
+            fi
+            sleep 12
+          done
+          echo 'Production AI readiness did not become healthy'; exit 1
       - name: Verify real production AI website generation
         shell: bash
         run: |
