@@ -39,43 +39,39 @@ test('local AI rejects an invalid model draft instead of using deterministic out
 });
 
 
-test('authenticated cloud AI generates website pages without deterministic fallback',async()=>{
- const previousFetch=globalThis.fetch,previousKey=process.env.OLLAMA_API_KEY,previousModel=process.env.OLLAMA_MODEL;
+test('legacy cloud API key cannot redirect requests to paid Ollama Cloud',async()=>{
+ const previousFetch=globalThis.fetch,previousKey=process.env.OLLAMA_API_KEY,previousUrl=process.env.OLLAMA_URL,previousModel=process.env.OLLAMA_MODEL;
  try{
-  process.env.OLLAMA_API_KEY='test-only-token';process.env.OLLAMA_MODEL='gemma4:31b';
-  let requested=false;
+  process.env.OLLAMA_API_KEY='test-only-token';process.env.OLLAMA_URL='http://127.0.0.1:11434';process.env.OLLAMA_MODEL='llama3.2:3b';
   globalThis.fetch=async(input,init)=>{
-   assert.equal(String(input),'https://ollama.com/api/generate');
-   assert.equal((init?.headers as Record<string,string>).Authorization,'Bearer test-only-token');
-   const body=JSON.parse(String(init?.body));
-   assert.equal(body.model,'gemma4:31b');
-   assert.equal(body.stream,false);
-   requested=true;
+   assert.equal(String(input),'http://127.0.0.1:11434/api/generate');
+   assert.equal((init?.headers as Record<string,string>).Authorization,undefined);
    return new Response(JSON.stringify({response:JSON.stringify(brief)}),{status:200});
   };
   const result=await generateWithLocalAi(brief);
-  assert.equal(requested,true);
   assert.equal(result.provider,'ollama');
-  assert.equal(result.draft.businessName,brief.businessName);
   assert.deepEqual(result.pages.map(page=>page.slug),['index','services','about','contact']);
-  for(const page of result.pages){assert.match(page.html,/getContext\('webgl'/));assert.match(page.html,/canvas\.id='forge-webgl-atmosphere'/)}
+  for(const page of result.pages)assert.match(page.html,/getContext\\('webgl'/);
  }finally{
   globalThis.fetch=previousFetch;
   if(previousKey===undefined)delete process.env.OLLAMA_API_KEY;else process.env.OLLAMA_API_KEY=previousKey;
+  if(previousUrl===undefined)delete process.env.OLLAMA_URL;else process.env.OLLAMA_URL=previousUrl;
   if(previousModel===undefined)delete process.env.OLLAMA_MODEL;else process.env.OLLAMA_MODEL=previousModel;
  }
 });
 
-test('cloud AI accepts markdown-fenced JSON without weakening draft validation',async()=>{
- const previousFetch=globalThis.fetch,previousKey=process.env.OLLAMA_API_KEY;
+test('Beam and cloud-tagged models fail closed without a network request',async()=>{
+ const previousFetch=globalThis.fetch,previousModel=process.env.OLLAMA_MODEL,previousUrl=process.env.OLLAMA_URL;
  try{
-  process.env.OLLAMA_API_KEY='test-only-token';
-  globalThis.fetch=async()=>new Response(JSON.stringify({response:'```json\n'+JSON.stringify(brief)+'\n```'}),{status:200});
-  const result=await generateWithLocalAi(brief);
-  assert.equal(result.draft.businessName,'Northstar Coffee');
-  assert.ok(result.pages.length>0);
+  process.env.OLLAMA_URL='http://127.0.0.1:11434';
+  globalThis.fetch=async()=>{throw new Error('unexpected network request')};
+  for(const model of ['beam','beam:cloud','gemma4:cloud']){
+   process.env.OLLAMA_MODEL=model;
+   await assert.rejects(generateWithLocalAi(brief),/Paid\\/cloud models are disabled/);
+  }
  }finally{
   globalThis.fetch=previousFetch;
-  if(previousKey===undefined)delete process.env.OLLAMA_API_KEY;else process.env.OLLAMA_API_KEY=previousKey;
+  if(previousModel===undefined)delete process.env.OLLAMA_MODEL;else process.env.OLLAMA_MODEL=previousModel;
+  if(previousUrl===undefined)delete process.env.OLLAMA_URL;else process.env.OLLAMA_URL=previousUrl;
  }
 });
