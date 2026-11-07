@@ -200,3 +200,16 @@ test('large desktop immersive framebuffer stays inside the GPU pixel budget',asy
   expect(pixels).toBeLessThanOrEqual(2205000);
  }
 });
+
+test('capture immersive desktop and mobile visual evidence for every generated page',async({page},testInfo)=>{
+ const pages=generateBusinessWebsite({businessName:'Harbor Studio',industry:'Architecture',description:'Independent design practice.',services:['Architecture','Interiors']}).pages;
+ for(const viewport of [{name:'desktop',width:1440,height:900},{name:'mobile',width:375,height:812}]){
+  await page.setViewportSize({width:viewport.width,height:viewport.height});
+  for(const generated of pages){
+   await page.setContent(generated.html);
+   await expect(page.locator('main#main-content')).toBeVisible();
+   await page.waitForTimeout(120);
+   await testInfo.attach('immersive-'+viewport.name+'-'+generated.slug,{body:await page.screenshot({animations:'disabled'}),contentType:'image/png'});
+  }
+ }
+});
