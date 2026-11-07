@@ -187,3 +187,23 @@ test('local Ollama integration works over real loopback HTTP without cloud crede
   if(previousModel===undefined)delete process.env.OLLAMA_MODEL;else process.env.OLLAMA_MODEL=previousModel;
  }
 });
+
+test('OpenAI API configuration is rejected without contacting any provider',async()=>{
+ const keys=['OPENAI_API_KEY','OPENAI_BASE_URL','OPENAI_MODEL','OLLAMA_URL','OLLAMA_MODEL'] as const;
+ const previous=Object.fromEntries(keys.map(key=>[key,process.env[key]]));
+ const previousFetch=globalThis.fetch;
+ try{
+  process.env.OLLAMA_URL='http://127.0.0.1:11434';process.env.OLLAMA_MODEL='llama3.2:3b';
+  for(const key of ['OPENAI_API_KEY','OPENAI_BASE_URL','OPENAI_MODEL'])delete process.env[key];
+  globalThis.fetch=async()=>{throw new Error('unexpected provider request')};
+  for(const key of ['OPENAI_API_KEY','OPENAI_BASE_URL','OPENAI_MODEL']){
+   process.env[key]='blocked-test-value';
+   await assert.rejects(generateWithLocalAi(brief),/OpenAI API configuration is prohibited/);
+   assert.deepEqual(await checkLocalAiReadiness(),{ready:false,reason:'invalid_endpoint'});
+   delete process.env[key];
+  }
+ }finally{
+  globalThis.fetch=previousFetch;
+  for(const key of keys){const value=previous[key];if(value===undefined)delete process.env[key];else process.env[key]=value}
+ }
+});
