@@ -1,6 +1,6 @@
 import {test} from 'node:test';
 import {strict as assert} from 'node:assert';
-import {createContextualShowcase} from './immersive-showcase';
+import {createContextualShowcase,enhanceImmersivePages} from './immersive-showcase';
 
 test('contextual immersive sites provide keyboard skip navigation and one main landmark',()=>{
  const page=createContextualShowcase({businessName:'Example Cafe',industry:'Coffee shop',description:'Coffee and community.',services:['Espresso','Pastries']})[0];
@@ -34,4 +34,16 @@ test('reference layout signals adapt immersive navigation, actions and media pre
 test('reference layout without strong signals retains standard presentation',()=>{
  const html=createContextualShowcase({businessName:'Studio',industry:'Architecture',description:'Design.',services:['Planning']})[0].html;
  assert.match(html,/<body class="mode-new layout-standard">/);
+});
+
+test('spatial enhancement applies across secondary pages but leaves the immersive homepage intact',()=>{
+ const pages=[{slug:'index',html:'<!doctype html><html><head></head><body>home</body></html>'},{slug:'services',html:'<!doctype html><html><head></head><body><main><h1>Services</h1></main></body></html>'},{slug:'about',html:'<!doctype html><html><head></head><body><main><h1>About</h1></main></body></html>'},{slug:'contact',html:'<!doctype html><html><head></head><body><main><h1>Contact</h1></main></body></html>'}];
+ const result=enhanceImmersivePages(pages);
+ assert.equal(result[0].html,pages[0].html);
+ for(const page of result.slice(1)){assert.match(page.html,/id="forge-spatial-layer"/);assert.match(page.html,/id="forge-spatial-controller"/);assert.match(page.html,/prefers-reduced-motion:reduce/)}
+ assert.equal(pages[1].html.includes('forge-spatial-layer'),false);
+});
+test('spatial enhancement skips incomplete HTML documents safely',()=>{
+ const pages=[{slug:'about',html:'<h1>fragment</h1>'}];
+ assert.deepEqual(enhanceImmersivePages(pages),pages);
 });
