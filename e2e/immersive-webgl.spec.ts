@@ -1,5 +1,6 @@
 import {test,expect} from '@playwright/test';
 import {enhanceImmersivePages} from '../src/lib/immersive-showcase';
+import {generateBusinessWebsite} from '../src/lib/business-site';
 
 const source='<!doctype html><html><head><meta name="viewport" content="width=device-width,initial-scale=1"></head><body><main><section style="height:120vh">First</section><section style="height:120vh">Second</section></main></body></html>';
 
@@ -56,4 +57,20 @@ test('homepage receives shared WebGL renderer without secondary-page CSS overrid
  await expect(page.locator('#forge-spatial-layer')).toHaveCount(0);
  await expect(page.locator('main section')).toHaveCount(2);
  expect(errors).toEqual([]);
+});
+
+test('production generator exports immersive Home Services About and Contact pages',async({page})=>{
+ const pages=generateBusinessWebsite({businessName:'Harbor Studio',industry:'Architecture',description:'Independent design practice serving local clients.',services:['Architecture','Interior design']}).pages;
+ expect(pages.map(item=>item.slug)).toEqual(['index','services','about','contact']);
+ for(const generated of pages){
+  const errors:string[]=[];
+  const onError=(error:Error)=>errors.push(error.message);
+  page.on('pageerror',onError);
+  await page.setContent(generated.html);
+  await expect(page.locator('main#main-content')).toHaveCount(1);
+  await expect(page.locator('#forge-webgl-atmosphere')).toHaveCount(1);
+  await expect(page.locator('nav[aria-label="Main navigation"]')).toHaveCount(1);
+  expect(errors,generated.slug).toEqual([]);
+  page.off('pageerror',onError);
+ }
 });
