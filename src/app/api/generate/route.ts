@@ -13,11 +13,11 @@ export async function POST(req:NextRequest){
  let body:unknown;
  try{body=await req.json()}catch{return NextResponse.json({error:'Invalid JSON'},{status:400})}
  if(!body||typeof body!=='object')return NextResponse.json({error:'Invalid request'},{status:400});
- const {name,description,template}=body as Record<string,unknown>;
- if(typeof name!=='string'||typeof description!=='string'||name.trim().length<2||name.length>80||description.trim().length<15||description.length>1500||!['ember','minimal','editorial'].includes(String(template)))return NextResponse.json({error:'Invalid input'},{status:400});
+ const {name,description,template,industry,services}=body as Record<string,unknown>;
+ if(typeof name!=='string'||typeof description!=='string'||name.trim().length<2||name.length>80||description.trim().length<15||description.length>1500||!['ember','minimal','editorial'].includes(String(template))||(industry!==undefined&&(typeof industry!=='string'||industry.length>80))||(services!==undefined&&(!Array.isArray(services)||services.length>12||services.some(item=>typeof item!=='string'||item.length<2||item.length>100))))return NextResponse.json({error:'Invalid input'},{status:400});
  limits.set(ip,{count:limit&&limit.reset>now?limit.count+1:1,reset:limit&&limit.reset>now?limit.reset:now+3600000});
  try{
-  const result=await generateWithLocalAi({businessName:name,industry:'Creative studio',description,services:['Website design']});
+  const result=await generateWithLocalAi({businessName:name,industry:typeof industry==='string'&&industry.trim()?industry.trim():'Business',description,services:Array.isArray(services)&&services.length?services as string[]:['General services']});
   const draft=result.draft;
   const site=SiteSchema.parse({
    id:crypto.randomUUID(),
