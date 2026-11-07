@@ -9,6 +9,9 @@ on:
       - 'src/lib/business-site.ts'
       - 'src/lib/immersive-showcase.ts'
       - 'scripts/smoke-local-ai.mjs'
+concurrency:
+  group: local-ai-${{ github.ref }}
+  cancel-in-progress: true
 jobs:
   ollama-integration:
     runs-on: ubuntu-latest
