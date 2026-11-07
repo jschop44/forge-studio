@@ -185,3 +185,18 @@ test('changing reduced-motion preference hides an active immersive canvas',async
  await page.emulateMedia({reducedMotion:'no-preference'});
  if(await canvas.count())await expect(canvas).toBeVisible();
 });
+
+test('large desktop immersive framebuffer stays inside the GPU pixel budget',async({page})=>{
+ await page.setViewportSize({width:2560,height:1440});
+ await page.emulateMedia({reducedMotion:'no-preference'});
+ const generated=generateBusinessWebsite({businessName:'Harbor Studio',industry:'Architecture',description:'Independent design practice.',services:['Architecture']}).pages;
+ const home=generated.find(item=>item.slug==='index');
+ expect(home).toBeDefined();
+ await page.setContent(home!.html);
+ const canvas=page.locator('#forge-webgl-atmosphere');
+ if(await canvas.count()){
+  await expect.poll(()=>canvas.evaluate(el=>(el as HTMLCanvasElement).width)).toBeGreaterThan(0);
+  const pixels=await canvas.evaluate(el=>(el as HTMLCanvasElement).width*(el as HTMLCanvasElement).height);
+  expect(pixels).toBeLessThanOrEqual(2205000);
+ }
+});
