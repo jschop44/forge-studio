@@ -35,6 +35,9 @@ for(const industry of industries){
    assert.doesNotMatch(page.html,/src="undefined"|url\("undefined"\)|<script(?! type="application\/ld\+json")[^>]*>/i);
    assert.doesNotMatch(page.html,/pornograph|erotic|graphic gore|illicit drugs/i);
    assert.match(page.html,/Example Business/);
+   assert.match(page.html,/<title>[^<]+<\/title>/);
+   assert.doesNotMatch(page.html,/href="(?:javascript:|data:|#undefined)|<img(?![^>]*\balt=)[^>]*>/i);
+   for(const target of page.html.matchAll(/href="([a-z-]+\.html)"/g))assert.ok(site.pages.some(p=>p.slug+'.html'===target[1]),'internal link resolves: '+target[1]);
   }
  });
 }
