@@ -8,7 +8,8 @@ const Input=z.object({businessName:z.string().trim().min(2).max(100),industry:z.
 export async function POST(req:NextRequest){
  if(!sameOrigin(req))return NextResponse.json({error:'Origin rejected'},{status:403});
  try{const raw=await req.text();if(raw.length>8000)return NextResponse.json({error:'Brief too large'},{status:413});
- const input=Input.safeParse(JSON.parse(raw));if(!input.success)return NextResponse.json({error:'Invalid business brief'},{status:400});
+ let parsed:unknown;try{parsed=JSON.parse(raw)}catch{return NextResponse.json({error:'Malformed JSON request'},{status:400})}
+ const input=Input.safeParse(parsed);if(!input.success)return NextResponse.json({error:'Invalid business brief'},{status:400});
  if(isExcludedBusiness(input.data))return NextResponse.json({error:'This business category is not supported'},{status:422});
  const result=await generateWithLocalAi(input.data);return NextResponse.json(result,{headers:{'Cache-Control':'no-store'}});
  }catch(error){
