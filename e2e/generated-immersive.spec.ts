@@ -57,3 +57,16 @@ test('keyboard movement updates immersive beacon proximity',async({page})=>{
  for(let i=0;i<10;i++)await page.keyboard.press('s');
  await expect(beacon).toContainText('nearby');
 });
+
+test('changing reduced-motion preference updates movement controls without reloading',async({page})=>{
+ const home=pages.find(p=>p.slug==='index');
+ expect(home).toBeTruthy();
+ await page.emulateMedia({reducedMotion:'no-preference'});
+ await page.setContent(home!.html,{waitUntil:'domcontentloaded'});
+ const controls=page.locator('[aria-label="Immersive world movement"]');
+ await expect(controls).toBeVisible();
+ await page.emulateMedia({reducedMotion:'reduce'});
+ await expect(controls).toBeHidden();
+ await page.emulateMedia({reducedMotion:'no-preference'});
+ await expect(controls).toBeVisible();
+});
