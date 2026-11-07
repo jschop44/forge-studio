@@ -44,5 +44,8 @@ export async function POST(req:NextRequest){
    sections:draft.services.map((service,index)=>({id:'service-'+(index+1),title:service,body:draft.description}))
   });
   return NextResponse.json({site});
- }catch{return NextResponse.json({error:'Local AI is unavailable or returned invalid content.'},{status:503})}
+ }catch(error){
+  if(error instanceof Error&&error.message==='Local AI capacity exceeded')return NextResponse.json({error:'AI is busy. Please retry shortly.'},{status:429,headers:{'Retry-After':'5','Cache-Control':'no-store'}});
+  return NextResponse.json({error:'Local AI is unavailable or returned invalid content.'},{status:503});
+ }
 }
