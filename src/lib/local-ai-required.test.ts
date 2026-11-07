@@ -207,3 +207,29 @@ test('OpenAI API configuration is rejected without contacting any provider',asyn
   for(const key of keys){const value=previous[key];if(value===undefined)delete process.env[key];else process.env[key]=value}
  }
 });
+
+test('real HTTP redirects cannot send Ollama inference to another endpoint',async()=>{
+ const previousFetch=globalThis.fetch,previousUrl=process.env.OLLAMA_URL,previousModel=process.env.OLLAMA_MODEL;
+ let targetHit=false;
+ const target=createServer((_req,res)=>{targetHit=true;res.end('unexpected')});
+ const redirector=createServer((_req,res)=>{
+  const address=target.address();assert.ok(address&&typeof address!=='string');
+  res.writeHead(302,{Location:'http://127.0.0.1:'+address.port+'/api/generate'});res.end();
+ });
+ try{
+  await new Promise<void>(resolve=>target.listen(0,'127.0.0.1',resolve));
+  await new Promise<void>(resolve=>redirector.listen(0,'127.0.0.1',resolve));
+  const address=redirector.address();assert.ok(address&&typeof address!=='string');
+  process.env.OLLAMA_URL='http://127.0.0.1:'+address.port;
+  process.env.OLLAMA_MODEL='llama3.2:3b';globalThis.fetch=previousFetch;
+  await assert.rejects(generateWithLocalAi(brief),/Local AI unavailable/);
+  assert.equal(targetHit,false);
+  assert.deepEqual(await checkLocalAiReadiness(),{ready:false,reason:'unreachable'});
+  assert.equal(targetHit,false);
+ }finally{
+  await Promise.all([new Promise<void>(resolve=>redirector.close(()=>resolve())),new Promise<void>(resolve=>target.close(()=>resolve()))]);
+  globalThis.fetch=previousFetch;
+  if(previousUrl===undefined)delete process.env.OLLAMA_URL;else process.env.OLLAMA_URL=previousUrl;
+  if(previousModel===undefined)delete process.env.OLLAMA_MODEL;else process.env.OLLAMA_MODEL=previousModel;
+ }
+});
