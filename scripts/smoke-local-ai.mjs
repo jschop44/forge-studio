@@ -42,5 +42,7 @@ for(const slug of ['index','services','about','contact']){
  if(!page.html.includes("gl.uniform2f(walkUniform,walkX,walkY)")||!page.html.includes('floorCoords'))throw Error('Missing navigable perspective ground plane on '+slug+' page');
  if(!page.html.includes('beaconPosition')||!page.html.includes('gl.uniform2f(beaconUniform,beaconX,beaconY)'))throw Error('Missing world-anchored navigation beacon on '+slug+' page');
  if(!page.html.includes("beaconLink.href='services.html'")||!page.html.includes("beaconLink.setAttribute('aria-label'"))throw Error('Missing accessible interactive beacon navigation on '+slug+' page');
+ for(const destination of ['about.html','contact.html'])if(!page.html.includes("href:'"+destination+"'"))throw Error('Missing spatial navigation portal '+destination+' on '+slug+' page');
+ if(!page.html.includes('portal.link.hidden=!visible'))throw Error('Spatial portals must respond to camera translation on '+slug+' page');
 }
 console.log('PASS: production Ollama generated and returned all four website pages.');
