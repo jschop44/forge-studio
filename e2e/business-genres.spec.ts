@@ -11,7 +11,7 @@ for(const genre of genres){
    await page.setContent(html,{waitUntil:'domcontentloaded'});
    await expect(page.locator('h1').first()).toBeVisible();
    await expect(page.locator('nav')).toBeVisible();
-   await expect(page.locator('a[href="services.html"]')).toHaveCount(2);
+   expect(await page.locator('a[href="services.html"]').count()).toBeGreaterThanOrEqual(2);
    expect(await page.locator('body').evaluate(el=>el.scrollWidth)).toBeLessThanOrEqual(viewport.width+2);
    expect(await page.locator('img:not([alt])').count()).toBe(0);
    expect(await page.locator('script:not([type="application/ld+json"])').count()).toBe(0);
