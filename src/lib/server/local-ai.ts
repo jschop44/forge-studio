@@ -3,7 +3,6 @@ import {generateBusinessWebsite} from '../business-site';
 const DraftSchema=z.object({businessName:z.string().min(2).max(100),industry:z.string().min(2).max(80),description:z.string().min(15).max(1800),services:z.array(z.string().min(2).max(100)).min(1).max(12)});
 export type AiDraft=z.infer<typeof DraftSchema>;
 export type AiGenerationResult={draft:AiDraft;provider:'ollama';pages:ReturnType<typeof generateBusinessWebsite>['pages']};
-function fallback(input:{businessName:string;industry:string;description:string;services:string[]}):AiDraft{return DraftSchema.parse({businessName:input.businessName,industry:input.industry,description:input.description.length>=15?input.description:'Professional services designed around your business goals.',services:input.services.length?input.services:['Consulting','Support']})}
 export async function checkLocalAiReadiness():Promise<{ready:boolean;reason:'ready'|'unreachable'|'model_missing'|'invalid_endpoint'}>{
  let url:URL;
  try{
@@ -23,7 +22,7 @@ export async function checkLocalAiReadiness():Promise<{ready:boolean;reason:'rea
  }catch{return {ready:false,reason:'unreachable'}}finally{clearTimeout(timeout)}
 }
 export async function generateWithLocalAi(input:{businessName:string;industry:string;description:string;services:string[];contactEmail?:string}):Promise<AiGenerationResult>{
- let draft=fallback(input);
+ let draft:AiDraft;
  {
  const endpoint=process.env.OLLAMA_URL||'http://127.0.0.1:11434';
  const url=new URL(endpoint);if(!['localhost','127.0.0.1','::1'].includes(url.hostname)||!['http:','https:'].includes(url.protocol))throw Error('OLLAMA_URL must be a loopback endpoint');
