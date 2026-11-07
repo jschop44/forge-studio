@@ -66,9 +66,9 @@ test('rewrites captured same-site links to generated local preview files',()=>{
  assert.doesNotMatch(files[0].html,/href="https:\/\/other.example/);
 });
 
-test('exported previews offer hover depth without forcing motion',()=>{
+test('exported previews preserve responsive layout without artificial hover depth',()=>{
  const html=blueprintToHtml({version:1,title:'Test',sections:[{type:'hero',headline:'Hero'}]});
- assert.match(html,/perspective\(1000px\)/);
+ assert.doesNotMatch(html,/perspective\(1000px\)/);
  assert.match(html,/prefers-reduced-motion:reduce/);
  assert.match(html,/transform:none!important/);
  assert.match(html,/@media\(max-width:650px\)/);
