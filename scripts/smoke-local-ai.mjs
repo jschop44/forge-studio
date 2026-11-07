@@ -37,5 +37,6 @@ for(const slug of ['index','services','about','contact']){
  if(!page.html.includes('prefers-reduced-motion'))throw Error('Missing reduced-motion safeguard on '+slug+' page');
  if(!page.html.includes("event.pointerType==='touch'"))throw Error('Missing touch orbit input on '+slug+' page');
  if(!page.html.includes("event.key==='w'"))throw Error('Missing keyboard orbit input on '+slug+' page');
+ if(!page.html.includes("event.key==='q'")||!page.html.includes("event.key==='e'")||!page.html.includes("gl.uniform1f(travelUniform,travel)"))throw Error('Missing camera depth controls on '+slug+' page');
 }
 console.log('PASS: production Ollama generated and returned all four website pages.');
