@@ -302,3 +302,11 @@ test('homepage renderer defines print media before its first use',()=>{
  const usage=script.indexOf('printMedia.matches');
  assert.ok(declaration>=0&&usage>declaration,'Homepage WebGL renderer must initialize print media before drawing');
 });
+
+test('immersive renderer prevents default GPU context loss and stops animation',()=>{
+ const pages=generateBusinessWebsite({businessName:'Harbor Studio',industry:'Architecture',description:'Independent design practice.',services:['Architecture']}).pages;
+ for(const page of pages){
+  assert.ok(page.html.includes("canvas.addEventListener('webglcontextlost',event=>{event.preventDefault();active=false;"),'Missing explicit GPU context-loss handling on '+page.slug);
+  assert.ok(page.html.includes('if(frame)cancelAnimationFrame(frame);frame=0;canvas.remove()'),'Missing GPU loss animation cleanup on '+page.slug);
+ }
+});
