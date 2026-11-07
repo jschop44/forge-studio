@@ -45,3 +45,15 @@ test('immersive navigation remains accessible when reduced motion is enabled',as
  await expect(page.locator('[aria-label="Immersive world movement"]')).toBeHidden();
  expect(failures).toEqual([]);
 });
+
+test('keyboard movement updates immersive beacon proximity',async({page})=>{
+ const home=pages.find(p=>p.slug==='index');
+ expect(home).toBeTruthy();
+ await page.setContent(home!.html,{waitUntil:'domcontentloaded'});
+ const beacon=page.locator('#forge-world-beacon-link');
+ await expect(beacon).toContainText('follow beacon');
+ await page.locator('body').click({position:{x:5,y:5}});
+ for(let i=0;i<10;i++)await page.keyboard.press('d');
+ for(let i=0;i<10;i++)await page.keyboard.press('s');
+ await expect(beacon).toContainText('nearby');
+});
