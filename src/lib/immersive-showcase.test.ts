@@ -187,8 +187,8 @@ test('production business generator includes immersive WebGL on every exported p
  assert.deepEqual(generated.pages.map(page=>page.slug),['index','services','about','contact']);
  for(const page of generated.pages){
   assert.match(page.html,/getContext\('webgl'/);
-  assert.match(page.html,/id="forge-webgl-atmosphere"/);
+  assert.match(page.html,/canvas\.id='forge-webgl-atmosphere'/);
   assert.match(page.html,/<main id="main-content"/);
-  assert.equal((page.html.match(/id="forge-webgl-atmosphere"/g)||[]).length,1);
+  assert.equal((page.html.match(/canvas\.id='forge-webgl-atmosphere'/g)||[]).length,1);
  }
 });
