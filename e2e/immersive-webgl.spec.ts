@@ -95,3 +95,19 @@ test('homepage WebGL is absent with reduced motion enabled',async({page})=>{
  await expect(page.locator('#forge-webgl-atmosphere')).toHaveCount(0);
  await expect(page.locator('main section')).toHaveCount(2);
 });
+
+test('all four generated pages preserve navigation and keyboard focus with immersive effects',async({page})=>{
+ const pages=generateBusinessWebsite({businessName:'Harbor Studio',industry:'Architecture',description:'Independent architecture and interior design practice.',services:['Architecture','Interior design']}).pages;
+ for(const generated of pages){
+  await page.setContent(generated.html);
+  const nav=page.getByRole('navigation',{name:'Main navigation'});
+  await expect(nav).toBeVisible();
+  await expect(page.locator('main#main-content')).toHaveCount(1);
+  const links=nav.locator('a');
+  expect(await links.count()).toBeGreaterThan(0);
+  await links.first().focus();
+  await expect(links.first()).toBeFocused();
+  const canvas=page.locator('#forge-webgl-atmosphere');
+  if(await canvas.count())await expect(canvas).toHaveCSS('pointer-events','none');
+ }
+});
