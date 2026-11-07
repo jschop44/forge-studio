@@ -100,7 +100,7 @@ export default function BusinessGenerator(){
   if(!paragraph){setStatus('This page has no editable main paragraph.');return}
   paragraph.textContent=value;
   setUndoPages(pages);
-  setPages(previous=>previous.map(item=>item.slug===active?{...item,html:'<!doctype html>\\n'+doc.documentElement.outerHTML}:item));
+  setPages(previous=>previous.map(item=>item.slug===active?{...item,html:'<!doctype html>\n'+doc.documentElement.outerHTML}:item));
   setStatus('Website paragraph updated. Review before publishing.');
  }
  const [subheadingEdit,setSubheadingEdit]=useState('');
@@ -114,7 +114,7 @@ export default function BusinessGenerator(){
   if(!heading){setStatus('This page does not contain an editable section heading.');return}
   heading.textContent=value;
   setUndoPages(pages);
-  setPages(previous=>previous.map(item=>item.slug===active?{...item,html:'<!doctype html>\\n'+doc.documentElement.outerHTML}:item));
+  setPages(previous=>previous.map(item=>item.slug===active?{...item,html:'<!doctype html>\n'+doc.documentElement.outerHTML}:item));
   setStatus('Section heading updated. Review the preview before publishing.');
  }
  const [showAdvancedReview,setShowAdvancedReview]=useState(false);
@@ -132,7 +132,7 @@ export default function BusinessGenerator(){
    const style=doc.createElement('style');
    style.textContent=':root{--forge-user-accent:'+quickAccent+'}a,button{accent-color:var(--forge-user-accent)}a{color:var(--forge-user-accent)}';
    doc.head.appendChild(style);
-   return {...page,html:'<!doctype html>\\n'+doc.documentElement.outerHTML};
+   return {...page,html:'<!doctype html>\n'+doc.documentElement.outerHTML};
   }));
   setStatus('Brand accent applied to all generated pages. Review contrast before publishing.');
  }
@@ -147,7 +147,7 @@ export default function BusinessGenerator(){
   const target=doc.querySelector('h1');
   if(!target){setStatus('This page has no editable main heading.');return}
   target.textContent=heading;
-  const updated='<!doctype html>\\n'+doc.documentElement.outerHTML;
+  const updated='<!doctype html>\n'+doc.documentElement.outerHTML;
   setUndoPages(pages);
   setPages(previous=>previous.map(item=>item.slug===active?{...item,html:updated}:item));
   setStatus('Heading updated in the website preview. Review the page before publishing.');
@@ -158,7 +158,7 @@ export default function BusinessGenerator(){
  async function inspectWebsite(){
  if(!siteUrl.trim()){setStatus('Enter a website address such as disney.com.');return}
  setResearchBusy(true);setStatus('Reading public website metadata and design details…');
- try{const response=await fetch('/api/site-reference',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({url:siteUrl.trim()})});const data=await response.json();if(!response.ok)throw Error(data.error||'Website unavailable');if(!data.title&&!data.description&&!(data.headings||[]).length)throw Error('The website returned HTML but no readable business information. Try its main homepage URL or provide a business description manually.');setReferenceStyle(data.styleReference||{});setInspected({url:data.url,title:data.title||'',description:data.description||'',headings:data.headings||[],navigation:data.navigation||[],pageSummaries:data.pageSummaries||[],stylesheetsRead:data.stylesheetsRead||0,visualSignals:data.visualSignals});setReferenceMarkup('');setPages([]);setName((data.title||'').split(/[|—–-]/)[0].trim().slice(0,100)||new URL(data.url).hostname);setBrief([data.description,...(data.headings||[]).slice(0,3)].filter(Boolean).join('. ').slice(0,1600));setStatus('Website inspected: '+data.url+'. '+(data.styleFound?'Some design tokens detected. ':'No usable design tokens detected; style-copy will use a fallback theme. ')+data.notice+' Review extracted details before generating.')}catch(error){setStatus(error instanceof Error?error.message:'Unable to inspect website.')}finally{setResearchBusy(false)}
+ try{const response=await fetch('/api/site-reference',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({url:siteUrl.trim()})});const data=await response.json();if(!response.ok)throw Error(data.error||'Website unavailable');if(!data.title&&!data.description&&!(data.headings||[]).length)throw Error('The website returned HTML but no readable business information. Try its main homepage URL or provide a business description manually.');setReferenceStyle(data.styleReference||{});setInspected({url:data.url,title:data.title||'',description:data.description||'',headings:data.headings||[],navigation:data.navigation||[],pageSummaries:data.pageSummaries||[],stylesheetsRead:data.stylesheetsRead||0,visualSignals:data.visualSignals});setReferenceMarkup('');setUndoPages(null);setPages([]);setName((data.title||'').split(/[|—–-]/)[0].trim().slice(0,100)||new URL(data.url).hostname);setBrief([data.description,...(data.headings||[]).slice(0,3)].filter(Boolean).join('. ').slice(0,1600));setStatus('Website inspected: '+data.url+'. '+(data.styleFound?'Some design tokens detected. ':'No usable design tokens detected; style-copy will use a fallback theme. ')+data.notice+' Review extracted details before generating.')}catch(error){setStatus(error instanceof Error?error.message:'Unable to inspect website.')}finally{setResearchBusy(false)}
  }
  function generateFromReviewedEvidence(){
   if(!inspected||designMode==='new'){setStatus('Inspect an existing website first.');return}
@@ -181,7 +181,7 @@ export default function BusinessGenerator(){
    const style=doc.createElement('style');
    style.textContent=':root{--forge-auto-accent:'+accent+'}a{color:var(--forge-auto-accent)}';
    doc.head.appendChild(style);
-   return {...page,html:'<!doctype html>\\n'+doc.documentElement.outerHTML};
+   return {...page,html:'<!doctype html>\n'+doc.documentElement.outerHTML};
   });
  }
  async function generate(){
