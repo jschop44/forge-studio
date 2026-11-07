@@ -3,10 +3,10 @@ const escapeHtml=value=>String(value??'').replace(/&/g,'&amp;').replace(/</g,'&l
 export function blueprintToHtml(blueprint,selectedPage=0,localNavigation=false){
  if(!blueprint||blueprint.version!==1||!Array.isArray(blueprint.sections))throw Error('Invalid blueprint');
  const observedPages=Array.isArray(blueprint.pages)?blueprint.pages.slice(0,12):[];
+ if(!Number.isInteger(selectedPage)||selectedPage<0||selectedPage>=Math.max(1,observedPages.length))throw Error('Invalid selected page');
  const title=escapeHtml(String(observedPages[selectedPage]?.title||blueprint.title||'Untitled').slice(0,120));
  const headline=escapeHtml(String(blueprint.headline||blueprint.title||'Website').slice(0,180));
  const source=(()=>{try{const url=new URL(blueprint.sourceUrl);return url.protocol==='https:'&&!url.username&&!url.password?url:null}catch{return null}})();
- if(!Number.isInteger(selectedPage)||selectedPage<0||selectedPage>=Math.max(1,observedPages.length))throw Error('Invalid selected page');
  const currentPage=observedPages[selectedPage];
  const tokens=currentPage?.designTokens||{};
  const safeColor=v=>typeof v==='string'&&/^(?:#[0-9a-f]{3,8}|rgba?\([0-9.,%\s]+\))$/i.test(v)?v:null;
