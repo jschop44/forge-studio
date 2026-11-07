@@ -46,3 +46,12 @@ test('navigation audit reports no orphaned pages in connected offline export',()
  assert.deepEqual(report.unsafeLinks,[]);
  assert.equal(report.allPagesReachable,true);
 });
+
+test('QA report exposes unsafe links and orphaned pages separately',()=>{
+ const report=auditPreviewNavigation({version:1,sourceUrl:'https://example.com',sections:[],pages:[
+  {path:'/',title:'Home',regions:[]},{path:'/about',title:'About',regions:[]}
+ ]});
+ assert.deepEqual(report.unsafeLinks,[]);
+ assert.deepEqual(report.orphanedPages,[]);
+ assert.equal(report.allPagesReachable,true);
+});
