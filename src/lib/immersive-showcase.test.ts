@@ -91,7 +91,7 @@ test('GPU atmosphere reacts to pointer input across the viewport',()=>{
  const html=enhanceImmersivePages([{slug:'about',html:'<!doctype html><html><head></head><body><main>About</main></body></html>'}])[0].html;
  assert.match(html,/uniform vec2 m/);
  assert.match(html,/pointerX=e\.clientX/);
- assert.match(html,/gl\.uniform2f\(mouse,pointerX,pointerY\)/);
+ assert.match(html,/gl\.uniform2f\(mouse,cameraX,cameraY\)/);
 });
 
 test('GPU atmosphere limits rendering cadence to reduce device load',()=>{
