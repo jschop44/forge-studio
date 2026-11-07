@@ -114,3 +114,11 @@ test('WebGL context loss stops rendering and removes the invalid canvas',()=>{
  assert.match(html,/canvas\.addEventListener\('webglcontextlost'/);
  assert.match(html,/active=false;if\(frame\)cancelAnimationFrame\(frame\);frame=0;canvas\.remove\(\)/);
 });
+
+test('WebGL camera eases pointer and scroll movement instead of snapping',()=>{
+ const html=enhanceImmersivePages([{slug:'about',html:'<!doctype html><html><head></head><body><main>About</main></body></html>'}])[0].html;
+ assert.match(html,/cameraX\+=\(pointerX-cameraX\)\*\.12/);
+ assert.match(html,/cameraY\+=\(pointerY-cameraY\)\*\.12/);
+ assert.match(html,/cameraScroll\+=\(scrollY-cameraScroll\)\*\.1/);
+ assert.match(html,/gl\.uniform1f\(scroll,cameraScroll\)/);
+});
