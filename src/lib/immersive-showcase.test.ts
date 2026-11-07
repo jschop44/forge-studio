@@ -137,3 +137,10 @@ test('WebGL initialization guards missing vertex attributes and GPU buffer alloc
  assert.match(html,/gl\.getAttribLocation\(program,'p'\)>=0/);
  assert.match(html,/if\(!buffer\)\{canvas\.remove\(\);gl\.deleteProgram\(program\)/);
 });
+
+test('WebGL animation pauses on pagehide and resumes after page restoration',()=>{
+ const html=enhanceImmersivePages([{slug:'services',html:'<!doctype html><html><head></head><body><main>Services</main></body></html>'}])[0].html;
+ assert.match(html,/addEventListener\('pagehide',onPageHide\)/);
+ assert.match(html,/addEventListener\('pageshow',resume\)/);
+ assert.match(html,/if\(frame\)cancelAnimationFrame\(frame\);frame=0/);
+});
