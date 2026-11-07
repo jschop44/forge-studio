@@ -1,6 +1,14 @@
 name: Free local AI end-to-end integration
 on:
   workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/local-ai-integration.yml'
+      - 'src/lib/server/local-ai.ts'
+      - 'src/lib/business-site.ts'
+      - 'src/lib/immersive-showcase.ts'
+      - 'scripts/smoke-local-ai.mjs'
 jobs:
   ollama-integration:
     runs-on: ubuntu-latest
