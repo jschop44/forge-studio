@@ -25,6 +25,10 @@ const response=await fetch(new URL('/api/ai/business',origin),{
 if(!response.ok)throw Error('Generation failed with HTTP '+response.status+': '+(await response.text()).slice(0,300));
 const result=await response.json();
 if(result.provider!=='ollama'||result.draft?.businessName!==input.businessName||!Array.isArray(result.pages))throw Error('Invalid generated site response');
+if(typeof result.draft?.description!=='string'||result.draft.description.trim().length<15)throw Error('Model did not generate a valid description');
+if(result.draft.industry!==input.industry)throw Error('AI changed verified business industry');
+if(JSON.stringify(result.draft.services)!==JSON.stringify(input.services))throw Error('AI changed verified business services');
+if(!result.draft.description.trim())throw Error('AI generated empty marketing copy');
 const pages=new Map(result.pages.map(page=>[page.slug,page]));
 for(const slug of ['index','services','about','contact']){
  const page=pages.get(slug);
