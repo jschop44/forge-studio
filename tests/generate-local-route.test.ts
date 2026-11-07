@@ -35,6 +35,7 @@ describe('legacy website generation uses mandatory local AI',()=>{
    assert.equal(response.status,200);
    const result=await response.json();
    assert.equal(result.site.name,'Cedar Studio');
+   assert.equal(result.site.sections[0].title,'Residential planning');
    assert.equal(result.site.template,'ember');
    assert.ok(result.site.sections.length>0);
   }finally{
