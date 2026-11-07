@@ -15,10 +15,13 @@ export const photoLibrary={
  wellness:['photo-1544367567-0f2fcb009e0b','photo-1506126613408-eca07ce68773'],
  general:['photo-1497366811353-6870744d04b2','photo-1497366754035-f200968a6e72']
 } as const;
-export function industryPhotos(industry:string){const term=industry.toLowerCase();const category=/entertainment|theme park|movie|cinema|film|media|streaming/.test(term)?'entertainment':/coffee|espresso|roast|barista|café|cafe/.test(term)?'coffee':/baseball|softball|batting|sporting goods|sports? equipment/.test(term)?'baseball':/car|auto|vehicle|motor/.test(term)?'automotive':/hotel|travel|resort|stay|hospitality/.test(term)?'hospitality':/fashion|jewel|clothing|luxury/.test(term)?'fashion':/food|restaurant|pizza|cafe|bakery/.test(term)?'food':/real.?estate|home|property|construction/.test(term)?'realestate':/tech|software|digital|ai|computer/.test(term)?'technology':/health|fitness|wellness|spa|beauty/.test(term)?'wellness':'general';return photoLibrary[category].map(id=>'https://images.unsplash.com/'+id+'?auto=format&fit=crop&w=1400&q=80')}
+/** Family-friendly visual policy: avoid using unreviewed stock imagery for sensitive themes. */
+export function requiresFamilySafeReview(topic:string):boolean{return /halloween|haunted|horror|scary|spooky|gore|blood|violence|weapon|adult|erotic|drug|cannabis|marijuana/i.test(topic)}
+export function industryPhotos(industry:string){if(requiresFamilySafeReview(industry))return [];const term=industry.toLowerCase();const category=/entertainment|theme park|movie|cinema|film|media|streaming/.test(term)?'entertainment':/coffee|espresso|roast|barista|café|cafe/.test(term)?'coffee':/baseball|softball|batting|sporting goods|sports? equipment/.test(term)?'baseball':/car|auto|vehicle|motor/.test(term)?'automotive':/hotel|travel|resort|stay|hospitality/.test(term)?'hospitality':/fashion|jewel|clothing|luxury/.test(term)?'fashion':/food|restaurant|pizza|cafe|bakery/.test(term)?'food':/real.?estate|home|property|construction/.test(term)?'realestate':/tech|software|digital|ai|computer/.test(term)?'technology':/health|fitness|wellness|spa|beauty/.test(term)?'wellness':'general';return photoLibrary[category].map(id=>'https://images.unsplash.com/'+id+'?auto=format&fit=crop&w=1400&q=80')}
 
 /** Match each offering to its own subject rather than reusing an industry hero. */
 export function servicePhoto(service:string,industry:string):string|null{
+ if(requiresFamilySafeReview(service+' '+industry))return null;
  const term=service.toLowerCase();
  const subjects:[RegExp,string][]=[
  [/baseball|softball|batting|glove|mitt|bat|cleat/,'photo-1471295253337-3ceaaedca402'],
