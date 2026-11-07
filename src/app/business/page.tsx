@@ -83,7 +83,8 @@ export default function BusinessGenerator(){
  const [quickAccent,setQuickAccent]=useState('#d9c7a4');
  function applyAccent(){
   if(!/^#[0-9a-fA-F]{6}$/.test(quickAccent))return;
-  setUndoPages(pages);\n  setPages(previous=>previous.map(page=>{
+  setUndoPages(pages);
+  setPages(previous=>previous.map(page=>{
    const doc=new DOMParser().parseFromString(page.html,'text/html');
    const style=doc.createElement('style');
    style.textContent=':root{--forge-user-accent:'+quickAccent+'}a,button{accent-color:var(--forge-user-accent)}a{color:var(--forge-user-accent)}';
@@ -104,7 +105,8 @@ export default function BusinessGenerator(){
   if(!target){setStatus('This page has no editable main heading.');return}
   target.textContent=heading;
   const updated='<!doctype html>\\n'+doc.documentElement.outerHTML;
-  setUndoPages(pages);\n  setPages(previous=>previous.map(item=>item.slug===active?{...item,html:updated}:item));
+  setUndoPages(pages);
+  setPages(previous=>previous.map(item=>item.slug===active?{...item,html:updated}:item));
   setStatus('Heading updated in the website preview. Review the page before publishing.');
  }
  const current=pages.find(p=>p.slug===active);
