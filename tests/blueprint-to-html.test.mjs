@@ -187,3 +187,21 @@ test('untrusted preview source with nonstandard port cannot create outbound link
  const html=blueprintToHtml({version:1,sourceUrl:'https://example.com:8443',sections:[],navigation:[{label:'Admin',target:'/admin'}],pages:[{path:'/',title:'Home',regions:[]}]});
  assert.doesNotMatch(html,/href="https:\/\/example\.com:8443\/admin"/);
 });
+
+test('reconstruction preserves measured region width and horizontal offset',()=>{
+ const html=blueprintToHtml({version:1,title:'Columns',sections:[
+  {type:'content',headline:'Left',bounds:{x:0,y:100,width:400,height:220}},
+  {type:'content',headline:'Right',bounds:{x:400,y:100,width:400,height:220}}
+ ]});
+ assert.match(html,/width:50%;margin-left:0%/);
+ assert.match(html,/width:50%;margin-left:50%/);
+ assert.match(html,/min-height:220px/);
+ assert.match(html,/width:100%!important;margin-left:0!important/);
+});
+test('invalid measured dimensions never inject CSS',()=>{
+ const html=blueprintToHtml({version:1,title:'Invalid',sections:[
+  {type:'content',headline:'Invalid',bounds:{x:-10,y:0,width:100,height:100}}
+ ]});
+ assert.doesNotMatch(html,/margin-left:-/);
+ assert.match(html,/Invalid/);
+});
