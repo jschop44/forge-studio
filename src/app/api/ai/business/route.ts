@@ -11,5 +11,10 @@ export async function POST(req:NextRequest){
  const input=Input.safeParse(JSON.parse(raw));if(!input.success)return NextResponse.json({error:'Invalid business brief'},{status:400});
  if(isExcludedBusiness(input.data))return NextResponse.json({error:'This business category is not supported'},{status:422});
  const result=await generateWithLocalAi(input.data);return NextResponse.json(result,{headers:{'Cache-Control':'no-store'}});
- }catch{return NextResponse.json({error:'Generation unavailable'},{status:503})}
+ }catch(error){
+  const detail=error instanceof Error?error.message:'';
+  const category=/HTTP 429/.test(detail)?'provider_rate_limited':/HTTP 40[13]/.test(detail)?'provider_auth':/HTTP 5\\d\\d/.test(detail)?'provider_server_error':/invalid draft|JSON/.test(detail)?'invalid_model_response':/abort|timeout/i.test(detail)?'provider_timeout':'provider_unavailable';
+  console.error('Forge AI generation failure category:',category);
+  return NextResponse.json({error:'Generation unavailable'},{status:503,headers:{'Cache-Control':'no-store'}});
+ }
 }
