@@ -7,7 +7,7 @@ test('audits generated local links without network access',()=>{
   {path:'/about',title:'About',regions:[],navigation:[{label:'Home',target:'/'}]}
  ]});
  assert.equal(report.pages,2);
- assert.equal(report.localLinks,2);
+ assert.equal(report.localLinks,6);
  assert.equal(report.externalLinks,1);
  assert.equal(report.allLinksValid,true);
  assert.equal(report.publicationReady,false);
