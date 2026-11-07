@@ -26,3 +26,12 @@ test('service inquiries fall back to contact section without verified email',()=
  assert.match(html,/<a href="#contact">Ask about Buyer representation/);
  assert.doesNotMatch(html,/mailto:invalid-email/);
 });
+
+test('reference layout signals adapt immersive navigation, actions and media presentation',()=>{
+ const html=createContextualShowcase({businessName:'Studio',industry:'Architecture',description:'Design.',services:['Planning'],visualSignals:{imageCount:4,sectionCount:5,heroSections:1,navigationLinks:7,buttonCount:6,hasVideo:true,hasCanvas:false}})[0].html;
+ assert.match(html,/<body class="mode-new layout-standard layout-navigation-rich layout-action-rich layout-media-rich">/);
+});
+test('reference layout without strong signals retains standard presentation',()=>{
+ const html=createContextualShowcase({businessName:'Studio',industry:'Architecture',description:'Design.',services:['Planning']})[0].html;
+ assert.match(html,/<body class="mode-new layout-standard">/);
+});
