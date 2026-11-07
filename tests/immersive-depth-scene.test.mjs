@@ -33,3 +33,10 @@ test('respects reduced motion and rejects invalid viewport and settings',()=>{
  assert.throws(()=>projectDepthScene(scene,0));
  assert.throws(()=>projectDepthScene(scene,375,{maxTilt:30}));
 });
+
+test('rejects malformed or excessive depth layers before projection',()=>{
+ const scene=buildDepthScene(blueprint);
+ assert.throws(()=>projectDepthScene({...scene,layers:[{x:0,y:0,width:NaN,height:10,depth:4}]},375),/Invalid depth scene/);
+ assert.throws(()=>projectDepthScene({...scene,layers:[{x:0,y:0,width:10,height:10,depth:-1}]},375),/Invalid depth scene/);
+ assert.throws(()=>projectDepthScene({...scene,layers:Array.from({length:101},()=>scene.layers[0])},375),/Invalid depth scene/);
+});
