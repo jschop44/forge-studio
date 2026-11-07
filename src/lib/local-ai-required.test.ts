@@ -65,7 +65,7 @@ test('Beam and cloud-tagged models fail closed without a network request',async(
  try{
   process.env.OLLAMA_URL='http://127.0.0.1:11434';
   globalThis.fetch=async()=>{throw new Error('unexpected network request')};
-  for(const model of ['beam','beam:cloud','gemma4:cloud']){
+  for(const model of ['beam','beam:cloud','reflection/beam','reflection/beam:latest','gemma4:cloud']){
    process.env.OLLAMA_MODEL=model;
    await assert.rejects(generateWithLocalAi(brief),/Paid\\/cloud models are disabled/);
   }
