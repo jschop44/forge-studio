@@ -23,7 +23,8 @@ export function blueprintToHtml(blueprint,selectedPage=0,localNavigation=false){
   const style=valid?' style="min-height:'+Math.min(560,Math.max(70,Math.round(b.height)))+'px"':'';
   return '<section class="region '+type+'"'+style+' aria-label="'+escapeHtml(type+' section')+'"><p>'+text+'</p></section>';
  }).join('\n');
- const localPaths=new Map(observedPages.map((p,index)=>[p?.path,index]));
+ const localPaths=new Map();
+ observedPages.forEach((p,index)=>{if(typeof p?.path==='string'&&!localPaths.has(p.path))localPaths.set(p.path,index)});
  const previewNames=previewFileNames(observedPages);
  const currentPath=typeof currentPage?.path==='string'?currentPage.path:'/';
  const pageNavigation=Array.isArray(currentPage?.navigation)&&currentPage.navigation.length?currentPage.navigation:blueprint.navigation;
