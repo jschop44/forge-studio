@@ -3,6 +3,14 @@ on:
   push:
     paths:
       - 'workers/browser-capture.mjs'
+      - 'workers/capture-redirect-policy.mjs'
+      - 'tests/capture-redirect-policy.test.mjs'
+      - 'workers/depth-scene-svg.mjs'
+      - 'tests/depth-scene-svg.test.mjs'
+      - 'workers/preview-navigation-audit.mjs'
+      - 'tests/preview-navigation-audit.test.mjs'
+      - 'workers/preview-manifest.mjs'
+      - 'tests/preview-manifest.test.mjs'
       - 'workers/navigation-probe-policy.mjs'
       - 'workers/public-network-policy.mjs'
       - 'tests/navigation-probe-policy.test.mjs'
