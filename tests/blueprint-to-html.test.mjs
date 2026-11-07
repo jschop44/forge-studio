@@ -236,3 +236,14 @@ test('captured region colors survive rendering without CSS injection',()=>{
  assert.match(html,/background:rgb\(12, 34, 56\);color:#ffffff;/);
  assert.doesNotMatch(html,/display:none|position:fixed/);
 });
+
+test('mixed measured and unmeasured regions stay in normal document flow',()=>{
+ const html=blueprintToHtml({version:1,title:'Mixed',sections:[
+  {type:'hero',headline:'Measured',bounds:{x:0,y:0,width:900,height:250}},
+  {type:'content',headline:'Unmeasured'}
+ ]});
+ assert.doesNotMatch(html,/class="capture-layout"/);
+ assert.doesNotMatch(html,/position:absolute;top:/);
+ assert.match(html,/Measured/);
+ assert.match(html,/Unmeasured/);
+});
