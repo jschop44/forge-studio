@@ -173,3 +173,12 @@ test('offline captured-page directory links to every generated HTML page',()=>{
   for(const destination of files)assert.ok(file.html.includes('href="'+destination.filename+'"'),destination.filename);
  }
 });
+
+test('offline page directory marks exactly the current page for assistive technology',()=>{
+ const files=blueprintToPages({version:1,sourceUrl:'https://example.com',sections:[],pages:[
+  {path:'/',title:'Home',regions:[]},{path:'/about',title:'About',regions:[]}
+ ]});
+ assert.match(files[0].html,/href="index\.html" aria-current="page"/);
+ assert.match(files[1].html,/href="about\.html" aria-current="page"/);
+ for(const file of files)assert.equal((file.html.match(/aria-current="page"/g)||[]).length,1);
+});
