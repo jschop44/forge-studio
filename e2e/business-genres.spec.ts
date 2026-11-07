@@ -32,6 +32,11 @@ for(const genre of genres){
     expect(await page.locator('body').evaluate(el=>el.scrollWidth),'overflow in '+genre+'/'+generatedPage.slug).toBeLessThanOrEqual(viewport.width+2);
     expect(await page.locator('img:not([alt])').count()).toBe(0);
     expect(await page.locator('a:not([href]), a[href=""], a[href="#"]').count()).toBe(0);
+    const localLinks=await page.locator('a[href]').evaluateAll(anchors=>anchors.map(a=>a.getAttribute('href')).filter((href):href is string=>Boolean(href)&&!href!.startsWith('mailto:')&&!href!.startsWith('tel:')&&!href!.startsWith('http')&&!href!.startsWith('#')));
+    const validPages=new Set(generated.pages.map(p=>p.slug+'.html'));
+    for(const href of localLinks){
+      expect(validPages.has(href),'broken internal link '+href+' in '+genre+'/'+generatedPage.slug).toBe(true);
+    }
     expect(await page.locator('main').count()).toBe(1);
     expect(await page.locator('nav[aria-label="Main navigation"]').count()).toBe(1);
     expect(await page.locator('script:not([type="application/ld+json"])').count()).toBe(0);
