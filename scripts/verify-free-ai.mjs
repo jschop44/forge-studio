@@ -14,4 +14,7 @@ assert.match(source,/redirect:'error'/,'HTTP redirect blocking must remain enfor
 assert.match(source,/url\.protocol!=='http:'/,'Local-only HTTP enforcement must remain enabled');
 assert.doesNotMatch(source,/https:\/\/ollama\.com\/api\/generate/,'Paid Ollama Cloud inference URL is prohibited');
 assert.doesNotMatch(source,/api\.openai\.com/,'OpenAI API endpoint is prohibited');
-console.log('Free-AI provider policy verified (static safeguards only).');
+const legacyRoute=readFileSync('src/app/api/generate/route.ts','utf8');
+assert.match(legacyRoute,/generateWithLocalAi/,'Legacy generation route must use local inference');
+assert.doesNotMatch(legacyRoute,/api\.openai\.com|OPENAI_API_KEY|gpt-4o-mini/,'Legacy generation route cannot use OpenAI API');
+console.log('Free-AI provider policy verified for both generation routes (static safeguards only).');
