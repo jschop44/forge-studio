@@ -275,3 +275,11 @@ test('immersive framebuffer limits total pixel count on large displays',()=>{
   assert.ok(page.html.includes('const pixelRatio=density*budgetScale'),'Missing budget scaling on '+page.slug);
  }
 });
+
+test('immersive WebGL camera accepts touch pointer movement without blocking scrolling',()=>{
+ const pages=generateBusinessWebsite({businessName:'Harbor Studio',industry:'Architecture',description:'Independent design practice.',services:['Architecture']}).pages;
+ for(const page of pages){
+  assert.ok(page.html.includes("addEventListener('pointermove',e=>{if(reduced.matches||document.hidden)return;pointerX="),'Missing touch-aware camera on '+page.slug);
+  assert.ok(page.html.includes("},{passive:true});addEventListener('pointerdown'"),'Pointer movement must remain passive on '+page.slug);
+ }
+});
