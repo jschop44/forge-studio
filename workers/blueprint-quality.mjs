@@ -10,7 +10,7 @@ export function assessBlueprint(blueprint){
  const probes=Array.isArray(blueprint.navigationChecks)?blueprint.navigationChecks.slice(0,96):[];
  const failedNavigation=probes.filter(p=>!p||p.ok!==true||!Number.isInteger(p.status)||p.status<200||p.status>=400);
  const warnings=[];
- const validBounds=b=>b&&[b.x,b.y,b.width,b.height].every(n=>typeof n==='number'&&Number.isFinite(n))&&b.x>=0&&b.y>=0&&b.width>0&&b.height>0;
+ const validBounds=b=>b&&[b.x,b.y,b.width,b.height].every(n=>typeof n==='number'&&Number.isFinite(n))&&b.x>=0&&b.y>=0&&b.width>0&&b.height>0&&b.x<=20000&&b.y<=20000&&b.width<=20000&&b.height<=20000;
  const measuredRegions=pages.reduce((n,p)=>n+(Array.isArray(p?.regions)?p.regions.filter(r=>validBounds(r?.bounds)).length:0),0);
  const unmeasuredRegions=regions-measuredRegions;
  const totalPages=pages.length;
