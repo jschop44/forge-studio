@@ -47,5 +47,6 @@ for(const slug of ['index','services','about','contact']){
  if(!page.html.includes("aria-label','Immersive world movement'")||!page.html.includes("control.addEventListener('click'"))throw Error('Missing accessible mobile spatial movement controls on '+slug+' page');
  if(!page.html.includes('const canMoveTo=(x,y)=>')||!page.html.includes('const moveWorld=(dx,dy)=>')||!page.html.includes('moveWorld(-.35,0)'))throw Error('Missing collision-aware shared movement on '+slug+' page');
  if(!page.html.includes('float boxHit(vec3 ro,vec3 rd')||!page.html.includes('structureAlpha')||!page.html.includes('hitDistance'))throw Error('Missing raycast 3D world portal geometry on '+slug+' page');
+ if(!page.html.includes('float shadow=0.')||!page.html.includes('ground.xz-footprint'))throw Error('Missing raycast ground-contact shadows on '+slug+' page');
 }
 console.log('PASS: production Ollama generated and returned all four website pages.');
