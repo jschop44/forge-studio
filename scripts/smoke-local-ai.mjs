@@ -33,6 +33,7 @@ for(const slug of ['index','services','about','contact']){
  const page=pages.get(slug);
  if(!page||typeof page.html!=='string'||!page.html.includes('<html')||!page.html.includes('</html>'))throw Error('Missing valid '+slug+' page');
  if(!page.html.includes('forge-home-webgl-controller')&&!page.html.includes('forge-spatial-controller'))throw Error('Missing immersive WebGL controller on '+slug+' page');
+ if(slug==='index'){const homeScript=page.html.match(/<script id="forge-home-webgl-controller">([\\s\\S]*?)<\\/script>/)?.[1];if(!homeScript||!homeScript.includes("const beaconLink=document.createElement('a')")||!homeScript.includes('const worldPortals=')||!homeScript.includes('let walkX=0,walkY=0'))throw Error('Homepage WebGL controller missing world navigation initialization')}
  if(!page.html.includes("getContext('webgl'"))throw Error('Missing WebGL initialization on '+slug+' page');
  if(!page.html.includes('prefers-reduced-motion'))throw Error('Missing reduced-motion safeguard on '+slug+' page');
  if(!page.html.includes("event.pointerType==='touch'"))throw Error('Missing touch orbit input on '+slug+' page');
