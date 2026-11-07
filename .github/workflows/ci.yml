@@ -7,28 +7,42 @@ concurrency:
   group: verify-${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 jobs:
-  build:
+  application:
+    name: Application checks
     runs-on: ubuntu-latest
-    timeout-minutes: 25
+    timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
-      - run: npm install --no-audit --no-fund
+          cache: npm
+      - run: npm ci --no-audit --no-fund
       - run: npm run verify:free-ai
       - run: npm test
       - run: npm run test:workers
       - run: npm run typecheck
       - run: npm run build
+
+  browser:
+    name: Browser checks
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - run: npm ci --no-audit --no-fund
       - run: npx playwright install --with-deps chromium
       - run: npm run test:e2e
-      - name: Publish verification summary
+      - name: Publish browser verification summary
         if: always()
         run: |
-          echo '## Forge Studio verification' >> "$GITHUB_STEP_SUMMARY"
-          echo '- Application, worker, typecheck, build, and Playwright steps are listed above with their individual results.' >> "$GITHUB_STEP_SUMMARY"
-          echo '- A successful job means all required verification steps passed.' >> "$GITHUB_STEP_SUMMARY"
+          echo '## Forge Studio browser verification' >> "$GITHUB_STEP_SUMMARY"
+          echo '- Review the browser job results and attached Playwright report.' >> "$GITHUB_STEP_SUMMARY"
+          echo '- Both application and browser jobs must pass before release.' >> "$GITHUB_STEP_SUMMARY"
       - uses: actions/upload-artifact@v4
         if: always()
         with:
