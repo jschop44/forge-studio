@@ -48,3 +48,22 @@ test('rejects prohibited business categories without rejecting legitimate pharma
  assert.equal(generateBusinessWebsite(brief('Community pharmacy')).pages.length,4);
  assert.equal(generateBusinessWebsite(brief('Hospital medication dispensary')).pages.length,4);
 });
+
+test('contact page never invents contact details',()=>{
+ const site=generateBusinessWebsite(brief('Accounting and bookkeeping'));
+ const contact=site.pages.find(p=>p.slug==='contact')!.html;
+ assert.match(contact,/Contact information has not been supplied/);
+ assert.doesNotMatch(contact,/mailto:|<form/i);
+});
+test('verified business contact email is escaped and linked',()=>{
+ const site=generateBusinessWebsite({...brief('Accounting and bookkeeping'),contactEmail:'hello@example.com'});
+ const contact=site.pages.find(p=>p.slug==='contact')!.html;
+ assert.match(contact,/href="mailto:hello@example\.com"/);
+ assert.doesNotMatch(contact,/Contact information has not been supplied/);
+});
+test('untrusted business content is escaped before appearing in generated HTML',()=>{
+ const site=generateBusinessWebsite({businessName:'Example <script>alert(1)</script>',industry:'Professional consulting',description:'A trusted team offering <img src=x onerror=alert(1)> services locally.',services:['<svg onload=alert(1)>']});
+ for(const page of site.pages){
+  assert.doesNotMatch(page.html,/<script>alert\(1\)<\/script>|<svg onload=|<img src=x onerror=/i);
+ }
+});
