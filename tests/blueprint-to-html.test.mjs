@@ -119,3 +119,16 @@ test('exports distinct page titles in HTML metadata',()=>{
  assert.match(files[0].html,/<title>Home<\/title>/);
  assert.match(files[1].html,/<title>Pricing &amp; Plans<\/title>/);
 });
+
+test('local preview navigation distinguishes routes with different query strings',()=>{
+ const pages=blueprintToPages({version:1,sourceUrl:'https://example.com',title:'Site',sections:[],pages:[
+  {path:'/catalog?type=a',title:'Type A',regions:[],navigation:[{label:'Type B',target:'/catalog?type=b'}]},
+  {path:'/catalog?type=b',title:'Type B',regions:[]}
+ ]});
+ assert.notEqual(pages[0].filename,pages[1].filename);
+ assert.match(pages[0].html,new RegExp('href="'+pages[1].filename.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')+'"'));
+});
+test('rejects noninteger and out-of-bounds selected pages',()=>{
+ const bp={version:1,sections:[],pages:[{title:'Home',regions:[]}]};
+ for(const index of [-1,1,1.5,NaN])assert.throws(()=>blueprintToHtml(bp,index),/Invalid selected page/);
+});
