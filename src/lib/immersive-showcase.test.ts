@@ -168,3 +168,15 @@ test('WebGL keyboard navigation preserves native links and form controls',()=>{
  assert.match(html,/\[contenteditable\]/);
  assert.match(html,/if\(reduced\.matches\|\|document\.hidden\|\|event\.altKey/);
 });
+
+test('generated contextual homepage can receive shared WebGL without losing accessible navigation',()=>{
+ const original=createContextualShowcase({businessName:'Harbor Studio',industry:'Architecture',description:'Thoughtful spaces.',services:['Design']});
+ const enhanced=enhanceImmersivePages(original);
+ const html=enhanced[0].html;
+ assert.match(html,/id="forge-home-webgl-controller"/);
+ assert.match(html,/getContext\('webgl'/);
+ assert.match(html,/<a class="skip-link" href="#main-content">Skip to main content<\/a>/);
+ assert.match(html,/<nav aria-label="Main navigation">/);
+ assert.equal((html.match(/<main\b/g)||[]).length,1);
+ assert.equal(enhanceImmersivePages(enhanced)[0].html,html);
+});
