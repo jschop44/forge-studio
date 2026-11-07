@@ -213,3 +213,16 @@ test('capture immersive desktop and mobile visual evidence for every generated p
   }
  }
 });
+
+test('print mode hides immersive effects while preserving page content',async({page})=>{
+ const pages=generateBusinessWebsite({businessName:'Harbor Studio',industry:'Architecture',description:'Independent design practice.',services:['Architecture','Interiors']}).pages;
+ for(const generated of pages){
+  await page.setContent(generated.html);
+  await page.emulateMedia({media:'print'});
+  const main=page.locator('main#main-content');
+  await expect(main).toBeVisible();
+  const canvas=page.locator('#forge-webgl-atmosphere');
+  if(await canvas.count())await expect(canvas).toBeHidden();
+  await page.emulateMedia({media:'screen'});
+ }
+});
