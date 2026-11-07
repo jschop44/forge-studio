@@ -61,3 +61,17 @@ test('authenticated cloud AI generates website pages without deterministic fallb
   if(previousModel===undefined)delete process.env.OLLAMA_MODEL;else process.env.OLLAMA_MODEL=previousModel;
  }
 });
+
+test('cloud AI accepts markdown-fenced JSON without weakening draft validation',async()=>{
+ const previousFetch=globalThis.fetch,previousKey=process.env.OLLAMA_API_KEY;
+ try{
+  process.env.OLLAMA_API_KEY='test-only-token';
+  globalThis.fetch=async()=>new Response(JSON.stringify({response:'\`\`\`json\\n'+JSON.stringify(brief)+'\\n\`\`\`'}),{status:200});
+  const result=await generateWithLocalAi(brief);
+  assert.equal(result.draft.businessName,'Northstar Coffee');
+  assert.ok(result.pages.length>0);
+ }finally{
+  globalThis.fetch=previousFetch;
+  if(previousKey===undefined)delete process.env.OLLAMA_API_KEY;else process.env.OLLAMA_API_KEY=previousKey;
+ }
+});
