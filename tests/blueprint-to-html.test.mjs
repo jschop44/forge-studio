@@ -193,10 +193,10 @@ test('reconstruction preserves measured region width and horizontal offset',()=>
   {type:'content',headline:'Left',bounds:{x:0,y:100,width:400,height:220}},
   {type:'content',headline:'Right',bounds:{x:400,y:100,width:400,height:220}}
  ]});
- assert.match(html,/width:50%;margin-left:0%/);
- assert.match(html,/width:50%;margin-left:50%/);
+ assert.match(html,/left:0%;width:50%/);
+ assert.match(html,/left:50%;width:50%/);
  assert.match(html,/min-height:220px/);
- assert.match(html,/width:100%!important;margin-left:0!important/);
+ assert.match(html,/position:relative!important;top:auto!important/);
 });
 test('invalid measured dimensions never inject CSS',()=>{
  const html=blueprintToHtml({version:1,title:'Invalid',sections:[
