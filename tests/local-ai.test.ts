@@ -7,7 +7,7 @@ describe('mandatory local AI generation',()=>{
   const previousUrl=process.env.OLLAMA_URL;
   try{
    process.env.OLLAMA_URL='http://127.0.0.1:11434';
-   globalThis.fetch=async(_input,init)=>{const payload=JSON.parse(String(init?.body));assert.equal(payload.keep_alive,'10m');assert.equal(payload.options.num_predict,240);assert.equal(payload.options.num_ctx,2048);assert.equal(payload.stream,false);assert.match(payload.prompt,/one key: description/);return new Response(JSON.stringify({response:JSON.stringify({description:'A small creative studio helping local businesses grow.'})}),{status:200})};
+   globalThis.fetch=async(_input,init)=>{const payload=JSON.parse(String(init?.body));assert.equal(payload.keep_alive,'10m');assert.equal(payload.options.num_predict,240);assert.equal(payload.options.num_ctx,2048);assert.equal(payload.stream,false);assert.equal(payload.format.type,'object');assert.deepEqual(payload.format.required,['description']);assert.equal(payload.format.additionalProperties,false);assert.match(payload.prompt,/one key: description/);return new Response(JSON.stringify({response:JSON.stringify({description:'A small creative studio helping local businesses grow.'})}),{status:200})};
    const result=await generateWithLocalAi({businessName:'Cedar Studio',industry:'Design',description:'A small creative studio helping local businesses grow.',services:['Website design','Brand strategy']});
    assert.equal(result.provider,'ollama');
    assert.equal(result.pages.length,4);
