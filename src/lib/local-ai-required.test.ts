@@ -66,7 +66,7 @@ test('cloud AI accepts markdown-fenced JSON without weakening draft validation',
  const previousFetch=globalThis.fetch,previousKey=process.env.OLLAMA_API_KEY;
  try{
   process.env.OLLAMA_API_KEY='test-only-token';
-  globalThis.fetch=async()=>new Response(JSON.stringify({response:'\`\`\`json\\n'+JSON.stringify(brief)+'\\n\`\`\`'}),{status:200});
+  globalThis.fetch=async()=>new Response(JSON.stringify({response:'```json\n'+JSON.stringify(brief)+'\n```'}),{status:200});
   const result=await generateWithLocalAi(brief);
   assert.equal(result.draft.businessName,'Northstar Coffee');
   assert.ok(result.pages.length>0);
