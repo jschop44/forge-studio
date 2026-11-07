@@ -32,3 +32,16 @@ test('reduced motion keeps immersive page content accessible without a GPU canva
  await expect(page.locator('#forge-webgl-atmosphere')).toHaveCount(0);
  await expect(page.locator('#forge-spatial-layer')).toHaveCount(1);
 });
+
+test('scene keyboard controls preserve native scrolling and editable fields',async({page})=>{
+ const html=enhanceImmersivePages([{slug:'contact',html:source.replace('<main>','<main><input aria-label="Your name" />')}])[0].html;
+ const errors:string[]=[];
+ page.on('pageerror',error=>errors.push(error.message));
+ await page.setContent(html);
+ await page.keyboard.press('ArrowDown');
+ await page.locator('input').focus();
+ await page.keyboard.type('Example');
+ await expect(page.locator('input')).toHaveValue('Example');
+ await expect(page.locator('main section')).toHaveCount(2);
+ expect(errors).toEqual([]);
+});
