@@ -59,6 +59,12 @@ jobs:
           curl --fail --silent --show-error --location --retry 4 --retry-delay 3 --retry-all-errors --max-time 30 --output /tmp/forge-home.html "$PREVIEW_URL/"
           test -s /tmp/forge-home.html || { echo "::error::Preview homepage returned an empty response"; exit 1; }
           echo "Homepage returned nonempty HTTP success response"
+          echo "Checking application health API"
+          curl --fail --silent --show-error --retry 3 --retry-delay 2 --max-time 20 --output /tmp/forge-health.json "$PREVIEW_URL/api/health"
+          node -e 'const fs=require("node:fs"); const data=JSON.parse(fs.readFileSync("/tmp/forge-health.json","utf8")); if(data.ok!==true||data.service!=="forge-studio") process.exit(1); console.log("Health API verified:",data.service)'
+          echo "### Cloudflare smoke test" >> "$GITHUB_STEP_SUMMARY"
+          echo "- Homepage: HTTP success, nonempty" >> "$GITHUB_STEP_SUMMARY"
+          echo "- Health API: passed" >> "$GITHUB_STEP_SUMMARY"
           echo "Checking application health endpoint"
           curl --fail --silent --show-error --location --retry 3 --retry-delay 2 --retry-all-errors --max-time 20 --output /tmp/forge-health.json "$PREVIEW_URL/api/health"
           node -e 'const fs=require("node:fs"); const data=JSON.parse(fs.readFileSync("/tmp/forge-health.json","utf8")); if(data.ok!==true||data.service!=="forge-studio"){console.error("::error::Health endpoint returned invalid application identity");process.exit(1)} console.log("Forge Studio application health verified")'
@@ -66,3 +72,7 @@ jobs:
           curl --silent --show-error --max-time 20 --output /tmp/forge-ready.json --write-out 'Readiness HTTP status: %{http_code}\\n' "$PREVIEW_URL/api/health/ready" || true
           head -c 500 /tmp/forge-ready.json || true
           echo
+          echo "Checking AI inference status (diagnostic only; does not imply generation works)"
+          curl --silent --show-error --max-time 20 --output /tmp/forge-ai.json --write-out 'AI status HTTP code: %{http_code}\\n' "$PREVIEW_URL/api/ai/status" || true
+          if test -s /tmp/forge-ai.json; then head -c 500 /tmp/forge-ai.json; echo; fi
+          echo "- AI generation: not verified by smoke test" >> "$GITHUB_STEP_SUMMARY"
