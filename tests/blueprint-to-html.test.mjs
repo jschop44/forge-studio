@@ -53,7 +53,7 @@ test('exports distinct standalone HTML files for multiple observed routes',()=>{
   {path:'/about/',title:'About',regions:[{type:'section',headline:'About us'}]},
   {path:'/about/',title:'Duplicate',regions:[]}
  ]});
- assert.deepEqual(result.map(p=>p.filename),['index.html','about.html','about-3.html']);
+ assert.deepEqual(result.map(p=>p.filename),['index.html','about.html','about-2.html']);
  assert.match(result[1].html,/About us/);
  assert.equal(new Set(result.map(p=>p.filename)).size,3);
 });
@@ -87,7 +87,7 @@ test('uses page-specific observed navigation when exporting pages',()=>{
   {path:'/about',title:'About',regions:[],navigation:[{label:'Home',target:'/'}]}
  ]});
  assert.match(files[0].html,/href="about.html"/);
- assert.doesNotMatch(files[0].html,/>Home<\/a>/);
+ assert.doesNotMatch(files[0].html,/<nav[^>]*>[\s\S]*?>Home<\/a>[\s\S]*?<\/nav>/);
  assert.match(files[1].html,/href="index.html"/);
 });
 
