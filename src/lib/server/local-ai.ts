@@ -1,5 +1,6 @@
 import {z} from 'zod';
 import {generateBusinessWebsite} from '../business-site';
+const CopySchema=z.object({description:z.string().trim().min(15).max(1800)});
 const DraftSchema=z.object({businessName:z.string().min(2).max(100),industry:z.string().min(2).max(80),description:z.string().min(15).max(1800),services:z.array(z.string().min(2).max(100)).min(1).max(12)});
 export type AiDraft=z.infer<typeof DraftSchema>;
 export type AiGenerationResult={draft:AiDraft;provider:'ollama';pages:ReturnType<typeof generateBusinessWebsite>['pages']};
@@ -39,13 +40,13 @@ export async function generateWithLocalAi(input:{businessName:string;industry:st
  if(activeGenerations>=MAX_ACTIVE_GENERATIONS)throw Error('Local AI capacity exceeded');
  activeGenerations++;
  try {
- let draft!:AiDraft;
+ let description!:string;
  {
  const config=ollamaConfig();const url=config.url;
  const controller=new AbortController();const timeout=setTimeout(()=>controller.abort(),60000);
- try{const response=await fetch(new URL('/api/generate',url),{method:'POST',signal:controller.signal,redirect:'error',headers:{'Content-Type':'application/json',...config.headers},body:JSON.stringify({model:config.model,stream:false,format:'json',keep_alive:'10m',options:{num_predict:420,num_ctx:2048,temperature:0.3},prompt:'Return ONLY JSON with keys businessName, industry, description, services. Write concise accurate marketing copy using only facts supplied by user. Do not invent credentials, customer testimonials, pricing or performance claims. Keep all copy professional and family-friendly, including Halloween and seasonal topics: no graphic horror, gore, sexual content, drug promotion, or disturbing imagery descriptions. Input: '+JSON.stringify(input)})});
+ try{const response=await fetch(new URL('/api/generate',url),{method:'POST',signal:controller.signal,redirect:'error',headers:{'Content-Type':'application/json',...config.headers},body:JSON.stringify({model:config.model,stream:false,format:'json',keep_alive:'10m',options:{num_predict:240,num_ctx:2048,temperature:0.3},prompt:'Return ONLY a JSON object with one key: description. Write concise accurate marketing copy using only facts supplied by user. Do not invent credentials, customer testimonials, pricing or performance claims. Keep all copy professional and family-friendly, including Halloween and seasonal topics: no graphic horror, gore, sexual content, drug promotion, or disturbing imagery descriptions. Input: '+JSON.stringify(input)})});
  if(!response.ok)throw Error('Local AI returned HTTP '+response.status);
- if(response.ok){const payload=await response.json();const raw=String(payload.response||'').trim();const clean=raw.replace(/^```(?:json)?\s*/i,'').replace(/\s*```$/,'');const parsed=DraftSchema.safeParse(JSON.parse(clean));if(parsed.success){draft=parsed.data}else throw Error('Local AI returned an invalid draft')}
+ if(response.ok){const payload=await response.json();const raw=String(payload.response||'').trim();const clean=raw.replace(/^```(?:json)?\s*/i,'').replace(/\s*```$/,'');const parsed=CopySchema.safeParse(JSON.parse(clean));if(parsed.success){description=parsed.data.description}else throw Error('Local AI returned an invalid draft')}
  }catch(error){throw new Error('Local AI unavailable: '+(error instanceof Error?error.message:'request failed'))}finally{clearTimeout(timeout)}
  }
  // The model may improve descriptive copy, but cannot rename or reclassify a business.
@@ -53,7 +54,7 @@ export async function generateWithLocalAi(input:{businessName:string;industry:st
  const verifiedDraft:AiDraft={
   businessName:input.businessName.trim(),
   industry:input.industry.trim(),
-  description:draft.description,
+  description,
   services:input.services.map(service=>service.trim())
  };
  const validated=DraftSchema.parse(verifiedDraft);
