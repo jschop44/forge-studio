@@ -15,3 +15,18 @@ export function buildDepthScene(blueprint,pageIndex=0){
  });
  return {version:1,pageIndex,layers,camera:{perspective:1000,tiltDegrees:0},accessibility:{reducedMotion:'disable-depth-animation',keyboardNavigation:'document-order'},source:'observed-regions',publicationReady:false};
 }
+
+/**
+ * Pure layout projection for an accessible, responsive depth preview.
+ * Geometry is derived from observed bounds; no browser scripts or network access.
+ */
+export function projectDepthScene(scene,viewportWidth,{reducedMotion=false,maxTilt=8}={}){
+ if(!scene||scene.version!==1||!Array.isArray(scene.layers))throw Error('Invalid depth scene');
+ if(!finite(viewportWidth)||viewportWidth<240||viewportWidth>10000)throw Error('Invalid viewport width');
+ if(typeof reducedMotion!=='boolean'||!finite(maxTilt)||maxTilt<0||maxTilt>15)throw Error('Invalid projection settings');
+ const contentWidth=Math.max(1,...scene.layers.map(l=>l.x+l.width));
+ const scale=Math.min(1,viewportWidth/contentWidth);
+ return {version:1,viewportWidth,scale,animationEnabled:!reducedMotion,
+  camera:{perspective:Math.max(600,Math.round((scene.camera?.perspective||1000)*scale)),tiltDegrees:reducedMotion?0:clamp(scene.camera?.tiltDegrees||0,-maxTilt,maxTilt)},
+  layers:scene.layers.map(layer=>({id:layer.id,role:layer.role,x:Math.round(layer.x*scale),y:Math.round(layer.y*scale),width:Math.max(1,Math.round(layer.width*scale)),height:Math.max(1,Math.round(layer.height*scale)),depth:reducedMotion?0:layer.depth,interactive:false}))};
+}
