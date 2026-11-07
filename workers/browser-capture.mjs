@@ -33,8 +33,9 @@ try{
  const landmarks=await page.locator('h1,h2,nav,main').evaluateAll(nodes=>nodes.slice(0,30).map(n=>({role:n.tagName.toLowerCase(),text:(n.textContent||'').trim().slice(0,120)})));
  const visualRegions=await page.locator('header,nav,main,footer,h1,section').evaluateAll(nodes=>nodes.slice(0,100).map(n=>{
   const r=n.getBoundingClientRect();
+  const computed=getComputedStyle(n);
   const role=n.tagName.toLowerCase()==='h1'?'hero':n.tagName.toLowerCase()==='section'?'section':n.tagName.toLowerCase();
-  return {role,x:Math.max(0,r.left+window.scrollX),y:Math.max(0,r.top+window.scrollY),width:Math.max(0,Math.min(r.width,window.innerWidth-Math.max(0,r.left))),height:Math.max(0,Math.min(r.height,Math.max(window.innerHeight,document.documentElement.scrollHeight)-Math.max(0,r.top+window.scrollY))),text:(n.textContent||'').trim().slice(0,200)};
+  return {role,backgroundColor:computed.backgroundColor,textColor:computed.color,x:Math.max(0,r.left+window.scrollX),y:Math.max(0,r.top+window.scrollY),width:Math.max(0,Math.min(r.width,window.innerWidth-Math.max(0,r.left))),height:Math.max(0,Math.min(r.height,Math.max(window.innerHeight,document.documentElement.scrollHeight)-Math.max(0,r.top+window.scrollY))),text:(n.textContent||'').trim().slice(0,200)};
  }).filter(r=>r.width>0&&r.height>0&&r.x<window.innerWidth&&r.y<Math.min(20000,document.documentElement.scrollHeight)));
  if(!visualRegions.length){
   const bodyRegion=await page.locator('body').evaluate(n=>{
@@ -64,7 +65,7 @@ try{
    if(response?.ok()&&sameOrigin&&additionalPages.length<3){
     try{
     const snapshot=await probe.evaluate(()=>{
-     const regions=[...document.querySelectorAll('header,nav,main,footer,h1,section')].slice(0,100).map(n=>{const r=n.getBoundingClientRect();return {role:n.tagName.toLowerCase()==='h1'?'hero':n.tagName.toLowerCase(),x:Math.max(0,r.left+scrollX),y:Math.max(0,r.top+scrollY),width:Math.max(0,Math.min(r.width,innerWidth-Math.max(0,r.left))),height:Math.max(0,Math.min(r.height,Math.max(innerHeight,document.documentElement.scrollHeight)-Math.max(0,r.top+scrollY))),text:(n.textContent||'').trim().slice(0,200)}}).filter(r=>r.width>0&&r.height>0&&r.y<Math.min(20000,document.documentElement.scrollHeight));
+     const regions=[...document.querySelectorAll('header,nav,main,footer,h1,section')].slice(0,100).map(n=>{const r=n.getBoundingClientRect();const computed=getComputedStyle(n);return {backgroundColor:computed.backgroundColor,textColor:computed.color,role:n.tagName.toLowerCase()==='h1'?'hero':n.tagName.toLowerCase(),x:Math.max(0,r.left+scrollX),y:Math.max(0,r.top+scrollY),width:Math.max(0,Math.min(r.width,innerWidth-Math.max(0,r.left))),height:Math.max(0,Math.min(r.height,Math.max(innerHeight,document.documentElement.scrollHeight)-Math.max(0,r.top+scrollY))),text:(n.textContent||'').trim().slice(0,200)}}).filter(r=>r.width>0&&r.height>0&&r.y<Math.min(20000,document.documentElement.scrollHeight));
      const body=getComputedStyle(document.body);const heading=document.querySelector('h1,h2');const h=heading?getComputedStyle(heading):body;
      const links=[...document.querySelectorAll('a')].slice(0,30).map(n=>({kind:'link',label:(n.getAttribute('aria-label')||n.textContent||'').trim().slice(0,100),target:(n.getAttribute('href')||'').slice(0,300),verified:false}));
      return {title:document.title,visualRegions:regions,designTokens:{backgroundColor:body.backgroundColor,textColor:body.color,fontFamily:body.fontFamily,headingFontFamily:h.fontFamily,headingFontSize:h.fontSize,baseFontSize:body.fontSize},interactions:links,landmarks:[...document.querySelectorAll('h1,h2')].slice(0,30).map(n=>({role:n.tagName.toLowerCase(),text:(n.textContent||'').trim().slice(0,120)}))};
