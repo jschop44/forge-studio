@@ -134,7 +134,9 @@ test('immersive canvas scales down on mobile high-density screens',async({page})
  const html=enhanceImmersivePages([{slug:'services',html:source}])[0].html;
  await page.setContent(html);
  const canvas=page.locator('#forge-webgl-atmosphere');
- if(await canvas.count()){
+ const supported=await page.evaluate(()=>Boolean(document.createElement('canvas').getContext('webgl')));
+ if(supported){
+  await expect(canvas).toHaveCount(1);
   await expect.poll(()=>canvas.evaluate(el=>(el as HTMLCanvasElement).width)).toBeGreaterThan(0);
   const dimensions=await canvas.evaluate(el=>({width:(el as HTMLCanvasElement).width,height:(el as HTMLCanvasElement).height}));
   expect(dimensions.width).toBeLessThanOrEqual(375);
