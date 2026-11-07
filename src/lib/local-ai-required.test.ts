@@ -1,6 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {generateWithLocalAi,checkLocalAiReadiness} from './server/local-ai';
+import {createServer} from 'node:http';
 
 const brief={businessName:'Northstar Coffee',industry:'Coffee shop',description:'Independent neighborhood coffee shop serving freshly roasted drinks.',services:['Espresso','Coffee beans']};
 
@@ -149,5 +150,40 @@ test('AI readiness rejects a paid Beam model before requesting any endpoint',asy
   globalThis.fetch=previousFetch;
   if(previousModel===undefined)delete process.env.OLLAMA_MODEL;else process.env.OLLAMA_MODEL=previousModel;
   if(previousUrl===undefined)delete process.env.OLLAMA_URL;else process.env.OLLAMA_URL=previousUrl;
+ }
+});
+
+test('local Ollama integration works over real loopback HTTP without cloud credentials',async()=>{
+ const previousFetch=globalThis.fetch,previousUrl=process.env.OLLAMA_URL,previousKey=process.env.OLLAMA_API_KEY,previousModel=process.env.OLLAMA_MODEL;
+ const server=createServer(async(req,res)=>{
+  res.setHeader('Content-Type','application/json');
+  if(req.url==='/api/tags'){
+   res.end(JSON.stringify({models:[{name:'llama3.2:3b'}]}));return;
+  }
+  if(req.url==='/api/generate'&&req.method==='POST'){
+   assert.equal(req.headers.authorization,undefined);
+   const chunks:Buffer[]=[];for await(const chunk of req)chunks.push(Buffer.from(chunk));
+   const request=JSON.parse(Buffer.concat(chunks).toString('utf8'));
+   assert.equal(request.model,'llama3.2:3b');
+   assert.equal(request.stream,false);
+   res.end(JSON.stringify({response:JSON.stringify(brief)}));return;
+  }
+  res.statusCode=404;res.end('{}');
+ });
+ try{
+  await new Promise<void>(resolve=>server.listen(0,'127.0.0.1',resolve));
+  const address=server.address();assert.ok(address&&typeof address!=='string');
+  process.env.OLLAMA_URL='http://127.0.0.1:'+address.port;
+  process.env.OLLAMA_MODEL='llama3.2:3b';process.env.OLLAMA_API_KEY='legacy-key-must-be-ignored';
+  globalThis.fetch=previousFetch;
+  assert.deepEqual(await checkLocalAiReadiness(),{ready:true,reason:'ready'});
+  const result=await generateWithLocalAi(brief);
+  assert.deepEqual(result.pages.map(page=>page.slug),['index','services','about','contact']);
+ }finally{
+  await new Promise<void>(resolve=>server.close(()=>resolve()));
+  globalThis.fetch=previousFetch;
+  if(previousUrl===undefined)delete process.env.OLLAMA_URL;else process.env.OLLAMA_URL=previousUrl;
+  if(previousKey===undefined)delete process.env.OLLAMA_API_KEY;else process.env.OLLAMA_API_KEY=previousKey;
+  if(previousModel===undefined)delete process.env.OLLAMA_MODEL;else process.env.OLLAMA_MODEL=previousModel;
  }
 });
