@@ -36,10 +36,14 @@ test('reference layout without strong signals retains standard presentation',()=
  assert.match(html,/<body class="mode-new layout-standard">/);
 });
 
-test('spatial enhancement applies across secondary pages but leaves the immersive homepage intact',()=>{
+test('spatial enhancement adds WebGL to homepage while preserving its original layout',()=>{
  const pages=[{slug:'index',html:'<!doctype html><html><head></head><body>home</body></html>'},{slug:'services',html:'<!doctype html><html><head></head><body><main><h1>Services</h1></main></body></html>'},{slug:'about',html:'<!doctype html><html><head></head><body><main><h1>About</h1></main></body></html>'},{slug:'contact',html:'<!doctype html><html><head></head><body><main><h1>Contact</h1></main></body></html>'}];
  const result=enhanceImmersivePages(pages);
- assert.equal(result[0].html,pages[0].html);
+ assert.match(result[0].html,/id="forge-home-webgl"/);
+ assert.match(result[0].html,/id="forge-home-webgl-controller"/);
+ assert.match(result[0].html,/getContext\('webgl'/);
+ assert.doesNotMatch(result[0].html,/id="forge-spatial-layer"/);
+ assert.equal(enhanceImmersivePages(result)[0].html,result[0].html);
  for(const page of result.slice(1)){assert.match(page.html,/id="forge-spatial-layer"/);assert.match(page.html,/id="forge-spatial-controller"/);assert.match(page.html,/prefers-reduced-motion:reduce/)}
  assert.equal(pages[1].html.includes('forge-spatial-layer'),false);
 });
