@@ -1,6 +1,7 @@
 import {test} from 'node:test';
 import {strict as assert} from 'node:assert';
 import {createContextualShowcase,enhanceImmersivePages} from './immersive-showcase';
+import {generateBusinessWebsite} from './business-site';
 
 test('contextual immersive sites provide keyboard skip navigation and one main landmark',()=>{
  const page=createContextualShowcase({businessName:'Example Cafe',industry:'Coffee shop',description:'Coffee and community.',services:['Espresso','Pastries']})[0];
@@ -179,4 +180,15 @@ test('generated contextual homepage can receive shared WebGL without losing acce
  assert.match(html,/<nav aria-label="Main navigation">/);
  assert.equal((html.match(/<main\b/g)||[]).length,1);
  assert.equal(enhanceImmersivePages(enhanced)[0].html,html);
+});
+
+test('production business generator includes immersive WebGL on every exported page',()=>{
+ const generated=generateBusinessWebsite({businessName:'Harbor Studio',industry:'Architecture',description:'Independent design practice serving local clients.',services:['Architecture','Interior design']});
+ assert.deepEqual(generated.pages.map(page=>page.slug),['index','services','about','contact']);
+ for(const page of generated.pages){
+  assert.match(page.html,/getContext\('webgl'/);
+  assert.match(page.html,/id="forge-webgl-atmosphere"/);
+  assert.match(page.html,/<main id="main-content"/);
+  assert.equal((page.html.match(/id="forge-webgl-atmosphere"/g)||[]).length,1);
+ }
 });
