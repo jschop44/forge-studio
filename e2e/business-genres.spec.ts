@@ -23,6 +23,8 @@ for(const genre of genres){
    const generated=generateBusinessWebsite({businessName:'Example Business',industry:genre,description:'A neighborhood business serving its local community.',services:['Customer support','Information']});
    await page.route('**/*',route=>route.request().resourceType()==='image'?route.abort():route.continue());
    for(const generatedPage of generated.pages){
+    // Reset document and keyboard focus between independent generated pages.
+    await page.goto('about:blank');
     await page.setContent(generatedPage.html,{waitUntil:'domcontentloaded'});
     await expect(page.locator('h1').first()).toBeVisible();
     await expect(page.locator('nav')).toBeVisible();
