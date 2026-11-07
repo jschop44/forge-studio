@@ -2,6 +2,7 @@ import {createHash} from 'node:crypto';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {buildPreviewManifest} from '../workers/preview-manifest.mjs';
+import {blueprintToPages} from '../workers/blueprint-to-html.mjs';
 test('exports deterministic bounded offline preview manifest',()=>{
  const blueprint={version:1,sourceUrl:'https://example.com',title:'Example',sections:[],pages:[{path:'/',title:'Home',regions:[]},{path:'/about',title:'About',regions:[]}]};
  const manifest=buildPreviewManifest(blueprint);
