@@ -34,6 +34,12 @@ jobs:
           restore-keys: |
             next-${{ runner.os }}-${{ hashFiles('package.json') }}-
       - run: npm run build
+      - name: Application verification summary
+        if: always()
+        run: |
+          echo '## Forge Studio application verification' >> "$GITHUB_STEP_SUMMARY"
+          echo 'Review the individual policy, unit, worker, typecheck, and build steps above.' >> "$GITHUB_STEP_SUMMARY"
+          echo 'A successful build alone does not establish that production Ollama inference is reachable.' >> "$GITHUB_STEP_SUMMARY"
 
   browser:
     name: Browser checks
