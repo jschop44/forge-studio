@@ -16,7 +16,13 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
-      - run: npm install --no-audit --no-fund
+      - uses: actions/cache@v4
+        with:
+          path: ~/.npm
+          key: npm-${{ runner.os }}-node22-${{ hashFiles('package.json') }}
+          restore-keys: |
+            npm-${{ runner.os }}-node22-
+      - run: npm install --prefer-offline --no-audit --no-fund
       - run: npm run verify:free-ai
       - run: npm test
       - run: npm run test:workers
@@ -32,7 +38,13 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
-      - run: npm install --no-audit --no-fund
+      - uses: actions/cache@v4
+        with:
+          path: ~/.npm
+          key: npm-${{ runner.os }}-node22-${{ hashFiles('package.json') }}
+          restore-keys: |
+            npm-${{ runner.os }}-node22-
+      - run: npm install --prefer-offline --no-audit --no-fund
       - run: npx playwright install --with-deps chromium
       - run: npm run test:e2e
       - name: Publish browser verification summary
