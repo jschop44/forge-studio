@@ -1,10 +1,15 @@
 import {NextRequest,NextResponse} from 'next/server';
 import {SiteSchema} from '../../../lib/schema';
 import {generateWithLocalAi} from '../../../lib/server/local-ai';
+import {sameOrigin} from '../../../lib/server/request-security';
+import {isExcludedBusiness} from '../../../lib/business-site';
 
 export const runtime='nodejs';
 const limits=new Map<string,{count:number;reset:number}>();
 export async function POST(req:NextRequest){
+ if(!sameOrigin(req))return NextResponse.json({error:'Origin rejected'},{status:403});
+ const length=Number(req.headers.get('content-length')||0);
+ if(length>8000)return NextResponse.json({error:'Brief too large'},{status:413});
  // A client-supplied X-Forwarded-For value is not an authenticated identity.
  // Use the platform-provided connecting address where available, and a
  // conservative shared bucket otherwise to prevent header-based limit bypass.
@@ -14,13 +19,15 @@ export async function POST(req:NextRequest){
  const limit=limits.get(ip);
  if(limit&&limit.reset>now&&limit.count>=10)return NextResponse.json({error:'Rate limit exceeded. Try again later.'},{status:429});
  let body:unknown;
- try{body=await req.json()}catch{return NextResponse.json({error:'Invalid JSON'},{status:400})}
+ try{const raw=await req.text();if(raw.length>8000)return NextResponse.json({error:'Brief too large'},{status:413});body=JSON.parse(raw)}catch{return NextResponse.json({error:'Invalid JSON'},{status:400})}
  if(!body||typeof body!=='object')return NextResponse.json({error:'Invalid request'},{status:400});
  const {name,description,template,industry,services}=body as Record<string,unknown>;
  if(typeof name!=='string'||typeof description!=='string'||name.trim().length<2||name.length>80||description.trim().length<15||description.length>1500||!['ember','minimal','editorial'].includes(String(template))||(industry!==undefined&&(typeof industry!=='string'||industry.length>80))||(services!==undefined&&(!Array.isArray(services)||services.length>12||services.some(item=>typeof item!=='string'||item.length<2||item.length>100))))return NextResponse.json({error:'Invalid input'},{status:400});
+ const brief={businessName:name,industry:typeof industry==='string'&&industry.trim()?industry.trim():'Business',description,services:Array.isArray(services)&&services.length?services as string[]:['General services']};
+ if(isExcludedBusiness(brief))return NextResponse.json({error:'This business category is not supported'},{status:422});
  limits.set(ip,{count:limit&&limit.reset>now?limit.count+1:1,reset:limit&&limit.reset>now?limit.reset:now+3600000});
  try{
-  const result=await generateWithLocalAi({businessName:name,industry:typeof industry==='string'&&industry.trim()?industry.trim():'Business',description,services:Array.isArray(services)&&services.length?services as string[]:['General services']});
+  const result=await generateWithLocalAi(brief);
   const draft=result.draft;
   const site=SiteSchema.parse({
    id:crypto.randomUUID(),
