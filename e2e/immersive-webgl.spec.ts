@@ -230,14 +230,14 @@ test('print mode hides immersive effects while preserving page content',async({p
 });
 
 test('WebGL initialization exception falls back to accessible content on every page',async({page})=>{
- await page.addInitScript(()=>{
-  const original=HTMLCanvasElement.prototype.getContext;
-  HTMLCanvasElement.prototype.getContext=function(type,...args){
-   if(type==='webgl')throw new Error('Simulated GPU unavailable');
-   return original.apply(this,[type,...args] as Parameters<typeof original>);
-  };
- });
  await page.goto('about:blank');
+ await page.evaluate(()=>{
+  const original=HTMLCanvasElement.prototype.getContext;
+  HTMLCanvasElement.prototype.getContext=function(...args:Parameters<HTMLCanvasElement['getContext']>){
+   if(args[0]==='webgl')throw new Error('Simulated GPU unavailable');
+   return Reflect.apply(original,this,args);
+  } as HTMLCanvasElement['getContext'];
+ });
  const pages=generateBusinessWebsite({businessName:'Harbor Studio',industry:'Architecture',description:'Independent design practice.',services:['Architecture']}).pages;
  for(const generated of pages){
   const errors:string[]=[];
