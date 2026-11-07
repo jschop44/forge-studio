@@ -33,9 +33,12 @@ export function blueprintToHtml(blueprint,selectedPage=0,localNavigation=false){
 
 function previewFileName(pages,index){
  const slugFor=page=>{
-  const path=typeof page?.path==='string'?page.path:'/';
-  const parts=path.split('/').filter(Boolean).map(part=>part.replace(/[^a-zA-Z0-9_-]/g,'-'));
-  return (parts.join('-')||'index').slice(0,80);
+  const raw=typeof page?.path==='string'?page.path:'/';
+  let url;
+  try{url=new URL(raw,'https://preview.invalid')}catch{url=new URL('https://preview.invalid/')}
+  const pathParts=url.pathname.split('/').filter(Boolean).map(part=>part.replace(/[^a-zA-Z0-9_-]/g,'-'));
+  const query=url.search?'-'+url.search.slice(1).replace(/[^a-zA-Z0-9_-]/g,'-'):'';
+  return ((pathParts.join('-')||'index')+query).slice(0,80);
  };
  const slug=slugFor(pages[index]);
  let collisions=0;
