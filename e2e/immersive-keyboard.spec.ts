@@ -34,3 +34,16 @@ test('immersive service details expand and collapse from keyboard',async({page})
  await expect(toggle).toHaveAttribute('aria-expanded','false');
  await expect(panel).toBeHidden();
 });
+
+test('keyboard perspective remains available with reduced motion',async({page})=>{
+ await page.emulateMedia({reducedMotion:'reduce'});
+ const html=createContextualShowcase({businessName:'Test Realty',industry:'Real estate',description:'Property experts.',services:['Home sales']})[0].html;
+ await page.goto('about:blank');
+ await page.setContent(html,{waitUntil:'domcontentloaded'});
+ const object=page.locator('#interactive-object');
+ await object.focus();
+ await page.keyboard.press('ArrowLeft');
+ await expect(object).toHaveAttribute('style',/rotateY\(-8deg\)/);
+ await page.keyboard.press('Escape');
+ await expect(object).toHaveAttribute('style',/rotateY\(0deg\)/);
+});
