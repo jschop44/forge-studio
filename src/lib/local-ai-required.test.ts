@@ -67,7 +67,7 @@ test('Beam and cloud-tagged models fail closed without a network request',async(
   globalThis.fetch=async()=>{throw new Error('unexpected network request')};
   for(const model of ['beam','beam:cloud','reflection/beam','reflection/beam:latest','gemma4:cloud']){
    process.env.OLLAMA_MODEL=model;
-   await assert.rejects(generateWithLocalAi(brief),/Paid\\/cloud models are disabled/);
+   await assert.rejects(generateWithLocalAi(brief),/Paid.cloud models are disabled/);
   }
  }finally{
   globalThis.fetch=previousFetch;
