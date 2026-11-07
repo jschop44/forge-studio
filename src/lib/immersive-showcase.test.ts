@@ -153,3 +153,13 @@ test('interactive 3D scene responds to page presses without hijacking controls',
  assert.match(html,/interactionPulse=1/);
  assert.match(html,/gl\.uniform1f\(pulse,interactionPulse\)/);
 });
+
+test('WebGL keyboard navigation preserves native links and form controls',()=>{
+ const html=enhanceImmersivePages([{slug:'about',html:'<!doctype html><html><head></head><body><main>About</main></body></html>'}])[0].html;
+ assert.match(html,/addEventListener\('keydown'/);
+ assert.match(html,/event\.key==='ArrowLeft'/);
+ assert.match(html,/event\.key==='ArrowRight'/);
+ assert.match(html,/event\.key==='ArrowUp'/);
+ assert.match(html,/event\.key==='ArrowDown'/);
+ assert.match(html,/\[contenteditable=true\]/);
+});
