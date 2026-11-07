@@ -1,6 +1,21 @@
 import {test,expect} from '@playwright/test';
 import {generateBusinessWebsite} from '../src/lib/business-site';
-const genres=['Coffee shop and cafe','Sporting goods retail','Healthcare and medical services','Pharmacy','Restaurant and hospitality','Real estate','Technology','Education and tutoring','Home and trade services','Legal services','Financial services','Beauty and personal care','Pet and animal care','Agriculture and farming','Manufacturing and industrial','Logistics and transportation','Nonprofit and community organization','Family-friendly Halloween festival','Local newspaper','Research laboratory'];
+const genres=[
+ 'Coffee shop and cafe','Sporting goods retail','Healthcare and medical services','Pharmacy',
+ 'Restaurant and hospitality','Real estate','Health and wellness','Automotive','Fashion and luxury',
+ 'Technology','Education and tutoring','Home and trade services','Legal services','Financial services',
+ 'Beauty and personal care','Arts and creative services','Pet and animal care',
+ 'Events and seasonal attractions','Agriculture and farming','Manufacturing and industrial',
+ 'Logistics and transportation','Construction','Architecture','Nonprofit and community organization',
+ 'Accounting and bookkeeping','Insurance agency','Florist and garden center','Hardware store',
+ 'Bookshop and stationery','Hotel and travel','Museum and cultural center','Music lessons',
+ 'Childcare and early education','Professional consulting','Cleaning and maintenance',
+ 'Wedding planning','Fitness and sports training','Landscaping and outdoor services',
+ 'Furniture and interior design','Renewable energy','Marine and boating','Bicycle shop',
+ 'Outdoor recreation','Grocery and food market','Veterinary clinic','Dental practice',
+ 'Software development','Photography studio','Artisan crafts','Language translation services',
+ 'Family-friendly Halloween festival','Community library','Local newspaper','Research laboratory'
+];
 for(const genre of genres){
  for(const viewport of [{width:1440,height:900},{width:390,height:844}]){
   test(genre+' renders at '+viewport.width+'px',async({page})=>{
