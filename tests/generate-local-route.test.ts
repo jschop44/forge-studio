@@ -25,9 +25,12 @@ describe('legacy website generation uses mandatory local AI',()=>{
    globalThis.fetch=async(input,init)=>{
     assert.equal(new URL(input instanceof URL?input.href:typeof input==='string'?input:input.url).hostname,'127.0.0.1');
     assert.equal(init?.method,'POST');
+    const prompt=JSON.parse(String(init?.body)).prompt as string;
+    assert.match(prompt,/Architecture/);
+    assert.match(prompt,/Residential planning/);
     return new Response(JSON.stringify({response:JSON.stringify({businessName:'Cedar Studio',industry:'Creative studio',description:'A small creative studio creating distinctive websites for independent brands.',services:['Website design']})}),{status:200});
    };
-   const request=new NextRequest('http://localhost/api/generate',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({name:'Cedar Studio',description:'A small creative studio creating distinctive websites for independent brands.',template:'ember'})});
+   const request=new NextRequest('http://localhost/api/generate',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({name:'Cedar Studio',description:'A small creative studio creating distinctive websites for independent brands.',template:'ember',industry:'Architecture',services:['Residential planning']})});
    const response=await POST(request);
    assert.equal(response.status,200);
    const result=await response.json();
