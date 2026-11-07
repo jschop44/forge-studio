@@ -34,7 +34,7 @@ export async function generateWithLocalAi(input:{businessName:string;industry:st
  const controller=new AbortController();const timeout=setTimeout(()=>controller.abort(),60000);
  try{const response=await fetch(new URL('/api/generate',url),{method:'POST',signal:controller.signal,headers:{'Content-Type':'application/json',...config.headers},body:JSON.stringify({model:config.model,stream:false,format:'json',prompt:'Return ONLY JSON with keys businessName, industry, description, services. Write concise accurate marketing copy using only facts supplied by user. Do not invent credentials, customer testimonials, pricing or performance claims. Keep all copy professional and family-friendly, including Halloween and seasonal topics: no graphic horror, gore, sexual content, drug promotion, or disturbing imagery descriptions. Input: '+JSON.stringify(input)})});
  if(!response.ok)throw Error('Local AI returned HTTP '+response.status);
- if(response.ok){const payload=await response.json();const parsed=DraftSchema.safeParse(JSON.parse(String(payload.response||'{}')));if(parsed.success){draft=parsed.data}else throw Error('Local AI returned an invalid draft')}
+ if(response.ok){const payload=await response.json();const raw=String(payload.response||'').trim();const clean=raw.replace(/^```(?:json)?\s*/i,'').replace(/\s*```$/,'');const parsed=DraftSchema.safeParse(JSON.parse(clean));if(parsed.success){draft=parsed.data}else throw Error('Local AI returned an invalid draft')}
  }catch(error){throw new Error('Local AI unavailable: '+(error instanceof Error?error.message:'request failed'))}finally{clearTimeout(timeout)}
  }
  return {draft,provider:'ollama',pages:generateBusinessWebsite({...draft,contactEmail:input.contactEmail}).pages};
