@@ -7,6 +7,9 @@ on:
       - 'src/lib/server/local-ai.ts'
       - 'src/app/api/ai/business/route.ts'
       - 'src/lib/local-ai-required.test.ts'
+concurrency:
+  group: forge-production-ai-smoke
+  cancel-in-progress: true
 jobs:
   inference:
     runs-on: ubuntu-latest
