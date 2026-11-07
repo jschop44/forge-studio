@@ -14,3 +14,15 @@ test('contextual immersive pages escape user-supplied business names',()=>{
  assert.doesNotMatch(page.html,/<h1>Cafe <script>/);
  assert.match(page.html,/Cafe &lt;script&gt;alert\(1\)&lt;\/script&gt;/);
 });
+
+test('service inquiries use the verified email and encode service-specific subjects',()=>{
+ const html=createContextualShowcase({businessName:'North & South',industry:'Real estate',description:'Local agents.',services:['Buyer representation','Home staging'],contactEmail:'hello@example.com'})[0].html;
+ assert.match(html,/mailto:hello@example\.com\?subject=Inquiry%20about%20Buyer%20representation/);
+ assert.match(html,/mailto:hello@example\.com\?subject=Inquiry%20about%20Home%20staging/);
+ assert.doesNotMatch(html,/<a href="#contact">Ask about Buyer representation/);
+});
+test('service inquiries fall back to contact section without verified email',()=>{
+ const html=createContextualShowcase({businessName:'North & South',industry:'Real estate',description:'Local agents.',services:['Buyer representation'],contactEmail:'invalid-email'})[0].html;
+ assert.match(html,/<a href="#contact">Ask about Buyer representation/);
+ assert.doesNotMatch(html,/mailto:invalid-email/);
+});
