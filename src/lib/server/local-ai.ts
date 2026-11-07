@@ -40,5 +40,14 @@ export async function generateWithLocalAi(input:{businessName:string;industry:st
  if(response.ok){const payload=await response.json();const raw=String(payload.response||'').trim();const clean=raw.replace(/^```(?:json)?\s*/i,'').replace(/\s*```$/,'');const parsed=DraftSchema.safeParse(JSON.parse(clean));if(parsed.success){draft=parsed.data}else throw Error('Local AI returned an invalid draft')}
  }catch(error){throw new Error('Local AI unavailable: '+(error instanceof Error?error.message:'request failed'))}finally{clearTimeout(timeout)}
  }
- return {draft,provider:'ollama',pages:generateBusinessWebsite({...draft,contactEmail:input.contactEmail}).pages};
+ // The model may improve descriptive copy, but cannot rename or reclassify a business.
+ // Preserve the verified user-provided identity and service offering.
+ const verifiedDraft:AiDraft={
+  businessName:input.businessName.trim(),
+  industry:input.industry.trim(),
+  description:draft.description,
+  services:input.services.map(service=>service.trim())
+ };
+ const validated=DraftSchema.parse(verifiedDraft);
+ return {draft:validated,provider:'ollama',pages:generateBusinessWebsite({...validated,contactEmail:input.contactEmail}).pages};
 }
