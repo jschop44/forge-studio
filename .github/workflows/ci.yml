@@ -23,10 +23,8 @@ jobs:
           restore-keys: |
             npm-${{ runner.os }}-node22-
       - run: npm install --prefer-offline --no-audit --no-fund
-      - run: npm run verify:free-ai
-      - run: npm test
-      - run: npm run test:workers
-      - run: npm run typecheck
+      - name: Fast policy, unit, worker, and TypeScript checks
+        run: npm run verify:fast
       - uses: actions/cache@v4
         with:
           path: .next/cache
