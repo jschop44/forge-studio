@@ -141,3 +141,17 @@ test('immersive canvas scales down on mobile high-density screens',async({page})
   expect(dimensions.height).toBeLessThanOrEqual(812);
  }
 });
+
+test('homepage WebGL controller executes without uncaught errors',async({page})=>{
+ const errors:string[]=[];
+ page.on('pageerror',error=>errors.push(error.message));
+ const generated=generateBusinessWebsite({businessName:'Harbor Studio',industry:'Architecture',description:'Independent architecture and interior design practice.',services:['Architecture','Interior design']}).pages;
+ const home=generated.find(item=>item.slug==='index');
+ expect(home).toBeDefined();
+ await page.setContent(home!.html);
+ await expect(page.locator('#forge-home-webgl-controller')).toHaveCount(1);
+ await page.mouse.move(140,180);
+ await page.evaluate(()=>window.scrollTo(0,300));
+ await page.waitForTimeout(150);
+ expect(errors).toEqual([]);
+});
