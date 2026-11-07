@@ -102,4 +102,35 @@ describe('legacy website generation uses mandatory local AI',()=>{
    assert.equal(calls,0);
   }finally{globalThis.fetch=original}
  });
+ it('reports a retryable busy response when local inference capacity is exhausted',async()=>{
+  const original=globalThis.fetch;
+  const previousUrl=process.env.OLLAMA_URL;
+  let release!:()=>void;
+  const gate=new Promise<void>(resolve=>{release=resolve});
+  const brief={name:'Capacity Studio',description:'An independent design studio serving local businesses and families.',template:'ember'};
+  try{
+   process.env.OLLAMA_URL='http://127.0.0.1:11434';
+   globalThis.fetch=async()=>{
+    await gate;
+    return new Response(JSON.stringify({response:JSON.stringify({businessName:'Capacity Studio',industry:'Business',description:brief.description,services:['General services']})}),{status:200});
+   };
+   const request=()=>new NextRequest('http://localhost/api/generate',{method:'POST',headers:{'content-type':'application/json','origin':'http://localhost'},body:JSON.stringify(brief)});
+   const first=POST(request());
+   const second=POST(request());
+   // Wait for request parsing to enter the inference stage.
+   for(let i=0;i<20;i++){
+    if((await import('../src/lib/server/local-ai')).localAiCapacity().active===2)break;
+    await new Promise<void>(resolve=>setImmediate(resolve));
+   }
+   const busy=await POST(request());
+   assert.equal(busy.status,429);
+   assert.equal(busy.headers.get('retry-after'),'5');
+   release();
+   await Promise.all([first,second]);
+  }finally{
+   release();
+   globalThis.fetch=original;
+   if(previousUrl===undefined)delete process.env.OLLAMA_URL;else process.env.OLLAMA_URL=previousUrl;
+  }
+ });
 });
