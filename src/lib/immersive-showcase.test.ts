@@ -100,3 +100,11 @@ test('GPU atmosphere limits rendering cadence to reduce device load',()=>{
  assert.match(html,/now-lastPaint<33/);
  assert.match(html,/lastPaint=now/);
 });
+
+test('WebGL scene includes ray-intersected 3D surface shading and directional light',()=>{
+ const html=enhanceImmersivePages([{slug:'about',html:'<!doctype html><html><head></head><body><main>About</main></body></html>'}])[0].html;
+ assert.match(html,/sqrt\(max\(0\.,radius\*radius-dist\)\)/);
+ assert.match(html,/vec3 normal=normalize/);
+ assert.match(html,/dot\(normal,light\)/);
+ assert.match(html,/uniform float s/);
+});
