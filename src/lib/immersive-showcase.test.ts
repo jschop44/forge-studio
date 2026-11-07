@@ -292,3 +292,13 @@ test('immersive WebGL suspends its animation loop during print preview',()=>{
   assert.ok(page.html.includes("printMedia.addEventListener('change',resume)"),'Missing print resume listener on '+page.slug);
  }
 });
+
+test('homepage renderer defines print media before its first use',()=>{
+ const page=generateBusinessWebsite({businessName:'Harbor Studio',industry:'Architecture',description:'Independent design practice.',services:['Architecture']}).pages.find(page=>page.slug==='index');
+ assert.ok(page);
+ const script=page.html.split('<script id="forge-home-webgl-controller">')[1]?.split('</script>')[0];
+ assert.ok(script);
+ const declaration=script.indexOf("const printMedia=matchMedia('print')");
+ const usage=script.indexOf('printMedia.matches');
+ assert.ok(declaration>=0&&usage>declaration,'Homepage WebGL renderer must initialize print media before drawing');
+});
