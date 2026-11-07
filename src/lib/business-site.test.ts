@@ -32,7 +32,7 @@ for(const industry of industries){
    assert.match(page.html,/<meta name="viewport"/);
    assert.match(page.html,/<nav>/);
    assert.match(page.html,/<h1>/);
-   assert.doesNotMatch(page.html,/src="undefined"|url\("undefined"\)|<script(?! type="application/ld\+json")[^>]*>/i);
+   assert.doesNotMatch(page.html,/src="undefined"|url\("undefined"\)|<script(?! type="application\/ld\+json")[^>]*>/i);
    assert.doesNotMatch(page.html,/pornograph|erotic|graphic gore|illicit drugs/i);
    assert.match(page.html,/Example Business/);
   }
