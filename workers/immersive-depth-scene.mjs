@@ -21,9 +21,10 @@ export function buildDepthScene(blueprint,pageIndex=0){
  * Geometry is derived from observed bounds; no browser scripts or network access.
  */
 export function projectDepthScene(scene,viewportWidth,{reducedMotion=false,maxTilt=8}={}){
- if(!scene||scene.version!==1||!Array.isArray(scene.layers)||scene.layers.length>100||scene.layers.some(l=>!l||![l.x,l.y,l.width,l.height,l.depth].every(finite)||l.x<0||l.y<0||l.width<=0||l.height<=0||l.depth<0||l.depth>100))throw Error('Invalid depth scene');
+ if(!scene||scene.version!==1||!Array.isArray(scene.layers)||scene.layers.length>100||scene.layers.some(l=>!l||![l.x,l.y,l.width,l.height,l.depth].every(finite)||l.x<0||l.y<0||l.width<=0||l.height<=0||l.depth<0||l.depth>100||l.x>10000||l.y>10000||l.width>10000||l.height>10000))throw Error('Invalid depth scene');
  if(!finite(viewportWidth)||viewportWidth<240||viewportWidth>10000)throw Error('Invalid viewport width');
  if(typeof reducedMotion!=='boolean'||!finite(maxTilt)||maxTilt<0||maxTilt>15)throw Error('Invalid projection settings');
+ if(scene.camera&&(!finite(scene.camera.perspective)||scene.camera.perspective<100||scene.camera.perspective>10000||!finite(scene.camera.tiltDegrees)||Math.abs(scene.camera.tiltDegrees)>90))throw Error('Invalid depth camera');
  const contentWidth=Math.max(1,...scene.layers.map(l=>l.x+l.width));
  const scale=Math.min(1,viewportWidth/contentWidth);
  return {version:1,viewportWidth,scale,animationEnabled:!reducedMotion,
