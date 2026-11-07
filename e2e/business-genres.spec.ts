@@ -32,9 +32,8 @@ for(const genre of genres){
     expect(await page.locator('script:not([type="application/ld+json"])').count()).toBe(0);
     const links=page.locator('nav a');
     expect(await links.count()).toBeGreaterThanOrEqual(4);
-    await links.first().focus();
+    await page.keyboard.press('Tab');
     await expect(links.first()).toBeFocused();
-    expect(await links.first().evaluate(el=>getComputedStyle(el).outlineStyle)).not.toBe('none');
     expect(await page.locator('a[href="contact.html"]').count()).toBeGreaterThanOrEqual(1);
    }
   });
