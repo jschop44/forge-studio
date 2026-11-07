@@ -40,3 +40,10 @@ test('rejects malformed or excessive depth layers before projection',()=>{
  assert.throws(()=>projectDepthScene({...scene,layers:[{x:0,y:0,width:10,height:10,depth:-1}]},375),/Invalid depth scene/);
  assert.throws(()=>projectDepthScene({...scene,layers:Array.from({length:101},()=>scene.layers[0])},375),/Invalid depth scene/);
 });
+
+test('rejects excessive depth coordinates and invalid camera settings',()=>{
+ const valid={version:1,layers:[{id:'a',role:'hero',x:0,y:0,width:200,height:100,depth:24}],camera:{perspective:1000,tiltDegrees:0}};
+ assert.throws(()=>projectDepthScene({...valid,layers:[{...valid.layers[0],x:10001}]},500),/Invalid depth scene/);
+ assert.throws(()=>projectDepthScene({...valid,camera:{perspective:Infinity,tiltDegrees:0}},500),/Invalid depth camera/);
+ assert.throws(()=>projectDepthScene({...valid,camera:{perspective:1000,tiltDegrees:100}},500),/Invalid depth camera/);
+});
