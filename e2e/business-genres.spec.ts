@@ -30,6 +30,12 @@ for(const genre of genres){
     expect(await page.locator('body').evaluate(el=>el.scrollWidth),'overflow in '+genre+'/'+generatedPage.slug).toBeLessThanOrEqual(viewport.width+2);
     expect(await page.locator('img:not([alt])').count()).toBe(0);
     expect(await page.locator('script:not([type="application/ld+json"])').count()).toBe(0);
+    const links=page.locator('nav a');
+    expect(await links.count()).toBeGreaterThanOrEqual(4);
+    await links.first().focus();
+    await expect(links.first()).toBeFocused();
+    expect(await links.first().evaluate(el=>getComputedStyle(el).outlineStyle)).not.toBe('none');
+    expect(await page.locator('a[href="contact.html"]').count()).toBeGreaterThanOrEqual(1);
    }
   });
  }
