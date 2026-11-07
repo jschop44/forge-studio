@@ -23,7 +23,7 @@ describe('legacy website generation uses mandatory local AI',()=>{
    process.env.OLLAMA_URL='http://127.0.0.1:11434';
    process.env.OLLAMA_MODEL='llama3.2:3b';
    globalThis.fetch=async(input,init)=>{
-    assert.equal(new URL(String(input)).hostname,'127.0.0.1');
+    assert.equal(new URL(input instanceof URL?input.href:typeof input==='string'?input:input.url).hostname,'127.0.0.1');
     assert.equal(init?.method,'POST');
     return new Response(JSON.stringify({response:JSON.stringify({businessName:'Cedar Studio',industry:'Creative studio',description:'A small creative studio creating distinctive websites for independent brands.',services:['Website design']})}),{status:200});
    };
