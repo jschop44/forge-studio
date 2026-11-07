@@ -197,12 +197,10 @@ test('homepage WebGL controller includes a complete renderer lifecycle',()=>{
  const pages=generateBusinessWebsite({businessName:'Northstar Coffee',industry:'Coffee shop',description:'Freshly roasted coffee and pastries for our neighborhood.',services:['Espresso','Coffee beans']}).pages;
  const home=pages.find(page=>page.slug==='index');assert.ok(home);
  const html=home.html;
- const controller=html.match(/<script id="forge-home-webgl-controller">([\\s\\S]*?)<\\/script>/);
+ const controller=html.split('<script id="forge-home-webgl-controller">')[1]?.split('</script>')[0];
  assert.ok(controller);
- assert.match(controller[1],/const canvas=document\\.createElement\\('canvas'\\)/);
- assert.match(controller[1],/function draw\\(now\\)/);
- assert.match(controller[1],/function resume\\(\\)/);
- assert.match(controller[1],/resume\\(\\)/);
- assert.match(controller[1],/webglcontextlost/);
+ for(const required of ["const canvas=document.createElement('canvas')",'function draw(now)','function resume()','resume()','webglcontextlost']){
+  assert.ok(controller.includes(required),'Missing WebGL renderer lifecycle marker: '+required);
+ }
  assert.equal((html.match(/id="forge-home-webgl-controller"/g)||[]).length,1);
 });
