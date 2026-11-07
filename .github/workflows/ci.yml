@@ -18,8 +18,13 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
-          cache: npm
-      - run: npm ci --prefer-offline --no-audit --no-fund
+      - uses: actions/cache@v4
+        with:
+          path: ~/.npm
+          key: npm-${{ runner.os }}-node22-${{ hashFiles('package.json') }}
+          restore-keys: |
+            npm-${{ runner.os }}-node22-
+      - run: npm install --prefer-offline --no-audit --no-fund
       - name: Fast policy, unit, worker, and TypeScript checks
         run: npm run verify:fast
       - uses: actions/cache@v4
@@ -48,8 +53,13 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
-          cache: npm
-      - run: npm ci --prefer-offline --no-audit --no-fund
+      - uses: actions/cache@v4
+        with:
+          path: ~/.npm
+          key: npm-${{ runner.os }}-node22-${{ hashFiles('package.json') }}
+          restore-keys: |
+            npm-${{ runner.os }}-node22-
+      - run: npm install --prefer-offline --no-audit --no-fund
       - uses: actions/cache@v4
         with:
           path: ~/.cache/ms-playwright
