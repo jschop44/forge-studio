@@ -18,7 +18,6 @@ function ollamaConfig(){
 // Local development continues to use loopback Ollama.
 type WorkersAiBinding={run:(model:string,input:Record<string,unknown>)=>Promise<unknown>};
 async function workersAi():Promise<WorkersAiBinding|null>{
- if(!process.env.CF_PAGES && !process.env.CLOUDFLARE_WORKERS && !process.env.WORKERS_AI_ENABLED)return null;
  try{
   const {getCloudflareContext}=await import('@opennextjs/cloudflare');
   const context=await getCloudflareContext({async:true});
