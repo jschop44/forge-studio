@@ -37,3 +37,12 @@ test('external preview links must have safe HTTPS origins',()=>{
  assert.equal(report.externalLinks,1);
  assert.equal(report.broken.length,0);
 });
+
+test('navigation audit reports no orphaned pages in connected offline export',()=>{
+ const report=auditPreviewNavigation({version:1,sections:[],pages:[
+  {path:'/',title:'Home',regions:[]},{path:'/about',title:'About',regions:[]}
+ ]});
+ assert.deepEqual(report.orphanedPages,[]);
+ assert.deepEqual(report.unsafeLinks,[]);
+ assert.equal(report.allPagesReachable,true);
+});
