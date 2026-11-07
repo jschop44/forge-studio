@@ -62,3 +62,15 @@ test('full measured geometry is explicitly reported without publication claims',
  assert.equal(report.checks.measuredGeometry,true);
  assert.equal(report.publicationReady,false);
 });
+
+test('malformed pages and interaction counts cannot crash or inflate quality metrics',()=>{
+ const report=assessBlueprint({version:1,pages:[null,{path:'/valid',regions:[{bounds:{x:0,y:0,width:10,height:10}}]}],interactionCoverage:{links:-5,buttons:'100',forms:Infinity}});
+ assert.equal(report.pages,2);
+ assert.equal(report.regions,1);
+ assert.equal(report.observed.links,0);
+ assert.equal(report.observed.buttons,0);
+ assert.equal(report.observed.forms,0);
+ assert.equal(report.emptyPages,1);
+ assert.equal(report.geometryCoverage,1);
+ assert.equal(report.publicationReady,false);
+});
