@@ -56,6 +56,7 @@ export function enhanceImmersivePages<T extends {slug:string;html:string}>(pages
   if(page.slug==='index'){
    const start=js.indexOf("const canvas=document.createElement('canvas')");
    const end=js.indexOf('update()})();</script>');
+   if(start<0||end<=start)throw new Error('Forge homepage WebGL renderer extraction failed');
    const renderer=js.slice(start,end);
    const homeCss='<style id="forge-home-webgl">#forge-webgl-atmosphere{position:fixed;inset:0;width:100%;height:100%;z-index:0;pointer-events:none;opacity:.28}@media(prefers-reduced-motion:reduce){#forge-webgl-atmosphere{display:none}}</style>';
    const homeJs='<script id="forge-home-webgl-controller">(()=>{const reduced=matchMedia(\'(prefers-reduced-motion: reduce)\');'+renderer+'})();</script>';
