@@ -1,11 +1,13 @@
 import {NextRequest,NextResponse} from 'next/server';
 import {SiteSchema} from '../../../lib/schema';
+import {z} from 'zod';
 import {generateWithLocalAi} from '../../../lib/server/local-ai';
 import {sameOrigin} from '../../../lib/server/request-security';
 import {isExcludedBusiness} from '../../../lib/business-site';
 
 export const runtime='nodejs';
 const limits=new Map<string,{count:number;reset:number}>();
+const LegacyBrief=z.object({name:z.string().trim().min(2).max(80),description:z.string().trim().min(15).max(1500),template:z.enum(['ember','minimal','editorial']),industry:z.string().trim().min(2).max(80).optional(),services:z.array(z.string().trim().min(2).max(100)).min(1).max(12).optional()});
 export async function POST(req:NextRequest){
  if(!sameOrigin(req))return NextResponse.json({error:'Origin rejected'},{status:403});
  const length=Number(req.headers.get('content-length')||0);
@@ -21,9 +23,10 @@ export async function POST(req:NextRequest){
  let body:unknown;
  try{const raw=await req.text();if(raw.length>8000)return NextResponse.json({error:'Brief too large'},{status:413});body=JSON.parse(raw)}catch{return NextResponse.json({error:'Invalid JSON'},{status:400})}
  if(!body||typeof body!=='object')return NextResponse.json({error:'Invalid request'},{status:400});
- const {name,description,template,industry,services}=body as Record<string,unknown>;
- if(typeof name!=='string'||typeof description!=='string'||name.trim().length<2||name.length>80||description.trim().length<15||description.length>1500||!['ember','minimal','editorial'].includes(String(template))||(industry!==undefined&&(typeof industry!=='string'||industry.length>80))||(services!==undefined&&(!Array.isArray(services)||services.length>12||services.some(item=>typeof item!=='string'||item.length<2||item.length>100))))return NextResponse.json({error:'Invalid input'},{status:400});
- const brief={businessName:name,industry:typeof industry==='string'&&industry.trim()?industry.trim():'Business',description,services:Array.isArray(services)&&services.length?services as string[]:['General services']};
+ const parsed=LegacyBrief.safeParse(body);
+ if(!parsed.success)return NextResponse.json({error:'Invalid input'},{status:400});
+ const {name,description,template,industry,services}=parsed.data;
+ const brief={businessName:name,industry:industry||'Business',description,services:services||['General services']};
  if(isExcludedBusiness(brief))return NextResponse.json({error:'This business category is not supported'},{status:422});
  limits.set(ip,{count:limit&&limit.reset>now?limit.count+1:1,reset:limit&&limit.reset>now?limit.reset:now+3600000});
  try{
