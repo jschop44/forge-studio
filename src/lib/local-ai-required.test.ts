@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {generateWithLocalAi} from './server/local-ai';
+import {generateWithLocalAi,checkLocalAiReadiness} from './server/local-ai';
 
 const brief={businessName:'Northstar Coffee',industry:'Coffee shop',description:'Independent neighborhood coffee shop serving freshly roasted drinks.',services:['Espresso','Coffee beans']};
 
@@ -120,5 +120,34 @@ test('local Ollama generation disables HTTP redirects',async()=>{
   globalThis.fetch=previousFetch;
   if(previousUrl===undefined)delete process.env.OLLAMA_URL;else process.env.OLLAMA_URL=previousUrl;
   if(previousModel===undefined)delete process.env.OLLAMA_MODEL;else process.env.OLLAMA_MODEL=previousModel;
+ }
+});
+
+test('AI readiness is false when the required local model is absent',async()=>{
+ const previousFetch=globalThis.fetch,previousUrl=process.env.OLLAMA_URL,previousModel=process.env.OLLAMA_MODEL;
+ try{
+  process.env.OLLAMA_URL='http://127.0.0.1:11434';process.env.OLLAMA_MODEL='llama3.2:3b';
+  globalThis.fetch=async(_input,init)=>{
+   assert.equal(init?.redirect,'error');
+   return new Response(JSON.stringify({models:[{name:'other:latest'}]}),{status:200});
+  };
+  assert.deepEqual(await checkLocalAiReadiness(),{ready:false,reason:'model_missing'});
+ }finally{
+  globalThis.fetch=previousFetch;
+  if(previousUrl===undefined)delete process.env.OLLAMA_URL;else process.env.OLLAMA_URL=previousUrl;
+  if(previousModel===undefined)delete process.env.OLLAMA_MODEL;else process.env.OLLAMA_MODEL=previousModel;
+ }
+});
+
+test('AI readiness rejects a paid Beam model before requesting any endpoint',async()=>{
+ const previousFetch=globalThis.fetch,previousModel=process.env.OLLAMA_MODEL,previousUrl=process.env.OLLAMA_URL;
+ try{
+  process.env.OLLAMA_URL='http://127.0.0.1:11434';process.env.OLLAMA_MODEL='reflection/beam';
+  globalThis.fetch=async()=>{throw new Error('unexpected request')};
+  assert.deepEqual(await checkLocalAiReadiness(),{ready:false,reason:'invalid_endpoint'});
+ }finally{
+  globalThis.fetch=previousFetch;
+  if(previousModel===undefined)delete process.env.OLLAMA_MODEL;else process.env.OLLAMA_MODEL=previousModel;
+  if(previousUrl===undefined)delete process.env.OLLAMA_URL;else process.env.OLLAMA_URL=previousUrl;
  }
 });
