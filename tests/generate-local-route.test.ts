@@ -2,6 +2,7 @@ import {describe,it} from 'node:test';
 import assert from 'node:assert/strict';
 import {NextRequest} from 'next/server';
 import {POST} from '../src/app/api/generate/route';
+import {POST as businessPOST} from '../src/app/api/ai/business/route';
 
 describe('legacy website generation uses mandatory local AI',()=>{
  it('rejects malformed input before contacting a model',async()=>{
@@ -107,22 +108,22 @@ describe('legacy website generation uses mandatory local AI',()=>{
   const previousUrl=process.env.OLLAMA_URL;
   let release!:()=>void;
   const gate=new Promise<void>(resolve=>{release=resolve});
-  const brief={name:'Capacity Studio',description:'An independent design studio serving local businesses and families.',template:'ember'};
+  const brief={businessName:'Capacity Studio',industry:'Business',description:'An independent design studio serving local businesses and families.',services:['General services']};
   try{
    process.env.OLLAMA_URL='http://127.0.0.1:11434';
    globalThis.fetch=async()=>{
     await gate;
     return new Response(JSON.stringify({response:JSON.stringify({businessName:'Capacity Studio',industry:'Business',description:brief.description,services:['General services']})}),{status:200});
    };
-   const request=()=>new NextRequest('http://localhost/api/generate',{method:'POST',headers:{'content-type':'application/json','origin':'http://localhost'},body:JSON.stringify(brief)});
-   const first=POST(request());
-   const second=POST(request());
+   const request=()=>new NextRequest('http://localhost/api/ai/business',{method:'POST',headers:{'content-type':'application/json','origin':'http://localhost'},body:JSON.stringify(brief)});
+   const first=businessPOST(request());
+   const second=businessPOST(request());
    // Wait for request parsing to enter the inference stage.
    for(let i=0;i<20;i++){
     if((await import('../src/lib/server/local-ai')).localAiCapacity().active===2)break;
     await new Promise<void>(resolve=>setImmediate(resolve));
    }
-   const busy=await POST(request());
+   const busy=await businessPOST(request());
    assert.equal(busy.status,429);
    assert.equal(busy.headers.get('retry-after'),'5');
    release();
