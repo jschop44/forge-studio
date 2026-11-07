@@ -10,7 +10,7 @@ on:
 jobs:
   inference:
     runs-on: ubuntu-latest
-    timeout-minutes: 8
+    timeout-minutes: 12
     steps:
       - name: Wait for Render deployment and model readiness
         shell: bash
