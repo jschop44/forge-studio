@@ -45,3 +45,15 @@ test('scene keyboard controls preserve native scrolling and editable fields',asy
  await expect(page.locator('main section')).toHaveCount(2);
  expect(errors).toEqual([]);
 });
+
+test('homepage receives shared WebGL renderer without secondary-page CSS overrides',async({page})=>{
+ const html=enhanceImmersivePages([{slug:'index',html:source}])[0].html;
+ const errors:string[]=[];
+ page.on('pageerror',error=>errors.push(error.message));
+ await page.setContent(html);
+ await expect(page.locator('#forge-home-webgl')).toHaveCount(1);
+ await expect(page.locator('#forge-home-webgl-controller')).toHaveCount(1);
+ await expect(page.locator('#forge-spatial-layer')).toHaveCount(0);
+ await expect(page.locator('main section')).toHaveCount(2);
+ expect(errors).toEqual([]);
+});
