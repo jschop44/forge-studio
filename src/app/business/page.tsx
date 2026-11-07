@@ -204,6 +204,11 @@ export default function BusinessGenerator(){
  const sourceBrief=designMode!=='new'&&inspected?[inspected.url,inspected.title,inspected.description,...inspected.headings.slice(0,3),...(inspected.pageSummaries||[]).flatMap(page=>[page.description,...page.headings.slice(0,2)])].filter(Boolean).join('. ').slice(0,1500):'';const researchedServices=inspected&&designMode!=='new'?[...inspected.headings,...(inspected.pageSummaries||[]).flatMap(page=>[page.label,...page.headings])].map(heading=>heading.replace(/\s+/g,' ').trim()).filter(heading=>heading.length>=5&&heading.length<=65&&!/^(home|about|contact|welcome|menu|explore|learn more|our story)$/i.test(heading)).filter((heading,index,all)=>all.findIndex(other=>other.toLowerCase()===heading.toLowerCase())===index).slice(0,3):[];const inferred=infer(name,sourceBrief||brief);const intelligence=inspected&&designMode!=='new'?analyzeSiteEvidence(inspected):null;const input={...inferred,...(intelligence&&intelligence.confidence!=='low'?{industry:intelligence.industry,services:intelligence.services}:{}),...(researchedServices.length>=2?{services:researchedServices}:{}),designMode,...(designMode!=='new'&&inspected?.visualSignals?{visualSignals:inspected.visualSignals}:{}),...(contactEmail.trim()?{contactEmail:contactEmail.trim()}: {}),...(designMode==='inspired'?{styleReference:{...referenceStyle,...parseStyleReference(referenceMarkup)}}:{})};
  try{
  const response=await fetch('/api/ai/business',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(input)});
+ if(response.status===429){
+  const retrySeconds=Math.min(30,Math.max(1,Number(response.headers.get('retry-after'))||5));
+  setStatus('Local AI is processing other websites. Please retry in about '+retrySeconds+' seconds.');
+  return;
+ }
  if(!response.ok)throw Error((await response.json()).error||'AI generation unavailable');
  const result=await response.json();setPages(automaticallyOptimizeMetadata(automaticallyApplyBrand([...createContextualShowcase(input),...enhanceImmersivePages([...result.pages.filter((p:GeneratedPage)=>p.slug!=='index'),...additionalPages()])])));setActive('index');setStatus('Website draft generated. Review its content and design before publishing.');
  }catch{setStatus('Website generation is temporarily unavailable. Please try again when the generation service is ready.');
