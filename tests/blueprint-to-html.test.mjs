@@ -205,3 +205,15 @@ test('invalid measured dimensions never inject CSS',()=>{
  assert.doesNotMatch(html,/margin-left:-/);
  assert.match(html,/Invalid/);
 });
+
+test('measured desktop regions preserve vertical separation and shared rows',()=>{
+ const html=blueprintToHtml({version:1,title:'Layout',sections:[
+  {type:'hero',headline:'Hero',bounds:{x:0,y:120,width:900,height:280}},
+  {type:'content',headline:'Left',bounds:{x:0,y:450,width:450,height:200}},
+  {type:'content',headline:'Right',bounds:{x:450,y:450,width:450,height:200}}
+ ]});
+ assert.match(html,/class="capture-layout" style="min-height:530px"/);
+ assert.match(html,/top:0px;left:0%;width:100%/);
+ assert.match(html,/top:330px;left:0%;width:50%/);
+ assert.match(html,/top:330px;left:50%;width:50%/);
+});
