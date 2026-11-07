@@ -22,7 +22,7 @@ export async function checkLocalAiReadiness():Promise<{ready:boolean;reason:'rea
  }catch{return {ready:false,reason:'unreachable'}}finally{clearTimeout(timeout)}
 }
 export async function generateWithLocalAi(input:{businessName:string;industry:string;description:string;services:string[];contactEmail?:string}):Promise<AiGenerationResult>{
- let draft:AiDraft;
+ let draft!:AiDraft;
  {
  const endpoint=process.env.OLLAMA_URL||'http://127.0.0.1:11434';
  const url=new URL(endpoint);if(!['localhost','127.0.0.1','::1'].includes(url.hostname)||!['http:','https:'].includes(url.protocol))throw Error('OLLAMA_URL must be a loopback endpoint');
