@@ -3,11 +3,10 @@ import {performance} from 'node:perf_hooks';
 
 const jobs=[
  ['policy',process.execPath,['scripts/verify-free-ai.mjs']],
- ['unit',process.platform==='win32'?'npm.cmd':'npm',['test','--','--test-reporter=dot']],
- ['workers',process.execPath,['--test','...']],
+ ['unit',process.platform==='win32'?'npm.cmd':'npm',['test']],
+ ['workers',process.platform==='win32'?'npm.cmd':'npm',['run','test:workers']],
  ['types',process.platform==='win32'?'npm.cmd':'npm',['run','typecheck']]
 ];
-jobs[2]=['workers',process.platform==='win32'?'npm.cmd':'npm',['run','test:workers']];
 const start=performance.now();
 const results=await Promise.all(jobs.map(([name,command,args])=>new Promise(resolve=>{
  const began=performance.now();
