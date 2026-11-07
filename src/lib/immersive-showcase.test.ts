@@ -56,3 +56,12 @@ test('secondary-page depth responds to pointer input without duplicating the lay
  assert.match(enhanced[0].html,/hover:hover/);
  assert.equal(enhanceImmersivePages(enhanced)[0].html,enhanced[0].html);
 });
+
+test('spatial enhancement covers entire sections and suspends hidden-page motion updates',()=>{
+ const page={slug:'services',html:'<!doctype html><html><head></head><body><main><section><h2>Services</h2></section></main></body></html>'};
+ const html=enhanceImmersivePages([page])[0].html;
+ assert.match(html,/body>main>section:after/);
+ assert.match(html,/document\.hidden/);
+ assert.match(html,/prefers-reduced-motion: reduce/);
+ assert.equal((html.match(/id="forge-spatial-controller"/g)||[]).length,1);
+});
