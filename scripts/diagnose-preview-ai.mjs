@@ -14,7 +14,7 @@ export function summarizeDiagnostic(event,requestUrl,filteredSubscription=false)
   try{
    const item=typeof message[1]==='string'?JSON.parse(message[1]):message[1];
    const diagnostic={code:/^\d{1,8}$/.test(String(item?.code))?String(item.code):'unknown',category:allowedCategories.has(item?.category)?item.category:'unknown'};
-   if(['quota_exceeded','schema_rejected','provider_auth','provider_timeout','model_unavailable','unknown'].includes(item?.failureKind))diagnostic.failureKind=item.failureKind;
+   if(['quota_exceeded','schema_rejected','provider_auth','provider_timeout','model_unavailable','paid_plan_required','provider_capacity','provider_network','unknown'].includes(item?.failureKind))diagnostic.failureKind=item.failureKind;
    categories.push(diagnostic);
   }catch{/* Malformed or private provider text is never forwarded. */}
  }
