@@ -19,6 +19,9 @@ const genres=[
 for(const genre of genres){
  for(const viewport of [{width:1440,height:900},{width:390,height:844}]){
   test(genre+' renders at '+viewport.width+'px',async({page})=>{
+   // This suite verifies layout, links and keyboard access. Active WebGL behavior
+   // is exercised separately in immersive-webgl and generated-immersive tests.
+   await page.emulateMedia({reducedMotion:'reduce'});
    await page.setViewportSize(viewport);
    const generated=generateBusinessWebsite({businessName:'Example Business',industry:genre,description:'A neighborhood business serving its local community.',services:['Customer support','Information']});
    await page.route('**/*',route=>route.request().resourceType()==='image'?route.abort():route.continue());
