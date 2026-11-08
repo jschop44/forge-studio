@@ -16,6 +16,9 @@ This optional module stores bounded, user-submitted observations in the existing
 
 Every query is scoped to the signed-in owner. The project key is an application-level label, not a substitute for owner authentication. There is no autonomous training, feedback inference, or cross-app data transfer.
 
+## Owner feedback in Forge
+The intelligence control center provides a project feedback form. Owners can record helpful, unhelpful or unverified outcomes and load a project-scoped summary. Review priorities require at least three distinct helpful owner-feedback records and a helpful ratio of at least 75% among verified feedback in that category. Exact duplicate records, automated audits and unverified outcomes cannot promote a priority. Priorities guide human review; they never modify sites or train models. Summaries cover only the returned window (up to 200 recent records).
+
 ## Rollback and removal
 1. Set `ENABLE_FORGE_LEARNING_MEMORY=false` to disable API access.
 2. Export any observations needed for retention through the authenticated GET endpoint before deletion (pagination is not implemented; GET returns only the most recent 200).

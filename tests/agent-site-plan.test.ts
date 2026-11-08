@@ -22,3 +22,20 @@ test('missing facts remain explicit instead of being presented as researched bus
  assert.equal(plan.requiresApproval,true);
  assert.deepEqual(plan.pagePlans[3].needsVerification,['contact details']);
 });
+
+test('planning turns supplied markup findings into evidence-labelled prioritized improvements',()=>{
+ const plan=createSitePlan({html:'<!doctype html><html><head></head><body><p>Design services</p></body></html>'});
+ assert.equal(plan.optimizationPlan.markupReviewed,true);
+ assert.ok(plan.optimizationPlan.improvements.length>0);
+ assert.equal(plan.optimizationPlan.improvements[0].severity,'high');
+ assert.ok(plan.optimizationPlan.improvements.every(item=>item.evidence==='supplied-markup'&&item.requiresVerification));
+ assert.equal(plan.optimizationPlan.marketResearchPerformed,false);
+ assert.equal(plan.optimizationPlan.competitorClaimsVerified,false);
+});
+
+test('planning without markup invents no audit findings or competitor evidence',()=>{
+ const plan=createSitePlan({businessName:'Cedar Studio'});
+ assert.equal(plan.optimizationPlan.markupReviewed,false);
+ assert.deepEqual(plan.optimizationPlan.improvements,[]);
+ assert.ok(plan.optimizationPlan.verificationRequired.includes('real performance'));
+});
