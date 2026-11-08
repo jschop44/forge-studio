@@ -1,4 +1,17 @@
-import { test, expect } from "@playwright/test";
+import { test, expect, type Page } from "@playwright/test";
+import {generateBusinessWebsite} from '../src/lib/business-site';
+
+// Browser UI fixture only. Real inference is verified by the separate AI smoke workflows.
+async function fixtureGeneration(page:Page){
+ await page.route('**/api/ai/business',async route=>{
+  expect(route.request().method()).toBe('POST');
+  const input=route.request().postDataJSON();
+  expect(input.businessName).toBe('Northstar Coffee');
+  const draft={businessName:input.businessName,industry:input.industry,description:'Freshly roasted coffee and welcoming service for our local community.',services:input.services};
+  await route.fulfill({status:200,json:{draft,provider:'browser-test-fixture',pages:generateBusinessWebsite(draft).pages}});
+ });
+}
+
 
 test("home page loads with an accessible document heading", async ({ page }) => {
   await page.goto("/");
@@ -22,7 +35,8 @@ test("mobile builder does not overflow horizontally", async ({ page }) => {
   expect(dimensions.documentWidth).toBeLessThanOrEqual(dimensions.viewportWidth + 2);
 });
 
-test("free generator produces preview pages and navigates tabs", async ({ page }) => {
+test("fixture-backed generation displays preview pages and navigates tabs", async ({ page }) => {
+  await fixtureGeneration(page);
   await page.goto("/business");
   await page.getByPlaceholder("e.g. Northstar Coffee").fill("Northstar Coffee");
   await page.getByRole("button", { name: /generate my immersive website/i }).click();
@@ -71,6 +85,7 @@ test("publication management page loads and shows disabled publishing state", as
 
 
 test("revision version lookup requires a publication ID", async ({ page }) => {
+  await fixtureGeneration(page);
   await page.goto("/business");
   await page.getByPlaceholder("e.g. Northstar Coffee").fill("Northstar Coffee");
   await page.getByRole("button", { name: /generate my immersive website/i }).click();
@@ -82,3 +97,23 @@ test("revision version lookup requires a publication ID", async ({ page }) => {
   await load.click();
   await expect(page.getByText(/Business publishing is not configured/i)).toBeVisible();
 });
+
+for(const status of [503,429]){
+ test('generation '+status+' response shows recovery guidance without a draft',async({page})=>{
+  let requests=0;
+  await page.route('**/api/ai/business',async route=>{
+   requests++;
+   await route.fulfill({status,headers:{'Retry-After':'7'},json:{error:'Generation unavailable'}});
+  });
+  await page.goto('/business');
+  await page.getByPlaceholder('e.g. Northstar Coffee').fill('Northstar Coffee');
+  const generate=page.getByRole('button',{name:/generate my immersive website/i});
+  await generate.click();
+  const message=status===429?/retry in about 7 seconds/i:/generation is temporarily unavailable/i;
+  await expect(page.getByText(message)).toBeVisible();
+  await expect(generate).toBeEnabled();
+  await expect(page.getByRole('navigation',{name:'Website pages'})).toHaveCount(0);
+  await expect(page.getByRole('button',{name:/publish approved draft/i})).toHaveCount(0);
+  expect(requests).toBe(1);
+ });
+}
