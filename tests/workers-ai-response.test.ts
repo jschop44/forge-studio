@@ -9,7 +9,7 @@ describe('Cloudflare Workers AI output validation',()=>{
  });
  it('accepts JSON and Markdown fenced JSON without leaking formatting',()=>{
   assert.equal(extractWorkersCopy({response:JSON.stringify({description})}),description);
-  assert.equal(extractWorkersCopy({response:'```json\\n'+JSON.stringify({description})+'\\n```'}),description);
+  assert.equal(extractWorkersCopy({response:'```json\n'+JSON.stringify({description})+'\n```'}),description);
  });
  it('rejects missing, malformed and short responses rather than silently bypassing AI',()=>{
   for(const output of [null,{}, {response:''},{response:'too short'},{response:'{}'}]){
