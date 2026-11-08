@@ -33,9 +33,14 @@ describe('mandatory local AI generation',()=>{
    };
    const first=generateWithLocalAi(input);
    const second=generateWithLocalAi(input);
+   // Cloudflare binding detection is asynchronous; wait until both calls
+   // reach the mocked Ollama transport before asserting its call count.
+   for(let attempt=0;attempt<100&&started<2;attempt++){
+    await new Promise<void>(resolve=>setImmediate(resolve));
+   }
+   assert.equal(started,2,'Both inference requests should reach the mocked provider');
    assert.equal(localAiCapacity().active,2);
    await assert.rejects(generateWithLocalAi(input),/capacity exceeded/);
-   assert.equal(started,2);
    release();
    await Promise.all([first,second]);
    assert.equal(localAiCapacity().active,0);
