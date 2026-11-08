@@ -41,7 +41,7 @@ test('immersive navigation remains accessible when reduced motion is enabled',as
  const beacon=page.locator('#forge-world-beacon-link');
  await expect(beacon).toHaveAttribute('href','services.html');
  await expect(beacon).toBeVisible();
- await expect(page.locator('#forge-webgl-atmosphere')).toHaveCount(1);
+ await expect(page.locator('#forge-webgl-atmosphere')).toHaveCount(0);
  await expect(page.locator('[aria-label="Immersive world movement"]')).toBeHidden();
  expect(failures).toEqual([]);
 });

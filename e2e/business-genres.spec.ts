@@ -27,7 +27,7 @@ for(const genre of genres){
     await page.goto('about:blank');
     await page.setContent(generatedPage.html,{waitUntil:'domcontentloaded'});
     await expect(page.locator('h1').first()).toBeVisible();
-    await expect(page.locator('nav')).toBeVisible();
+    await expect(page.locator('nav[aria-label="Main navigation"]')).toBeVisible();
     expect(await page.locator('a[href="services.html"]').count()).toBeGreaterThanOrEqual(1);
     expect(await page.locator('body').evaluate(el=>el.scrollWidth),'overflow in '+genre+'/'+generatedPage.slug).toBeLessThanOrEqual(viewport.width+2);
     expect(await page.locator('img:not([alt])').count()).toBe(0);
@@ -39,8 +39,8 @@ for(const genre of genres){
     }
     expect(await page.locator('main').count()).toBe(1);
     expect(await page.locator('nav[aria-label="Main navigation"]').count()).toBe(1);
-    expect(await page.locator('script:not([type="application/ld+json"])').count()).toBe(0);
-    const links=page.locator('nav a');
+    expect(await page.locator('script[id^="forge-"]').count()).toBeGreaterThanOrEqual(1);
+    const links=page.locator('nav[aria-label="Main navigation"] a');
     expect(await links.count()).toBeGreaterThanOrEqual(4);
     await page.keyboard.press('Tab');
     await expect(page.locator('.skip-link')).toBeFocused();

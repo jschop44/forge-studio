@@ -82,7 +82,7 @@ test('homepage WebGL overlay never blocks navigation or form interaction',async(
  const input=page.getByRole('textbox',{name:'Visitor name'});
  await input.fill('Alex');
  await expect(input).toHaveValue('Alex');
- await page.getByRole('link',{name:'Contact'}).click();
+ await page.getByRole('link',{name:'Contact',exact:true}).click();
  await expect(page).toHaveURL(/#contact$/);
  const overlay=page.locator('#forge-webgl-atmosphere');
  if(await overlay.count())await expect(overlay).toHaveCSS('pointer-events','none');

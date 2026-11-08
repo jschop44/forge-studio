@@ -63,7 +63,8 @@ describe('Generated website immersive navigation coverage',()=>{
   for(const page of site.pages){
    const scripts=[...page.html.matchAll(/<script(?:\s[^>]*)?>([\s\S]*?)<\/script>/g)];
    assert.ok(scripts.length>0,page.slug+' has no inline scripts');
-   for(const [,source] of scripts){
+   for(const [tag,source] of scripts){
+    if(/type=["']application\/ld\+json["']/i.test(tag)){assert.doesNotThrow(()=>JSON.parse(source));continue;}
     assert.doesNotThrow(()=>new Script(source,{filename:page.slug+'.html'}),page.slug+' contains invalid JavaScript');
    }
   }

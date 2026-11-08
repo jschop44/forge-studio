@@ -1,0 +1,121 @@
+name: Forge free build
+run-name: Forge ${{ inputs.mode || 'verify' }} · ${{ inputs.request_id || github.sha }}
+on:
+  push:
+    paths:
+      - 'src/app/builds/**'
+      - 'scripts/free-build-proposal.mjs'
+      - 'tests/free-build-proposal.test.mjs'
+      - '.github/workflows/forge-free-build.yml'
+  workflow_dispatch:
+    inputs:
+      mode:
+        type: choice
+        options: [verify, ai-proposal]
+        default: verify
+        required: true
+      task:
+        type: string
+        default: ''
+      target_file:
+        type: string
+        default: ''
+      request_id:
+        type: string
+        default: manual
+permissions:
+  contents: read
+concurrency:
+  group: forge-free-build-${{ github.ref }}
+  cancel-in-progress: false
+jobs:
+  verify:
+    if: ${{ github.event.repository.private == false && github.ref == 'refs/heads/main' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: npm install --no-audit --no-fund
+      - name: Verify baseline source and build
+        run: npm run verify
+      - name: Test build proposal guards
+        run: node --test tests/free-build-proposal.test.mjs
+  proposal:
+    needs: verify
+    if: ${{ inputs.mode == 'ai-proposal' && github.event.repository.private == false && github.ref == 'refs/heads/main' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: npm install --no-audit --no-fund
+      - name: Install official local Ollama runtime
+        run: |
+          curl --fail --silent --show-error --location https://ollama.com/install.sh -o /tmp/ollama-install.sh
+          sh /tmp/ollama-install.sh
+          ollama serve > /tmp/ollama.log 2>&1 &
+          for i in $(seq 1 30); do curl --fail --silent http://127.0.0.1:11434/api/tags && break || sleep 1; done
+          ollama pull qwen2.5-coder:1.5b
+      - name: Generate one frontend code proposal locally
+        env:
+          FORGE_TASK: ${{ inputs.task }}
+          FORGE_TARGET: ${{ inputs.target_file }}
+        run: node scripts/free-build-proposal.mjs
+      - name: Static type check proposal (no generated code execution)
+        run: npm run typecheck
+      - name: Save proposal branch for review
+        env:
+          GH_TOKEN: ${{ github.token }}
+          FORGE_TARGET: ${{ inputs.target_file }}
+        run: |
+          set -euo pipefail
+          branch="forge-proposal/${GITHUB_RUN_ID}"
+          git config user.name 'Forge build bot'
+          git config user.email 'forge-build@users.noreply.github.com'
+          git -c core.hooksPath=/dev/null checkout -b "$branch"
+          git add -- "$FORGE_TARGET"
+          git -c core.hooksPath=/dev/null commit -m 'Forge local AI frontend proposal (runtime verification required)'
+          auth=$(printf 'x-access-token:%s' "$GH_TOKEN" | base64 -w0)
+          git -c core.hooksPath=/dev/null -c "http.https://github.com/.extraheader=AUTHORIZATION: basic $auth" push origin "$branch"
+          echo "### Code proposal saved" >> "$GITHUB_STEP_SUMMARY"
+          echo "Branch: $branch. Static types passed. Generated code has NOT passed runtime tests and has NOT been merged or deployed." >> "$GITHUB_STEP_SUMMARY"
+          echo "https://github.com/$GITHUB_REPOSITORY/compare/main...$branch" >> "$GITHUB_STEP_SUMMARY"
+  deploy-console:
+    needs: verify
+    if: ${{ github.event_name == 'push' && github.event.repository.private == false }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: npm install --no-audit --no-fund
+      - run: npm run build:cloudflare
+      - name: Publish build console to existing free preview
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          test -n "$CLOUDFLARE_API_TOKEN"
+          test -n "$CLOUDFLARE_ACCOUNT_ID"
+          npm run deploy:cloudflare
+      - name: Verify published console responds
+        run: |
+          curl --fail --silent --show-error --retry 3 --retry-delay 3 --max-time 30 https://forge-studio-preview.stands-old-3h.workers.dev/builds -o /tmp/build-console.html
+          grep -q 'Start a build' /tmp/build-console.html
