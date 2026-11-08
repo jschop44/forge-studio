@@ -20,7 +20,8 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
-      - run: npm install --prefer-offline --no-audit --no-fund
+      - name: Verify diagnostic privacy without installing dependencies
+        run: node --test tests/diagnose-preview-ai.test.mjs
       - name: Report sanitized provider diagnostics only
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
