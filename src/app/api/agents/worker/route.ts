@@ -5,6 +5,7 @@ import {planNextTask} from '../../../../lib/agents/orchestrator';
 import {executeSafeAgent,type AgentOutput} from '../../../../lib/agents/execution';
 import {settleAgentJob} from '../../../../lib/server/agent-job-settlement';
 import type {AgentDecision,AgentTask} from '../../../../lib/agents/types';
+import {nextAgentStage} from '../../../../lib/agents/handoff';
 export const runtime='nodejs';
 export async function POST(req:NextRequest){
  if(process.env.ENABLE_AGENT_QUEUE!=='true')return NextResponse.json({error:'Worker disabled'},{status:503});
@@ -18,13 +19,7 @@ export async function POST(req:NextRequest){
   try{decision=planNextTask(task);if(decision.status==='ready')output=executeSafeAgent(task);}
   catch{decision={taskId:task.id,status:'blocked',reason:'Policy evaluation failed'};}
   const status=decision.status==='ready'?'completed':decision.status==='needs-approval'?'needs-approval':'blocked';
-  const next=status==='completed'&&decision.next?{
-   id:crypto.randomUUID(),kind:decision.next,payload:{
-    ...task.payload,previousResult:output?.data,
-    ...(decision.next==='site-generation'?{approvedPlan:false}:{}),
-    ...(decision.next==='quality-review'?{pages:output?.data.pages,html:((output?.data.pages as {html:string}[]|undefined)?.[0]?.html)||''}:{})
-   }
-  }:undefined;
+  const next=nextAgentStage(task,decision,output);
   const settled=await settleAgentJob((text,parameters)=>sql.query(text,parameters),{id:task.id,tenantId:task.tenantId,attempt:task.attempt,lease:String(job.lease)},{status,result:output,reason:decision.reason,next});
   results.push({id:job.id,status:settled?status:'claim-lost'});
  }
