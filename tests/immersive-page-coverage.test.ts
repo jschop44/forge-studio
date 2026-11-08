@@ -48,6 +48,14 @@ describe('Generated website immersive navigation coverage',()=>{
    assert.match(page.html,/pageshow/,page.slug);
   }
  });
+ it('preserves camera perspective and zoom across page navigation',()=>{
+  for(const page of site.pages){
+   assert.match(page.html,/cameraStorageKey=worldStorageKey\+':camera'/,page.slug);
+   assert.match(page.html,/sessionStorage\.getItem\(cameraStorageKey\)/,page.slug);
+   assert.match(page.html,/addEventListener\('pagehide',saveCamera\)/,page.slug);
+   assert.match(page.html,/resetPosition\.addEventListener\('click'/,page.slug);
+  }
+ });
  it('does not duplicate immersive scripts when enhancement is repeated',()=>{
   const again=enhanceImmersivePages(site.pages);
   for(const page of again){
