@@ -13,7 +13,7 @@ describe('Generated website immersive navigation coverage',()=>{
  it('adds the immersive WebGL layer to every generated page',()=>{
   assert.equal(site.pages.length,4);
   for(const page of site.pages){
-   assert.match(page.html,/id="forge-spatial-controller"/,page.slug);
+   assert.match(page.html,page.slug==='index'?/id="forge-home-webgl-controller"/:/id="forge-spatial-controller"/,page.slug);
    assert.match(page.html,/forge-webgl-atmosphere/,page.slug);
    assert.match(page.html,/forge-world-beacon-link/,page.slug);
    assert.match(page.html,/Immersive world movement/,page.slug);
@@ -59,7 +59,7 @@ describe('Generated website immersive navigation coverage',()=>{
  it('does not duplicate immersive scripts when enhancement is repeated',()=>{
   const again=enhanceImmersivePages(site.pages);
   for(const page of again){
-   assert.equal((page.html.match(/id="forge-spatial-controller"/g)||[]).length,1,page.slug);
+   assert.equal((page.html.match(/id="forge-spatial-controller"|id="forge-home-webgl-controller"/g)||[]).length,1,page.slug);
   }
  });
 });
