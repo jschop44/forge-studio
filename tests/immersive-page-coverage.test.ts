@@ -93,6 +93,12 @@ describe('Generated website immersive navigation coverage',()=>{
    assert.match(page.html,/portal\.link\.style\.display='block'/,page.slug);
   }
  });
+ it('prevents browser scrolling only for handled immersive keyboard inputs',()=>{
+  for(const page of site.pages){
+   assert.match(page.html,/event\.target instanceof Element&&event\.target\.closest\('a,button,input,textarea,select/,page.slug);
+   assert.match(page.html,/else return;event\.preventDefault\(\);interactionPulse=\.5/,page.slug);
+  }
+ });
  it('does not duplicate immersive scripts when enhancement is repeated',()=>{
   const again=enhanceImmersivePages(site.pages);
   for(const page of again){
