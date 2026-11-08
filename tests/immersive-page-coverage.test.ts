@@ -40,6 +40,14 @@ describe('Generated website immersive navigation coverage',()=>{
    assert.match(page.html,/sessionStorage\.removeItem\(worldStorageKey\)/,page.slug);
   }
  });
+ it('includes reduced-motion-aware internal page transitions',()=>{
+  for(const page of site.pages){
+   assert.match(page.html,/forge-world-departing/,page.slug);
+   assert.match(page.html,/destination\.origin!==location\.origin/,page.slug);
+   assert.match(page.html,/reduced\.matches/,page.slug);
+   assert.match(page.html,/pageshow/,page.slug);
+  }
+ });
  it('does not duplicate immersive scripts when enhancement is repeated',()=>{
   const again=enhanceImmersivePages(site.pages);
   for(const page of again){
