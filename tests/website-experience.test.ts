@@ -2,7 +2,7 @@ import {servicePhoto} from '../src/lib/industry-photos';
 import {generateBusinessWebsite} from '../src/lib/business-site';
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {objectNavigationPlan} from '../src/lib/website-experience';
+import {objectNavigationPlan,inferBusinessIndustry} from '../src/lib/website-experience';
 test('objects and their destinations match verified niche and offerings',()=>{
  assert.deepEqual(objectNavigationPlan({industry:'Coffee shop',services:['Coffee beans','Ceramic mugs']}),{theme:'coffee',targets:[{part:'handle',label:'Ceramic mugs',href:'services.html#offering-1'},{part:'coffee',label:'Coffee beans',href:'services.html#offering-0'}]});
  const baseball=objectNavigationPlan({industry:'Baseball store',services:['Baseball bats','Gloves','Coffee beans']});
@@ -41,4 +41,9 @@ test('theme selection preserves the full business range rather than limiting it 
  assert.equal(servicePhoto('Contact the team','Coffee shop'),null);
  assert.equal(servicePhoto('Bathroom design','Interior design'),null);
  assert.equal(servicePhoto('Care services','Healthcare'),null);
+});
+
+test('incidental coffee offerings do not reclassify a clear baseball business',()=>{
+ assert.equal(inferBusinessIndustry('Baseball Supply','We sell bats, gloves, and coffee at our concession counter.'),'Baseball and sporting goods');
+ assert.equal(inferBusinessIndustry('Northstar Coffee','Coffee, baked goods, events, and neighborhood gatherings.'),'Coffee shop and cafe');
 });

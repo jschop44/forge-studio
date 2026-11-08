@@ -3,7 +3,7 @@ function objectNavigationRuntime(config){
  const root=document.querySelector('[data-object-navigation]'),canvas=root?.querySelector('canvas'),status=root?.querySelector('[role=status]');
  if(!canvas)return;
  const gl=canvas.getContext('webgl',{alpha:true,antialias:true});
- if(!gl){status.textContent='3D is unavailable. Use the offering links below.';canvas.hidden=true;return}
+ if(!gl){status.textContent='3D is unavailable. Use the offering links below.';canvas.hidden=true;root.querySelector('[data-reset-object]').hidden=true;return}
  const reduced=matchMedia('(prefers-reduced-motion: reduce)');
  const faces=[];const targets=config.targets;
  function triangle(a,b,c,color,part){const u=b.map((v,i)=>v-a[i]),v=c.map((n,i)=>n-a[i]);let normal=[u[1]*v[2]-u[2]*v[1],u[2]*v[0]-u[0]*v[2],u[0]*v[1]-u[1]*v[0]];const length=Math.hypot(...normal)||1;normal=normal.map(n=>n/length);faces.push({points:[a,b,c],normal,color,part})}
@@ -23,7 +23,7 @@ function objectNavigationRuntime(config){
  const vertex='attribute vec3 p;attribute vec3 n;attribute vec3 c;varying vec3 color;uniform float aspect;void main(){float depth=5.0-p.z;gl_Position=vec4(p.x*2.2/aspect,(p.y-.75)*2.2,1.00669*depth-.200669,depth);float light=.35+.65*abs(dot(normalize(n),normalize(vec3(-.5,1.,1.))));color=c*light;}';
  const fragment='precision mediump float;varying vec3 color;void main(){gl_FragColor=vec4(color,1.);}';
  function shader(type,source){const s=gl.createShader(type);gl.shaderSource(s,source);gl.compileShader(s);if(!gl.getShaderParameter(s,gl.COMPILE_STATUS))throw Error('Shader unavailable');return s}
- let program;try{program=gl.createProgram();gl.attachShader(program,shader(gl.VERTEX_SHADER,vertex));gl.attachShader(program,shader(gl.FRAGMENT_SHADER,fragment));gl.linkProgram(program);if(!gl.getProgramParameter(program,gl.LINK_STATUS))throw Error('Renderer unavailable')}catch{canvas.hidden=true;status.textContent='Use the offering links below to explore.';return}
+ let program;try{program=gl.createProgram();gl.attachShader(program,shader(gl.VERTEX_SHADER,vertex));gl.attachShader(program,shader(gl.FRAGMENT_SHADER,fragment));gl.linkProgram(program);if(!gl.getProgramParameter(program,gl.LINK_STATUS))throw Error('Renderer unavailable')}catch{canvas.hidden=true;root.querySelector('[data-reset-object]').hidden=true;status.textContent='Use the offering links below to explore.';return}
  gl.useProgram(program);const buffer=gl.createBuffer();gl.bindBuffer(gl.ARRAY_BUFFER,buffer);
  for(const [name,offset] of [['p',0],['n',12],['c',24]]){const loc=gl.getAttribLocation(program,name);gl.enableVertexAttribArray(loc);gl.vertexAttribPointer(loc,3,gl.FLOAT,false,36,offset)}
  const aspectLocation=gl.getUniformLocation(program,'aspect');gl.enable(gl.DEPTH_TEST);
@@ -39,7 +39,7 @@ function objectNavigationRuntime(config){
  canvas.addEventListener('keydown',e=>{if(e.key==='ArrowLeft')yaw-=.15;else if(e.key==='ArrowRight')yaw+=.15;else if(e.key==='ArrowUp')pitch=Math.min(1.1,pitch+.12);else if(e.key==='ArrowDown')pitch=Math.max(-.2,pitch-.12);else return;e.preventDefault();draw()});
  root.querySelector('[data-reset-object]').addEventListener('click',()=>{yaw=-.35;pitch=.4;zoom=1;draw()});
  const resize=new ResizeObserver(draw);resize.observe(canvas);document.addEventListener('visibilitychange',draw);
- canvas.addEventListener('webglcontextlost',e=>{e.preventDefault();live=false;canvas.hidden=true;status.textContent='3D paused. Use the offering links below.'});
+ canvas.addEventListener('webglcontextlost',e=>{e.preventDefault();live=false;canvas.hidden=true;root.querySelector('[data-reset-object]').hidden=true;status.textContent='3D paused. Use the offering links below.'});
  addEventListener('pagehide',()=>{live=false;resize.disconnect();cancelAnimationFrame(frame);gl.deleteBuffer(buffer);gl.deleteProgram(program)},{once:true});draw();
 }
 export function objectNavigationMarkup(plan){

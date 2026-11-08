@@ -18,3 +18,20 @@ export function enhanceCinematicPages<T extends {slug:string;html:string}>(pages
  const script=`<script id="forge-cinematic-controller">(()=>{const reduced=matchMedia('(prefers-reduced-motion: reduce)'),print=matchMedia('print');let frame=0,active=true;function paint(){frame=0;if(!active||document.hidden)return;const depth=reduced.matches||print.matches?0:Math.max(-18,Math.min(18,scrollY*.045));document.documentElement.style.setProperty('--forge-depth',depth+'px')}function schedule(){if(!frame)frame=requestAnimationFrame(paint)}addEventListener('scroll',schedule,{passive:true});reduced.addEventListener('change',schedule);print.addEventListener('change',schedule);document.addEventListener('visibilitychange',schedule);addEventListener('pagehide',()=>{active=false;cancelAnimationFrame(frame);removeEventListener('scroll',schedule)},{once:true});schedule()})();</script>`;
  return pages.map(page=>({...page,html:page.html.replace('</head>',style+'</head>').replace('</body>',script+'</body>')}));
 }
+
+/** A clear business name outweighs an incidental product mentioned later in its brief. */
+export function inferBusinessIndustry(name:string,brief:string):string{
+ const categories:[RegExp,string][]=[
+  [/\b(disney|theme park|entertainment|movies?|cinema|streaming)\b/i,'Entertainment, media and theme parks'],
+  [/\b(baseball|softball|batting|sports? equipment|sporting goods)\b/i,'Baseball and sporting goods'],
+  [/\b(coffee|espresso|roast(?:er|ery)?|barista|caf[eé])\b/i,'Coffee shop and cafe'],
+  [/\b(restaurant|pizza|bakery|dining)\b/i,'Restaurant and hospitality'],
+  [/\b(real estate|realtor|property)\b/i,'Real estate'],
+  [/\b(gym|fitness|wellness|spa)\b/i,'Health and wellness'],
+  [/\b(auto|car|vehicle|automotive)\b/i,'Automotive'],
+  [/\b(fashion|jewelry|clothing)\b/i,'Fashion and luxury'],
+  [/\b(software|tech|technology|digital|ai)\b/i,'Technology']
+ ];
+ for(const source of [name,brief]){const found=categories.find(([pattern])=>pattern.test(source));if(found)return found[1]}
+ return 'Professional services';
+}

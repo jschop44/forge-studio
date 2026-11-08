@@ -8,7 +8,7 @@ import {capturePreviewPages} from '../../lib/capture-preview';
 import {navigationQualityRecommendations} from '../../lib/navigation-quality-recommendations';
 import type {BrowserEvidence} from '../../lib/browser-evidence';
 import {downloadText} from '../../lib/export';
-import {enhanceCinematicPages} from '../../lib/website-experience';
+import {enhanceCinematicPages,inferBusinessIndustry} from '../../lib/website-experience';
 import {analyzeSiteEvidence,inspectionCoverage} from '../../lib/forge-intelligence';
 import {inspectionToBrowserEvidence} from '../../lib/inspection-evidence-adapter';
 import {proposeBusinessSiteFromCapture,generateReviewedCaptureSite} from '../../lib/capture-business-proposal';
@@ -17,7 +17,7 @@ type Brief={businessName:string;industry:string;description:string;services:stri
 function infer(name:string,brief:string):Brief{
  const text=(name+' '+brief).toLowerCase();
  const declaredIndustry=brief.match(/(?:^|\n)\s*(?:industry|business type|category)\s*:\s*([^\n]{3,80})/i)?.[1]?.trim();
- const industry=declaredIndustry||(/disney|theme park|entertainment|movies|characters|streaming/.test(text)?'Entertainment, media and theme parks':/coffee|espresso|roast|barista|café|cafe/.test(text)?'Coffee shop and cafe':/baseball|softball|batting|sports? equipment|sporting goods|baseball bat|baseball glove/.test(text)?'Baseball and sporting goods':/restaurant|pizza|food|bakery/.test(text)?'Restaurant and hospitality':/real estate|realtor|property/.test(text)?'Real estate':/gym|fitness|wellness|spa/.test(text)?'Health and wellness':/auto|car|vehicle/.test(text)?'Automotive':/fashion|jewelry|clothing/.test(text)?'Fashion and luxury':/software|tech|digital|ai /.test(text)?'Technology':'Professional services');
+ const industry=declaredIndustry||inferBusinessIndustry(name,brief);
  const description=brief.trim().length>=15?brief.trim():name+' provides thoughtful, professional solutions for customers seeking quality and dependable service.';
  const serviceLine=brief.split('\n').find(line=>/^(services|products|offerings|menu)\s*:/i.test(line.trim()));
  const listed=serviceLine?serviceLine.replace(/^[^:]+:/,'').split(/[,;]/).map(part=>part.trim()).filter(part=>part.length>=3&&part.length<=65).slice(0,12):[];

@@ -1,11 +1,11 @@
 import {test,expect,type Page} from '@playwright/test';
 import {generateBusinessWebsite} from '../src/lib/business-site';
 const coffee={businessName:'Northstar Coffee',industry:'Coffee shop',description:'An independent coffee shop offering coffee beans and ceramic mugs.',services:['Coffee beans','Ceramic mugs'],experienceStyle:'object-navigation'};
-async function fixture(page:Page,brief=coffee){
+async function fixture(page:Page,brief=coffee,expectCanvas=true){
  const pages=generateBusinessWebsite(brief).pages;
  await page.route('https://objects.test/**',route=>{const slug=new URL(route.request().url()).pathname.split('/').pop()?.replace('.html','')||'index';return route.fulfill({status:200,contentType:'text/html',body:pages.find(p=>p.slug===slug)?.html||'Missing fixture'})});
  await page.goto('https://objects.test/index.html');
- await expect(page.locator('[data-object-navigation] canvas')).toBeVisible();
+ if(expectCanvas)await expect(page.locator('[data-object-navigation] canvas')).toBeVisible();
 }
 async function meshPoint(page:Page,point:[number,number,number]){
  return page.locator('[data-object-navigation] canvas').evaluate((canvas,point)=>{
@@ -54,4 +54,20 @@ test('standard is the builder default and the selected experience travels with i
  await expect(frame.locator('h1')).toContainText('Northstar Coffee');
  await expect(frame.locator('[data-object-navigation]')).toHaveCount(0);
  await expect(frame.locator('#forge-webgl-atmosphere')).toHaveCount(0);
+});
+
+test('WebGL failure preserves offering navigation without unusable 3D controls',async({page})=>{
+ await page.addInitScript(()=>{HTMLCanvasElement.prototype.getContext=()=>null});
+ await fixture(page,coffee,false);
+ await expect(page.locator('[data-object-navigation] canvas')).toBeHidden();
+ await expect(page.getByRole('button',{name:'Reset view'})).toBeHidden();
+ await page.getByRole('link',{name:'Ceramic mugs',exact:true}).click();
+ await expect(page).toHaveURL(/services\.html#offering-1$/);
+});
+test.describe('touch mesh navigation',()=>{
+ test.use({hasTouch:true,viewport:{width:390,height:844}});
+ test('tapping the handle opens drinkware',async({page})=>{
+  await fixture(page);const point=await meshPoint(page,[1.57,.86,.06]);
+  await page.touchscreen.tap(point.x,point.y);await expect(page).toHaveURL(/services\.html#offering-1$/);
+ });
 });
