@@ -91,10 +91,10 @@ jobs:
         run: |
           set -euo pipefail
           echo "Running one end-to-end AI generation request"
-          status=$(curl --silent --show-error --max-time 100 --output /tmp/forge-generated.json --write-out '%{http_code}' \\
-            --header 'Content-Type: application/json' \\
-            --header "Origin: $PREVIEW_URL" \\
-            --data '{"name":"Cedar Studio","description":"A small creative studio providing professional website design services for local businesses.","template":"minimal","industry":"Design","services":["Website design"]}' \\
+          status=$(curl --silent --show-error --max-time 100 --output /tmp/forge-generated.json --write-out '%{http_code}' \
+            --header 'Content-Type: application/json' \
+            --header "Origin: $PREVIEW_URL" \
+            --data '{"name":"Cedar Studio","description":"A small creative studio providing professional website design services for local businesses.","template":"minimal","industry":"Design","services":["Website design"]}' \
             "$PREVIEW_URL/api/generate")
           echo "Generation HTTP status: $status"
           if test "$status" != 200; then
