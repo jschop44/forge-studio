@@ -4,8 +4,8 @@ import {checkLocalAiReadiness,localAiCapacity} from '../../../../lib/server/loca
 export const runtime='nodejs';
 export const dynamic='force-dynamic';
 
-// Readiness confirms that Ollama is reachable and the configured model is
-// installed. It does NOT imply a successful end-to-end generation.
+// Readiness checks the available AI binding or local Ollama model.
+// Binding presence does NOT prove successful inference or generation.
 export async function GET(){
  const [readiness,capacity]=await Promise.all([
   checkLocalAiReadiness(),
@@ -15,7 +15,8 @@ export async function GET(){
   ready:readiness.ready,
   reason:readiness.reason,
   capacity,
-  generationVerified:false
+  generationVerified:false,
+  verification:'A successful end-to-end generation is required before marking AI production-ready'
  },{
   status:readiness.ready?200:503,
   headers:{'Cache-Control':'no-store'}
