@@ -30,11 +30,18 @@ export function servicePhoto(service:string,industry:string):string|null{
  [/espresso|latte|cappuccino|coffee|barista/,'photo-1461023058943-07fcbe16d735'],
  [/\b(?:tea|matcha)\b/,'photo-1544787219-7f47ccb76574'],
  [/pizza/,'photo-1513104890138-7c749659a591'],
+ [/cater|private dining|event dining/,'photo-1414235077428-338989a2e8c0'],
+ [/breakfast|brunch/,'photo-1484723091739-30a097e8f929'],
+ [/dinner|reservation|table service/,'photo-1517248135467-4c7edcad34c4'],
  [/burger/,'photo-1568901346375-23c9450c58cd'],
  [/salad|vegetable/,'photo-1512621776951-a57141f2eefd'],
  [/property|home|house|listing|real estate/,'photo-1600596542815-ffad4c1539a9'],
  [/\b(?:cars?|vehicles?|automotive)\b/,'photo-1503376780353-7e6692767b70'],
- [/yoga|meditation/,'photo-1544367567-0f2fcb009e0b']
+ [/yoga|meditation/,'photo-1544367567-0f2fcb009e0b'],
+ [/hotel|room|suite|accommodation/,'photo-1566073771259-6a8506099945'],
+ [/fashion|clothing|apparel|wardrobe/,'photo-1483985988355-763728e1935b'],
+ [/software|technology|electronics|computer/,'photo-1518770660439-4636190af475'],
+ [/fitness|gym|workout|training/,'photo-1506126613408-eca07ce68773']
  ];
  const found=subjects.find(([pattern])=>pattern.test(term));
  if(found)return 'https://images.unsplash.com/'+found[1]+'?auto=format&fit=crop&w=1000&q=80';
