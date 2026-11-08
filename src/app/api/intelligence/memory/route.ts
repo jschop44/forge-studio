@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { currentUserId } from "../../../../lib/server/auth";
 import { sameOrigin } from "../../../../lib/server/request-security";
 import { database } from "../../../../lib/server/db";
-import { LearningObservationSchema } from "../../../../lib/learning-observations";
+import { LearningObservationSchema, summarizeStoredLearningObservations } from "../../../../lib/learning-observations";
 export const runtime = "nodejs";
 const disabled = () => process.env.ENABLE_FORGE_LEARNING_MEMORY !== "true";
 export async function POST(req: NextRequest) {
@@ -32,7 +32,7 @@ export async function GET(req: NextRequest) {
     const rows = project
       ? await sql`SELECT id,observation,created_at FROM forge_learning_observations WHERE owner_id=${owner}::uuid AND project_key=${project} ORDER BY created_at DESC LIMIT 200`
       : await sql`SELECT id,observation,created_at FROM forge_learning_observations WHERE owner_id=${owner}::uuid ORDER BY created_at DESC LIMIT 200`;
-    return NextResponse.json({observations:rows},{headers:{"Cache-Control":"no-store"}});
+    return NextResponse.json({observations:rows,summary:summarizeStoredLearningObservations(rows.map(row=>row.observation))},{headers:{"Cache-Control":"no-store"}});
   } catch { return NextResponse.json({error:"Learning memory unavailable"},{status:503}); }
 }
 export async function DELETE(req: NextRequest) {

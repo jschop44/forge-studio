@@ -29,3 +29,16 @@ export function summarizeLearningObservations(input: unknown[]) {
     note: "Aggregates recorded outcomes only; no autonomous learning or model training occurs.",
   };
 }
+
+/** Summarize the bounded records actually returned, tolerating legacy/corrupt entries.
+ * Findings are data only; this never authorizes recommendations or trains a model.
+ */
+export function summarizeStoredLearningObservations(input: unknown[]) {
+  const valid: LearningObservation[] = [];
+  for (const item of input) {
+    const parsed = LearningObservationSchema.safeParse(item);
+    if (parsed.success) valid.push(parsed.data);
+  }
+  return {...summarizeLearningObservations(valid), ignoredInvalid: input.length-valid.length,
+    scope: "returned-records" as const};
+}
