@@ -15,6 +15,11 @@ describe('business-specific image diversity',()=>{
   assert.ok(images.every(Boolean));
   assert.equal(new Set(images).size,images.length);
  });
+ it('selects relevant imagery for additional business niches',()=>{
+  for(const [offering,industry] of [['Hotel suites','Hospitality'],['Fitness training','Fitness'],['Software development','Technology'],['Fashion clothing','Fashion'],['Private dining','Restaurant']]){
+   assert.ok(servicePhoto(offering,industry)?.startsWith('https://images.unsplash.com/photo-'),offering);
+  }
+ });
  it('keeps stock imagery disabled for sensitive subjects',()=>{
   assert.deepEqual(industryPhotos('horror attraction'),[]);
   assert.equal(servicePhoto('weapon sales','retail'),null);
