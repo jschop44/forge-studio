@@ -20,11 +20,11 @@ test('standard sites omit immersive controllers and object scenes; cinematic rem
  const standard=generateBusinessWebsite({...brief,experienceStyle:'standard'});
  assert.equal(standard.pages.length,4);
  for(const page of standard.pages){assert.ok(!page.html.includes('forge-spatial-controller'));assert.ok(!page.html.includes('forge-home-webgl-controller'));assert.ok(!page.html.includes('data-object-navigation'));}
- assert.ok(generateBusinessWebsite({...brief,experienceStyle:'cinematic'}).pages[0].html.includes('forge-home-webgl-controller'));
+ const cinematic=generateBusinessWebsite({...brief,experienceStyle:'cinematic'}).pages[0].html;assert.ok(cinematic.includes('forge-cinematic-controller'));assert.ok(!cinematic.includes('forge-home-webgl-controller'));assert.ok(!cinematic.includes('forge-world-movement'));
 });
 test('object navigation uses actual offering anchors and refuses unrelated niches',()=>{
  const pages=generateBusinessWebsite({...brief,experienceStyle:'object-navigation'}).pages;
- assert.ok(pages[0].html.includes('forge-object-navigation-controller'));
+ for(const page of pages)assert.ok(page.html.includes('forge-object-navigation-controller'));
  assert.ok(pages[0].html.includes('services.html#offering-1'));
  assert.ok(pages[1].html.includes('id="offering-1"'));
  assert.ok(!pages[0].html.includes('forge-home-webgl-controller'));

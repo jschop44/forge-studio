@@ -18,7 +18,7 @@ async function meshPoint(page:Page,point:[number,number,number]){
 for(const mobile of [false,true]){
  test(`actual cup handle mesh opens drinkware (${mobile?'mobile':'desktop'})`,async({page})=>{
   if(mobile)await page.setViewportSize({width:390,height:844});
-  await fixture(page);const point=await meshPoint(page,[1.64,.86,0]);
+  await fixture(page);const point=await meshPoint(page,[1.57,.86,.06]);
   await page.mouse.click(point.x,point.y);
   await expect(page).toHaveURL(/services\.html#offering-1$/);
   await expect(page.locator('#offering-1')).toContainText('Ceramic mugs');

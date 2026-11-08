@@ -8,7 +8,7 @@ import {capturePreviewPages} from '../../lib/capture-preview';
 import {navigationQualityRecommendations} from '../../lib/navigation-quality-recommendations';
 import type {BrowserEvidence} from '../../lib/browser-evidence';
 import {downloadText} from '../../lib/export';
-import {createContextualShowcase,enhanceImmersivePages} from '../../lib/immersive-showcase';
+import {enhanceCinematicPages} from '../../lib/website-experience';
 import {analyzeSiteEvidence,inspectionCoverage} from '../../lib/forge-intelligence';
 import {inspectionToBrowserEvidence} from '../../lib/inspection-evidence-adapter';
 import {proposeBusinessSiteFromCapture,generateReviewedCaptureSite} from '../../lib/capture-business-proposal';
@@ -213,7 +213,7 @@ export default function BusinessGenerator(){
   return;
  }
  if(!response.ok){const failure=await response.json();throw Error(response.status===503?'Website generation is temporarily unavailable. Please try again.':failure.error||'AI generation unavailable')}
- const result=await response.json();const generated=experienceStyle==='cinematic'?[...createContextualShowcase({...input,description:result.draft.description,design:result.draft.design}),...enhanceImmersivePages([...result.pages.filter((p:GeneratedPage)=>p.slug!=='index'),...additionalPages()])]:[...result.pages,...additionalPages()];setPages(automaticallyOptimizeMetadata(automaticallyApplyBrand(generated)));setActive('index');setStatus('Website draft generated. Review its content and design before publishing.');
+ const result=await response.json();const extras=experienceStyle==='cinematic'?enhanceCinematicPages(additionalPages()):additionalPages();const generated=[...result.pages,...extras];setPages(automaticallyOptimizeMetadata(automaticallyApplyBrand(generated)));setActive('index');setStatus('Website draft generated. Review its content and design before publishing.');
  }catch(error){setStatus(error instanceof Error?error.message:'Website generation is temporarily unavailable.');
  }finally{setBusy(false)}
  }
