@@ -42,7 +42,11 @@ test("fixture-backed generation displays preview pages and navigates tabs", asyn
   await page.getByRole("button", { name: /generate my immersive website/i }).click();
   const tabs = page.getByRole("navigation", { name: "Website pages" });
   await expect(tabs).toBeVisible({ timeout: 30000 });
-  await expect(page.getByText(/Draft quality:/i)).toBeVisible();
+  await expect(page.getByText(/Automatic website check:/i)).toBeVisible();
+  const technicalDetails=page.getByRole('button',{name:'Show technical check details'});
+  await expect(technicalDetails).toHaveAttribute('aria-expanded','false');
+  await technicalDetails.click();
+  await expect(page.getByRole('button',{name:'Hide technical check details'})).toHaveAttribute('aria-expanded','true');
   await expect(page.getByText(/Publishing has not been verified/i)).toBeVisible();
   const approvePublish=page.getByRole("checkbox", { name: /reviewed every generated page and approve publishing/i });
   await expect(approvePublish).not.toBeChecked();
