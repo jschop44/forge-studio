@@ -116,13 +116,15 @@ test('immersive pages remain interactive at narrow mobile viewport widths',async
  await page.setViewportSize({width:375,height:812});
  const pages=generateBusinessWebsite({businessName:'Harbor Studio',industry:'Architecture',description:'Independent architecture and interior design practice.',services:['Architecture','Interior design']}).pages;
  for(const generated of pages){
+  // Dispose the previous document and its animation loops before testing the next page.
+  await page.goto('about:blank');
   const errors:string[]=[];
   const onError=(error:Error)=>errors.push(error.message);
   page.on('pageerror',onError);
-  await page.setContent(generated.html);
+  await page.setContent(generated.html,{waitUntil:'domcontentloaded'});
   await expect(page.locator('main#main-content')).toBeVisible();
-  await page.evaluate(()=>{document.body.style.minHeight='200vh';window.scrollTo(0,document.documentElement.scrollHeight)});
-  await expect.poll(()=>page.evaluate(()=>window.scrollY)).toBeGreaterThan(0);
+  await page.evaluate(()=>{document.body.style.minHeight='200vh';window.scrollTo({top:document.documentElement.scrollHeight,behavior:'instant'})});
+  await expect.poll(()=>page.evaluate(()=>window.scrollY),{message:'Mobile page must remain scrollable: '+generated.slug}).toBeGreaterThan(0);
   expect(errors,generated.slug).toEqual([]);
   page.off('pageerror',onError);
  }
