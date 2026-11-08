@@ -1,6 +1,6 @@
 # Modular intelligence agents
 The architecture separates LeadFlow enrichment, Growth Lens audits, Forge Studio planning, generation, quality review and publication review.
-Agent decisions are deterministic until an explicitly configured, quota-limited model provider is available. Queue-based site generation currently uses the deterministic business-site generator.
+Agent decisions are deterministic until an explicitly configured, quota-limited model provider is available. Approved queue generation calls the configured AI generation service and records its provider and draft. Provider failures block the task rather than silently generating a template-only result. Deterministic generation remains available only in the pure helper used by unit tests.
 
 The authenticated worker can claim durable database jobs and enqueue the next stage. It requires ENABLE_AGENT_QUEUE, a configured database and worker secret; its scheduled workflow also requires FORGE_WORKER_URL. Source code and unit tests do not establish that these settings or live cross-app connectors are operational.
 

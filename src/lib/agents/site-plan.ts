@@ -8,7 +8,7 @@ export function createSitePlan(input:PlanningBrief){
  return {
   pages:['Home','Services','About','Contact'],industry:brief.industry||'services',
   businessBrief:brief,missingInformation,requiresApproval:true,
-  generationMode:'deterministic-draft',externalResearchPerformed:false,
+  generationMode:'ai-assisted-draft',modelInferencePerformed:false,externalResearchPerformed:false,
   pagePlans:[
    {slug:'index',purpose:'Introduce the business and direct visitors to its offerings.',suppliedFacts:[brief.businessName,brief.description].filter((value):value is string=>Boolean(value))},
    {slug:'services',purpose:'Explain the supplied services without inventing prices or guarantees.',suppliedFacts:services},

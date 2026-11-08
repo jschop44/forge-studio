@@ -5,7 +5,7 @@ export async function drainAgentQueue(env=process.env,fetcher=fetch){
  if(!env.FORGE_WORKER_SECRET||env.FORGE_WORKER_SECRET.length<32)throw Error('Worker secret is missing or invalid');
  const batches=[];
  for(let batch=0;batch<6;batch++){
-  const response=await fetcher(workerUrl,{method:'POST',redirect:'error',headers:{'x-forge-worker-key':env.FORGE_WORKER_SECRET},signal:AbortSignal.timeout(20000)});
+  const response=await fetcher(workerUrl,{method:'POST',redirect:'error',headers:{'x-forge-worker-key':env.FORGE_WORKER_SECRET},signal:AbortSignal.timeout(90000)});
   if(!response.ok)throw Error('Worker request failed with HTTP '+response.status);
   const data=await response.json();
   if(!Number.isInteger(data.processed)||data.processed<0||data.processed>20||!Array.isArray(data.results)||data.results.length!==data.processed||data.results.some(r=>!['completed','needs-approval','blocked','claim-lost'].includes(r.status)))throw Error('Invalid worker result');

@@ -18,7 +18,7 @@ test('missing facts remain explicit instead of being presented as researched bus
  assert.deepEqual(plan.businessBrief.services,[]);
  assert.deepEqual(plan.missingInformation,['businessName','industry','description','services']);
  assert.equal(plan.externalResearchPerformed,false);
- assert.equal(plan.generationMode,'deterministic-draft');
+ assert.equal(plan.generationMode,'ai-assisted-draft');
  assert.equal(plan.requiresApproval,true);
  assert.deepEqual(plan.pagePlans[3].needsVerification,['contact details']);
 });

@@ -1,3 +1,4 @@
+import {generateWithLocalAi} from '../server/local-ai';
 import {z} from 'zod';
 import {generateBusinessWebsite} from '../business-site';
 import {auditGeneratedSite} from '../site-audit';
@@ -20,4 +21,13 @@ export function executeSafeAgent(task:AgentTask):AgentOutput{
  case 'quality-review':{const review=reviewAgentPages(task.payload);return {stage:task.kind,summary:'Reviewed '+review.evidence.pageCount+' supplied page(s)',data:review};}
  case 'publish-review':return {stage:task.kind,summary:'Publication requires explicit owner approval',data:{requiresApproval:true}};
  }
+}
+
+/** Queue execution requires real model inference for generation; no silent template fallback. */
+export async function executeAgent(task:AgentTask,generate=generateWithLocalAi):Promise<AgentOutput>{
+ if(task.kind!=='site-generation')return executeSafeAgent(task);
+ const context=Context.parse(task.payload);
+ if(!context.approvedPlan)throw Error('Site plan approval required');
+ const result=await generate({businessName:context.businessName||'New Business',industry:context.industry||'Services',description:context.summary||'Professional services designed to help customers succeed.',services:context.services?.length?context.services:['Consulting','Customer support']});
+ return {stage:task.kind,summary:'AI-generated four-page site draft',data:{name:result.draft.businessName,provider:result.provider,draft:result.draft,pages:result.pages.map(page=>({slug:page.slug,title:page.title,html:page.html}))}};
 }
