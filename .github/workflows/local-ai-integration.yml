@@ -62,7 +62,7 @@ jobs:
           done
           cat /tmp/forge-next.log
           exit 1
-      - name: Verify real inference and four immersive generated pages
+      - name: Verify real inference and four generated pages
         id: smoke
         run: |
           started=$(date +%s)

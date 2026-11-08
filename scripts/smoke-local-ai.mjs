@@ -28,29 +28,18 @@ if(typeof result.draft?.description!=='string'||result.draft.description.trim().
 if(result.draft.industry!==input.industry)throw Error('AI changed verified business industry');
 if(JSON.stringify(result.draft.services)!==JSON.stringify(input.services))throw Error('AI changed verified business services');
 if(!result.draft.description.trim())throw Error('AI generated empty marketing copy');
+const design=result.draft.design;
+if(!design||!['editorial','image-led'].includes(design.layout)||!['sand','mint','sky'].includes(design.palette))throw Error('Model composition is missing or invalid');
 const pages=new Map(result.pages.map(page=>[page.slug,page]));
+if(result.pages.length!==4||pages.size!==4)throw Error('Expected exactly four distinct generated pages');
 for(const slug of ['index','services','about','contact']){
  const page=pages.get(slug);
  if(!page||typeof page.html!=='string'||!page.html.includes('<html')||!page.html.includes('</html>'))throw Error('Missing valid '+slug+' page');
- if(!page.html.includes('forge-home-webgl-controller')&&!page.html.includes('forge-spatial-controller'))throw Error('Missing immersive WebGL controller on '+slug+' page');
- if(slug==='index'){const homeScript=page.html.split('<script id="forge-home-webgl-controller">')[1]?.split('</script>')[0];if(!homeScript||!homeScript.includes("const beaconLink=document.createElement('a')")||!homeScript.includes('const worldPortals=')||!homeScript.includes('let walkX=0,walkY=0'))throw Error('Homepage WebGL controller missing world navigation initialization')}
- if(!page.html.includes("getContext('webgl'"))throw Error('Missing WebGL initialization on '+slug+' page');
- if(!page.html.includes('prefers-reduced-motion'))throw Error('Missing reduced-motion safeguard on '+slug+' page');
- if(!page.html.includes("event.pointerType==='touch'"))throw Error('Missing touch orbit input on '+slug+' page');
- if(!page.html.includes("event.key==='w'"))throw Error('Missing keyboard orbit input on '+slug+' page');
- if(!page.html.includes("event.key==='q'")||!page.html.includes("event.key==='e'")||!page.html.includes("gl.uniform1f(travelUniform,travel)"))throw Error('Missing camera depth controls on '+slug+' page');
- if(!page.html.includes("addEventListener('touchmove'")||!page.html.includes("addEventListener('wheel'"))throw Error('Missing touch pinch or wheel depth controls on '+slug+' page');
- if(!page.html.includes("gl.uniform2f(walkUniform,renderWalkX,renderWalkY)")||!page.html.includes('floorCoords'))throw Error('Missing navigable perspective ground plane on '+slug+' page');
- if(!page.html.includes('beaconPosition')||!page.html.includes('gl.uniform2f(beaconUniform,beaconX,beaconY)'))throw Error('Missing world-anchored navigation beacon on '+slug+' page');
- if(!page.html.includes("beaconLink.href='services.html'")||!page.html.includes("beaconLink.setAttribute('aria-label'"))throw Error('Missing accessible interactive beacon navigation on '+slug+' page');
- for(const destination of ['about.html','contact.html'])if(!page.html.includes("href:'"+destination+"'"))throw Error('Missing spatial navigation portal '+destination+' on '+slug+' page');
- if(!page.html.includes('portal.link.hidden=!visible'))throw Error('Spatial portals must respond to camera translation on '+slug+' page');
- if(!page.html.includes("aria-label','Immersive world movement'")||!page.html.includes("control.addEventListener('click'"))throw Error('Missing accessible mobile spatial movement controls on '+slug+' page');
- if(!page.html.includes('const canMoveTo=(x,y)=>')||!page.html.includes('const moveWorld=(dx,dy)=>')||!page.html.includes('moveWorld(-.35,0)'))throw Error('Missing collision-aware shared movement on '+slug+' page');
- if(!page.html.includes('float boxHit(vec3 ro,vec3 rd')||!page.html.includes('structureAlpha')||!page.html.includes('hitDistance'))throw Error('Missing raycast 3D world portal geometry on '+slug+' page');
- if(!page.html.includes('float shadow=0.')||!page.html.includes('ground.xz-footprint'))throw Error('Missing raycast ground-contact shadows on '+slug+' page');
- if(!page.html.includes('portal.link.tabIndex=visible?0:-1')||!page.html.includes("if(reduced.matches||matchMedia('print').matches){movementPad.hidden=true;movementPad.style.display='none'}"))throw Error('Missing accessible portal focus and reduced-motion handling on '+slug+' page');
- if(!page.html.includes("portal.link.style.display=visible?'block':'none'"))throw Error('Missing explicit offscreen portal visibility handling on '+slug+' page');
- if(!page.html.includes('Math.ceil(Math.hypot(dx,dy)/.2)')||!page.html.includes('for(let i=0;i<steps;i++)'))throw Error('Missing collision substeps to prevent spatial tunneling on '+slug+' page');
+ if(!page.html.includes('data-forge-layout="'+design.layout+'"'))throw Error('Model layout not rendered on '+slug+' page');
+ if(!page.html.includes('forge-home-webgl-controller')&&!page.html.includes('forge-spatial-controller'))throw Error('Missing immersive controller asset on '+slug+' page');
+ if(!page.html.includes('prefers-reduced-motion'))throw Error('Missing reduced-motion styling on '+slug+' page');
 }
-console.log('PASS: production Ollama generated and returned all four website pages.');
+const accent={sand:'#e3c89e',mint:'#9ee3bf',sky:'#9ed8f5'}[design.palette];
+if(!pages.get('index').html.includes(accent))throw Error('Model palette not rendered');
+console.log('PASS: real Ollama generated four pages with validated model-selected composition.');
+console.log('Browser behavior, spatial controls and responsive layouts are verified separately by the Chromium suite.');
