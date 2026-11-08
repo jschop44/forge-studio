@@ -1,46 +1,63 @@
-import {spawn} from 'node:child_process';
+import {pathToFileURL} from 'node:url';
 const origin='https://forge-studio-preview.stands-old-3h.workers.dev';
-const child=spawn('npx',['wrangler','tail','forge-studio-preview','--format','json','--sampling-rate','1'],{stdio:['ignore','pipe','pipe'],env:process.env,detached:true});
-let output='',tailReady=false,tailFailed=false;
-const observe=chunk=>{if(/Connected to|Successfully created tail/i.test(chunk.toString()))tailReady=true};
-child.stdout.on('data',chunk=>{observe(chunk);output=(output+chunk.toString()).slice(-1000000)});
-// Tail output may contain unrelated request metadata. Never forward raw output or errors.
-child.stderr.on('data',observe);
-child.on('error',()=>{tailFailed=true});
-child.on('exit',()=>{tailFailed=true});
-const wait=ms=>new Promise(resolve=>setTimeout(resolve,ms));
-try{
- // npx startup may exceed seven seconds. Wait for an actual subscription.
- const deadline=Date.now()+45000;
- while(!tailReady&&!tailFailed&&Date.now()<deadline)await wait(250);
- if(!tailReady)throw Error('Diagnostic log subscription did not become ready; no inference request was sent');
- const response=await fetch(origin+'/api/ai/business',{method:'POST',headers:{'Content-Type':'application/json',Origin:origin},body:JSON.stringify({businessName:'Forge Diagnostic Studio',industry:'Design',description:'An independent studio designing accessible websites for local businesses.',services:['Website design']}),signal:AbortSignal.timeout(90000)});
- console.log(JSON.stringify({syntheticRequestStatus:response.status}));
- await wait(5000);
-}finally{try{process.kill(-child.pid,'SIGTERM')}catch{}}
-// Wrangler JSON events can span lines. Parse balanced JSON without printing event bodies.
-let depth=0,start=-1,quoted=false,escaped=false;
-const categories=[];
-for(let i=0;i<output.length;i++){
- const c=output[i];
- if(quoted){if(escaped)escaped=false;else if(c==='\\')escaped=true;else if(c==='"')quoted=false;continue}
- if(c==='"'){quoted=true;continue}
- if(c==='{'){if(depth===0)start=i;depth++}
- if(c==='}'&&depth>0&&--depth===0){
+const allowedCategories=new Set(['provider_rate_limited','provider_auth','provider_server_error','invalid_model_response','provider_timeout','provider_unavailable','provider_failure']);
+// Only report a bounded allowlist from the exact synthetic request. Never expose raw events.
+export function summarizeDiagnostic(event,requestUrl){
+ if(event?.event?.request?.url!==requestUrl)return null;
+ const categories=[];
+ for(const log of event.logs||[]){
+  const message=log.message;
+  if(!Array.isArray(message))continue;
+  if(message[0]==='Forge AI generation failure category:'&&allowedCategories.has(message[1]))categories.push({category:message[1]});
+  if(message[0]!=='Workers AI inference failed')continue;
   try{
-   const event=JSON.parse(output.slice(start,i+1));
-   for(const log of event.logs||[]){
-    if(log.message?.[0]==='Forge AI generation failure category:'){
-     const category=log.message[1];
-     if(['provider_rate_limited','provider_auth','provider_server_error','invalid_model_response','provider_timeout','provider_unavailable'].includes(category))categories.push({category});
-    }
-    if(log.message?.[0]!=='Workers AI inference failed')continue;
-    const data=log.message[1];
-    const item=typeof data==='string'?JSON.parse(data):data;
-    categories.push({code:/^\d{1,8}$/.test(String(item?.code))?String(item.code):'unknown',category:['provider_failure','invalid_model_response'].includes(item?.category)?item.category:'unknown'});
-   }
-  }catch{/* Never print malformed provider/event content. */}
+   const item=typeof message[1]==='string'?JSON.parse(message[1]):message[1];
+   categories.push({code:/^\d{1,8}$/.test(String(item?.code))?String(item.code):'unknown',category:allowedCategories.has(item?.category)?item.category:'unknown'});
+  }catch{/* Malformed or private provider text is never forwarded. */}
+ }
+ return {providerDiagnostics:categories,exceptionCount:Array.isArray(event.exceptions)?event.exceptions.length:0,rawEventsDisclosed:false};
+}
+export async function diagnosePreviewAi(){
+ const account=process.env.CLOUDFLARE_ACCOUNT_ID,token=process.env.CLOUDFLARE_API_TOKEN;
+ if(!account||!token)throw Error('Cloudflare diagnostic credentials are missing');
+ const endpoint=`https://api.cloudflare.com/client/v4/accounts/${encodeURIComponent(account)}/workers/scripts/forge-studio-preview/tails`;
+ const headers={Authorization:`Bearer ${token}`,'Content-Type':'application/json'};
+ let record,socket;
+ try{
+  const response=await fetch(endpoint,{method:'POST',headers,body:JSON.stringify({filters:[{sampling_rate:1}]}),signal:AbortSignal.timeout(15000)});
+  if(!response.ok)throw Error('Diagnostic subscription creation failed (HTTP '+response.status+')');
+  const payload=await response.json();record=payload.result;
+  if(!payload.success||typeof record?.id!=='string'||typeof record?.url!=='string'||new URL(record.url).protocol!=='wss:')throw Error('Diagnostic subscription was rejected');
+  socket=new WebSocket(record.url,'trace-v1');
+  const requestUrl=origin+'/api/ai/business?diagnostic='+crypto.randomUUID();
+  let finish;
+  const eventResult=new Promise(resolve=>{finish=resolve});
+  socket.addEventListener('message',async event=>{
+   try{
+    const data=typeof event.data==='string'?event.data:await event.data.text();
+    if(data.length>1000000)return;
+    const summary=summarizeDiagnostic(JSON.parse(data),requestUrl);
+    if(summary)finish(summary);
+   }catch{/* Do not disclose websocket payloads. */}
+  });
+  await new Promise((resolve,reject)=>{
+   const timer=setTimeout(()=>reject(Error('Diagnostic subscription timed out')),15000);
+   socket.addEventListener('open',()=>{clearTimeout(timer);socket.send(JSON.stringify({debug:false}));resolve()},{once:true});
+   socket.addEventListener('error',()=>{clearTimeout(timer);reject(Error('Diagnostic subscription connection failed'))},{once:true});
+  });
+  const generation=await fetch(requestUrl,{method:'POST',headers:{'Content-Type':'application/json',Origin:origin},body:JSON.stringify({businessName:'Forge Diagnostic Studio',industry:'Design',description:'An independent studio designing accessible websites for local businesses.',services:['Website design']}),signal:AbortSignal.timeout(90000)});
+  console.log(JSON.stringify({syntheticRequestStatus:generation.status}));
+  let timer;
+  const summary=await Promise.race([eventResult,new Promise(resolve=>{timer=setTimeout(()=>resolve(null),15000)})]);
+  clearTimeout(timer);
+  if(!summary)throw Error('No correlated diagnostic event captured');
+  console.log(JSON.stringify(summary));
+  if(!generation.ok&&!summary.providerDiagnostics.length)throw Error('Provider failure remains unclassified');
+ }finally{
+  socket?.close();
+  if(record?.id)await fetch(endpoint+'/'+encodeURIComponent(record.id),{method:'DELETE',headers,signal:AbortSignal.timeout(10000)}).catch(()=>{});
  }
 }
-console.log(JSON.stringify({tailReady,providerDiagnostics:categories,rawEventsDisclosed:false}));
-if(!categories.length)throw Error('No provider diagnostics captured; inference failure remains unresolved');
+if(process.argv[1]&&import.meta.url===pathToFileURL(process.argv[1]).href){
+ diagnosePreviewAi().catch(()=>{console.error('AI diagnostics failed; no private provider output disclosed');process.exitCode=1});
+}
