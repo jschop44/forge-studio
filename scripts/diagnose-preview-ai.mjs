@@ -24,19 +24,21 @@ export async function diagnosePreviewAi(){
  const headers={Authorization:`Bearer ${token}`,'Content-Type':'application/json'};
  let record,socket;
  try{
-  const response=await fetch(endpoint,{method:'POST',headers,body:JSON.stringify({filters:[{sampling_rate:1}]}),signal:AbortSignal.timeout(15000)});
+  const response=await fetch(endpoint,{method:'POST',headers,body:JSON.stringify({filters:[]}),signal:AbortSignal.timeout(15000)});
   if(!response.ok)throw Error('Diagnostic subscription creation failed (HTTP '+response.status+')');
   const payload=await response.json();record=payload.result;
   if(!payload.success||typeof record?.id!=='string'||typeof record?.url!=='string'||new URL(record.url).protocol!=='wss:')throw Error('Diagnostic subscription was rejected');
   socket=new WebSocket(record.url,'trace-v1');
   const requestUrl=origin+'/api/ai/business?diagnostic='+crypto.randomUUID();
-  let finish;
+  let finish,receivedEvents=0,parsedEvents=0;
   const eventResult=new Promise(resolve=>{finish=resolve});
   socket.addEventListener('message',async event=>{
+   receivedEvents++;
    try{
     const data=typeof event.data==='string'?event.data:await event.data.text();
     if(data.length>1000000)return;
-    const summary=summarizeDiagnostic(JSON.parse(data),requestUrl);
+    const parsed=JSON.parse(data);parsedEvents++;
+    const summary=summarizeDiagnostic(parsed,requestUrl);
     if(summary)finish(summary);
    }catch{/* Do not disclose websocket payloads. */}
   });
@@ -45,11 +47,14 @@ export async function diagnosePreviewAi(){
    socket.addEventListener('open',()=>{clearTimeout(timer);socket.send(JSON.stringify({debug:false}));resolve()},{once:true});
    socket.addEventListener('error',()=>{clearTimeout(timer);reject(Error('Diagnostic subscription connection failed'))},{once:true});
   });
+  // Allow the server to apply the subscription settings before the probe.
+  await new Promise(resolve=>setTimeout(resolve,1000));
   const generation=await fetch(requestUrl,{method:'POST',headers:{'Content-Type':'application/json',Origin:origin},body:JSON.stringify({businessName:'Forge Diagnostic Studio',industry:'Design',description:'An independent studio designing accessible websites for local businesses.',services:['Website design']}),signal:AbortSignal.timeout(90000)});
   console.log(JSON.stringify({syntheticRequestStatus:generation.status}));
   let timer;
-  const summary=await Promise.race([eventResult,new Promise(resolve=>{timer=setTimeout(()=>resolve(null),15000)})]);
+  const summary=await Promise.race([eventResult,new Promise(resolve=>{timer=setTimeout(()=>resolve(null),45000)})]);
   clearTimeout(timer);
+  console.log(JSON.stringify({receivedEvents,parsedEvents,correlatedEvent:Boolean(summary)}));
   if(!summary)throw Error('No correlated diagnostic event captured');
   console.log(JSON.stringify(summary));
   if(!generation.ok&&!summary.providerDiagnostics.length)throw Error('Provider failure remains unclassified');
