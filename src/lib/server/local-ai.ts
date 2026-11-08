@@ -1,4 +1,5 @@
 import {z} from 'zod';
+import {generateWorkersComposition,type WorkersAiBinding} from './workers-ai-composition';
 import {DesignSchema,parseAiComposition,compositionAppearance,compositionInstruction,compositionJsonSchema} from '../ai-composition';
 import {generateBusinessWebsite} from '../business-site';
 const CopySchema=z.object({description:z.string().trim().min(15).max(1800)});
@@ -16,7 +17,6 @@ function ollamaConfig(){
 }
 // Cloudflare Workers AI runs through an account binding; no API token is exposed to clients.
 // Local development continues to use loopback Ollama.
-type WorkersAiBinding={run:(model:string,input:Record<string,unknown>)=>Promise<unknown>};
 async function workersAi():Promise<WorkersAiBinding|null>{
  try{
   const {getCloudflareContext}=await import('@opennextjs/cloudflare');
@@ -71,11 +71,7 @@ export async function generateWithLocalAi(input:{businessName:string;industry:st
  const cloudAi=await workersAi();
  if(cloudAi){
    try{
-    const response=await cloudAi.run('@cf/meta/llama-3.1-8b-instruct-fp8',{messages:[{role:'system',content:compositionInstruction},{role:'user',content:JSON.stringify(input)}],max_tokens:360,temperature:0.3});
-    const raw=response&&typeof response==='object'?(response as {response?:unknown;output?:unknown}):{};
-    const value=typeof raw.response==='string'?raw.response:typeof raw.output==='string'?raw.output:null;
-    if(!value)throw Error('Workers AI returned no composition');
-    let composition;try{composition=parseAiComposition(value)}catch{throw Error('Workers AI returned invalid composition')}
+    const composition=await generateWorkersComposition(cloudAi,input);
     description=composition.description;design=composition.design;
    }catch(error){
     // Do not log the user's prompt, model response, or credentials.
