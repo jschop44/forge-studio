@@ -87,6 +87,12 @@ describe('Generated website immersive navigation coverage',()=>{
    assert.match(page.html,/portal\.x-renderWalkX/,page.slug);
   }
  });
+ it('keeps portals available when reduced motion is enabled during browsing',()=>{
+  for(const page of site.pages){
+   assert.match(page.html,/reduced\.addEventListener\('change',\(\)=>/,page.slug);
+   assert.match(page.html,/portal\.link\.style\.display='block'/,page.slug);
+  }
+ });
  it('does not duplicate immersive scripts when enhancement is repeated',()=>{
   const again=enhanceImmersivePages(site.pages);
   for(const page of again){
