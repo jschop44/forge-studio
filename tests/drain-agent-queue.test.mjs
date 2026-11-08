@@ -9,7 +9,7 @@ test('advances generated work and quality review then stops at publication appro
  assert.equal(calls,3);assert.equal(result.stopped,'idle-or-gated');
 });
 test('does not spin on idle, blocked, approval or lost claims',async()=>{
- for(const statuses of [[],['blocked'],['needs-approval'],['claim-lost']]){
+ for(const statuses of [[],['blocked'],['needs-approval'],['claim-lost'],['retry-scheduled']]){
   let calls=0;await drainAgentQueue(env,async()=>{calls++;return response(statuses)});assert.equal(calls,1);
  }
 });

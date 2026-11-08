@@ -1,6 +1,7 @@
 import {describe,it,before,after,beforeEach} from 'node:test';
 import assert from 'node:assert/strict';
 import {PGlite} from '@electric-sql/pglite';
+import {retryAgentJob} from '../src/lib/server/agent-job-retry';
 import {settleAgentJob,type JobClaim,type JobSettlement} from '../src/lib/server/agent-job-settlement';
 
 const parent='3c26d0bb-c4e7-4884-bbf4-8592c3cdbf7c',tenant='f6a38971-ec2d-4809-9251-c70e44164f3e',child='3c26d0bb-c4e7-4884-bbf4-8592c3cdbf7d';
@@ -16,7 +17,7 @@ describe('atomic Postgres agent handoffs',()=>{
    id uuid PRIMARY KEY, tenant_id uuid NOT NULL, parent_id uuid REFERENCES forge_jobs(id),
    kind text NOT NULL CHECK(kind <> 'publish-review'), source text NOT NULL,
    payload jsonb NOT NULL DEFAULT '{}', status text NOT NULL DEFAULT 'pending',
-   result jsonb, last_error text, attempt integer NOT NULL DEFAULT 0,
+   result jsonb, last_error text, attempt integer NOT NULL DEFAULT 0, max_attempts integer NOT NULL DEFAULT 3, available_at timestamptz NOT NULL DEFAULT now(),
    updated_at timestamptz NOT NULL DEFAULT now()
   ); CREATE UNIQUE INDEX parent_kind ON forge_jobs(parent_id,kind) WHERE parent_id IS NOT NULL;`);
  });
@@ -24,6 +25,20 @@ describe('atomic Postgres agent handoffs',()=>{
  beforeEach(async()=>{
   await db.exec('TRUNCATE forge_jobs');
   await db.query("INSERT INTO forge_jobs(id,tenant_id,kind,source,status,updated_at) VALUES($1,$2,'site-generation','forge-studio','evaluating',$3)",[parent,tenant,claim.lease]);
+ });
+ it('schedules one fenced retry with backoff and preserves the payload',async()=>{
+  assert.equal(await retryAgentJob(query,claim,120),true);
+  assert.equal(await retryAgentJob(query,claim,120),false);
+  const rows=await query('SELECT status,attempt,payload,available_at>now() AS delayed FROM forge_jobs',[]);
+  assert.equal(rows[0].status,'pending');assert.equal(rows[0].attempt,1);
+  assert.equal(rows[0].delayed,true);assert.deepEqual(rows[0].payload,{});
+ });
+ it('rejects retries for stale leases, wrong tenants and exhausted attempts',async()=>{
+  assert.equal(await retryAgentJob(query,{...claim,tenantId:child},60),false);
+  assert.equal(await retryAgentJob(query,{...claim,lease:'2026-11-08 00:00:00+00'},60),false);
+  await db.exec('UPDATE forge_jobs SET attempt=3');
+  assert.equal(await retryAgentJob(query,{...claim,attempt:3},60),false);
+  assert.equal((await query('SELECT status FROM forge_jobs',[]))[0].status,'evaluating');
  });
  it('commits the stage result and preserves all successor payload data',async()=>{
   assert.equal(await settleAgentJob(query,claim,settlement),true);
