@@ -4,7 +4,7 @@ import {generateWorkersComposition} from '../src/lib/server/workers-ai-compositi
 const composition={description:'A studio providing accessible website design for local businesses.',design:{layout:'image-led',palette:'sky'}};
 test('Cloudflare composition uses native JSON schema mode and accepts parsed provider objects',async()=>{
  const result=await generateWorkersComposition({run:async(model,input)=>{
-  assert.equal(model,'@cf/meta/llama-3.1-8b-instruct');
+  assert.equal(model,'@cf/meta/llama-3.3-70b-instruct-fp8-fast');
   assert.equal((input.response_format as {type:string}).type,'json_schema');
   return {response:composition};
  }},{businessName:'Cedar Studio'});
