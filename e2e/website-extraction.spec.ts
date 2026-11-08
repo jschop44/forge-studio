@@ -45,9 +45,9 @@ test('a failed extraction stays visible and is never replaced by misleading extr
  await page.route('**/api/site-reference',route=>route.fulfill({status:422,json:{error:'Website returned status 403'}}));
  await page.route('**/api/ai/business',route=>{generations++;return route.abort()});
  await openExtraction(page);await page.getByRole('button',{name:'Extract website appearance',exact:true}).click();
- await expect(page.getByRole('alert')).toContainText('Website extraction failed: Website returned status 403');
+ await expect(page.getByRole('alert').filter({hasText:'Website extraction failed:'})).toContainText('Website extraction failed: Website returned status 403');
  await page.getByRole('button',{name:/generate my website/i}).click();
- await expect(page.getByRole('alert')).toContainText('Website extraction failed: Website returned status 403');
+ await expect(page.getByRole('alert').filter({hasText:'Website extraction failed:'})).toContainText('Website extraction failed: Website returned status 403');
  await expect(page.locator('.forge-auto-cta')).toBeEnabled();expect(generations).toBe(0);
  await expect(page.getByText(/Click Extract website appearance\/details before generating/)).toHaveCount(0);
 });
