@@ -46,6 +46,7 @@ export async function POST(req:NextRequest){
   return NextResponse.json({site});
  }catch(error){
   if(error instanceof Error&&error.message==='Local AI capacity exceeded')return NextResponse.json({error:'AI is busy. Please retry shortly.'},{status:429,headers:{'Retry-After':'5','Cache-Control':'no-store'}});
-  return NextResponse.json({error:'AI generation is unavailable or returned invalid content.'},{status:503,headers:{'Cache-Control':'no-store'}});
+  const code=error instanceof Error&&['WORKERS_AI_INVALID_RESPONSE','WORKERS_AI_PROVIDER_FAILURE'].includes(error.message)?error.message:'AI_GENERATION_UNAVAILABLE';
+  return NextResponse.json({error:'AI generation is unavailable or returned invalid content.',code},{status:503,headers:{'Cache-Control':'no-store'}});
  }
 }
