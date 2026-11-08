@@ -13,7 +13,9 @@ export function summarizeDiagnostic(event,requestUrl,filteredSubscription=false)
   if(message[0]!=='Workers AI inference failed')continue;
   try{
    const item=typeof message[1]==='string'?JSON.parse(message[1]):message[1];
-   categories.push({code:/^\d{1,8}$/.test(String(item?.code))?String(item.code):'unknown',category:allowedCategories.has(item?.category)?item.category:'unknown'});
+   const diagnostic={code:/^\d{1,8}$/.test(String(item?.code))?String(item.code):'unknown',category:allowedCategories.has(item?.category)?item.category:'unknown'};
+   if(['quota_exceeded','schema_rejected','provider_auth','provider_timeout','model_unavailable','unknown'].includes(item?.failureKind))diagnostic.failureKind=item.failureKind;
+   categories.push(diagnostic);
   }catch{/* Malformed or private provider text is never forwarded. */}
  }
  return {providerDiagnostics:categories,exceptionCount:Array.isArray(event.exceptions)?event.exceptions.length:0,rawEventsDisclosed:false};

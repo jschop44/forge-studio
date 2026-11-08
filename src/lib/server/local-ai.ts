@@ -75,8 +75,12 @@ export async function generateWithLocalAi(input:{businessName:string;industry:st
     description=composition.description;design=composition.design;
    }catch(error){
     // Do not log the user's prompt, model response, or credentials.
-    const code=error&&typeof error==='object'&&'code' in error?String((error as {code:unknown}).code):'unknown';
-    console.error('Workers AI inference failed',{code,category:error instanceof Error&&error.message.startsWith('Workers AI returned')?'invalid_model_response':'provider_failure'});
+    const providerMessage=error instanceof Error?error.message:'';
+    const suppliedCode=error&&typeof error==='object'&&'code' in error?String((error as {code:unknown}).code):'';
+    const messageCode=providerMessage.match(/\b(?:error|code|AI_ERROR)\s*[:=]?\s*(\d{3,8})\b/i)?.[1];
+    const code=/^\d{1,8}$/.test(suppliedCode)?suppliedCode:messageCode||'unknown';
+    const failureKind=/quota|neurons|daily.*limit|allocation/i.test(providerMessage)?'quota_exceeded':/JSON Mode|json_schema|response_format|schema/i.test(providerMessage)?'schema_rejected':/unauthorized|authentication|permission|forbidden/i.test(providerMessage)?'provider_auth':/timeout|timed out|abort/i.test(providerMessage)?'provider_timeout':/model.*(?:not found|unavailable|deprecated)/i.test(providerMessage)?'model_unavailable':'unknown';
+    console.error('Workers AI inference failed',{code,failureKind,category:error instanceof Error&&error.message.startsWith('Workers AI returned')?'invalid_model_response':'provider_failure'});
     throw new Error(error instanceof Error&&error.message.startsWith('Workers AI returned')?'WORKERS_AI_INVALID_RESPONSE':'WORKERS_AI_PROVIDER_FAILURE');
    }
    provider='cloudflare';
