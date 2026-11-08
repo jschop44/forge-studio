@@ -40,7 +40,7 @@ export async function diagnosePreviewAi(){
     const data=typeof event.data==='string'?event.data:await event.data.text();
     if(data.length>1000000)return;
     const parsed=JSON.parse(data);parsedEvents++;
-    const summary=// Server-side unique-header filtering correlates events even when trace URLs are redacted.
+    // Server-side unique-header filtering correlates events even when trace URLs are redacted.
     const summary=summarizeDiagnostic(parsed,requestUrl,true);
     if(summary)finish(summary);
    }catch{/* Do not disclose websocket payloads. */}
