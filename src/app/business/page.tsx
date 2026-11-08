@@ -210,7 +210,7 @@ export default function BusinessGenerator(){
   return;
  }
  if(!response.ok)throw Error((await response.json()).error||'AI generation unavailable');
- const result=await response.json();setPages(automaticallyOptimizeMetadata(automaticallyApplyBrand([...createContextualShowcase({...input,description:result.draft.description}),...enhanceImmersivePages([...result.pages.filter((p:GeneratedPage)=>p.slug!=='index'),...additionalPages()])])));setActive('index');setStatus('Website draft generated. Review its content and design before publishing.');
+ const result=await response.json();setPages(automaticallyOptimizeMetadata(automaticallyApplyBrand([...createContextualShowcase({...input,description:result.draft.description,design:result.draft.design}),...enhanceImmersivePages([...result.pages.filter((p:GeneratedPage)=>p.slug!=='index'),...additionalPages()])])));setActive('index');setStatus('Website draft generated. Review its content and design before publishing.');
  }catch{setStatus('Website generation is temporarily unavailable. Please try again when the generation service is ready.');
  }finally{setBusy(false)}
  }

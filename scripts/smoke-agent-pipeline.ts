@@ -3,6 +3,7 @@ import {executeAgent} from '../src/lib/agents/execution';
 import {planNextTask} from '../src/lib/agents/orchestrator';
 import {nextAgentStage} from '../src/lib/agents/handoff';
 import type {AgentTask} from '../src/lib/agents/types';
+import {DesignSchema,compositionAppearance} from '../src/lib/ai-composition';
 import type {AiGenerationResult} from '../src/lib/server/local-ai';
 
 // Synthetic, non-persistent regression fixture. Never queues or publishes a real user site.
@@ -25,6 +26,10 @@ const draft=await executeAgent(approved,async input=>{
  assert.equal(result.draft.businessName,input.businessName);
  assert.equal(result.draft.industry,input.industry);
  assert.deepEqual(result.draft.services,input.services);
+ const design=DesignSchema.parse(result.draft.design);
+ const appearance=compositionAppearance(design);
+ assert.ok(result.pages.every(page=>page.html.includes('data-forge-layout="'+appearance.layout+'"')));
+ assert.ok(result.pages[0].html.includes(appearance.accent));
  return result;
 });
 const qualityStage=nextAgentStage(approved,planNextTask(approved),draft)!;
@@ -35,7 +40,7 @@ const quality=await executeAgent(qualityTask);
 assert.equal((quality.data.audits as unknown[]).length,4);
 const publication=nextAgentStage(qualityTask,qualityDecision,quality)!;
 assert.equal(planNextTask({...task,...publication}).status,'needs-approval');
-console.log(JSON.stringify({provider:draft.data.provider,pages:(draft.data.pages as unknown[]).length,quality:'passed',publication:'needs-approval',persisted:false,published:false}));
+console.log(JSON.stringify({provider:draft.data.provider,pages:(draft.data.pages as unknown[]).length,composition:'model-selected-layout-and-palette',quality:'passed',publication:'needs-approval',persisted:false,published:false}));
 
 }
 main().catch(error=>{console.error(error.message);process.exitCode=1});

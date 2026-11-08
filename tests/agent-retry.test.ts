@@ -9,7 +9,7 @@ test('transient AI failures receive bounded exponential retries',()=>{
  assert.equal(agentRetryDelay(new Error('WORKERS_AI_PROVIDER_FAILURE'),10,20),3600);
 });
 test('exhausted, invalid and policy failures never retry',()=>{
- for(const error of [new Error('Site plan approval required'),new Error('WORKERS_AI_INVALID_RESPONSE'),new Error('Invalid task'),null])assert.equal(agentRetryDelay(error,0,3),null);
+ for(const error of [new Error('Site plan approval required'),new Error('WORKERS_AI_INVALID_RESPONSE'),new Error('Invalid task'),new Error('Local AI unavailable: Invalid model composition'),new Error('Local AI unavailable: HTTP 401'),null])assert.equal(agentRetryDelay(error,0,3),null);
  assert.equal(agentRetryDelay(new Error('WORKERS_AI_PROVIDER_FAILURE'),3,3),null);
  assert.equal(agentRetryDelay(new Error('WORKERS_AI_PROVIDER_FAILURE'),-1,3),null);
 });

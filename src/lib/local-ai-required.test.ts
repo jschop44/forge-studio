@@ -32,7 +32,7 @@ test('local AI rejects an invalid model draft instead of using deterministic out
  try{
   process.env.OLLAMA_URL='http://127.0.0.1:11434';
   globalThis.fetch=async()=>new Response(JSON.stringify({response:'{}'}),{status:200});
-  await assert.rejects(generateWithLocalAi(brief),/invalid draft/);
+  await assert.rejects(generateWithLocalAi(brief),/Invalid model composition/);
  }finally{
   globalThis.fetch=previousFetch;
   if(previousUrl===undefined)delete process.env.OLLAMA_URL;else process.env.OLLAMA_URL=previousUrl;
@@ -47,7 +47,7 @@ test('legacy cloud API key cannot redirect requests to paid Ollama Cloud',async(
   globalThis.fetch=async(input,init)=>{
    assert.equal(String(input),'http://127.0.0.1:11434/api/generate');
    assert.equal((init?.headers as Record<string,string>).Authorization,undefined);
-   return new Response(JSON.stringify({response:JSON.stringify(brief)}),{status:200});
+   return new Response(JSON.stringify({response:JSON.stringify({description:brief.description,design:{layout:'editorial',palette:'sand'}})}),{status:200});
   };
   const result=await generateWithLocalAi(brief);
   assert.equal(result.provider,'ollama');
@@ -113,7 +113,7 @@ test('local Ollama generation disables HTTP redirects',async()=>{
   process.env.OLLAMA_URL='http://127.0.0.1:11434';process.env.OLLAMA_MODEL='llama3.2:3b';
   globalThis.fetch=async(_input,init)=>{
    assert.equal(init?.redirect,'error');
-   return new Response(JSON.stringify({response:JSON.stringify(brief)}),{status:200});
+   return new Response(JSON.stringify({response:JSON.stringify({description:brief.description,design:{layout:'editorial',palette:'sand'}})}),{status:200});
   };
   const result=await generateWithLocalAi(brief);
   assert.equal(result.provider,'ollama');
@@ -166,7 +166,7 @@ test('local Ollama integration works over real loopback HTTP without cloud crede
    const request=JSON.parse(Buffer.concat(chunks).toString('utf8'));
    assert.equal(request.model,'llama3.2:3b');
    assert.equal(request.stream,false);
-   res.end(JSON.stringify({response:JSON.stringify(brief)}));return;
+   res.end(JSON.stringify({response:JSON.stringify({description:brief.description,design:{layout:'editorial',palette:'sand'}})}));return;
   }
   res.statusCode=404;res.end('{}');
  });

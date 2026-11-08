@@ -1,7 +1,8 @@
 import {z} from 'zod';
+import {DesignSchema,parseAiComposition,compositionAppearance,compositionInstruction,compositionJsonSchema} from '../ai-composition';
 import {generateBusinessWebsite} from '../business-site';
 const CopySchema=z.object({description:z.string().trim().min(15).max(1800)});
-const DraftSchema=z.object({businessName:z.string().min(2).max(100),industry:z.string().min(2).max(80),description:z.string().min(15).max(1800),services:z.array(z.string().min(2).max(100)).min(1).max(12)});
+const DraftSchema=z.object({businessName:z.string().min(2).max(100),industry:z.string().min(2).max(80),description:z.string().min(15).max(1800),services:z.array(z.string().min(2).max(100)).min(1).max(12),design:DesignSchema.optional()});
 export type AiDraft=z.infer<typeof DraftSchema>;
 export type AiGenerationResult={draft:AiDraft;provider:'ollama'|'cloudflare';pages:ReturnType<typeof generateBusinessWebsite>['pages']};
 function ollamaConfig(){
@@ -65,12 +66,17 @@ export async function generateWithLocalAi(input:{businessName:string;industry:st
  activeGenerations++;
  try {
  let description!:string;
+ let design!:z.infer<typeof DesignSchema>;
  let provider:'ollama'|'cloudflare'='ollama';
  const cloudAi=await workersAi();
  if(cloudAi){
    try{
-    const response=await cloudAi.run('@cf/meta/llama-3.1-8b-instruct-fp8',{messages:[{role:'system',content:'Write one concise professional business website description (15-1800 characters). Use only provided facts. Do not invent claims, prices, testimonials or credentials. Return plain text only.'},{role:'user',content:JSON.stringify(input)}],max_tokens:240,temperature:0.3});
-    description=extractWorkersCopy(response);
+    const response=await cloudAi.run('@cf/meta/llama-3.1-8b-instruct-fp8',{messages:[{role:'system',content:compositionInstruction},{role:'user',content:JSON.stringify(input)}],max_tokens:360,temperature:0.3});
+    const raw=response&&typeof response==='object'?(response as {response?:unknown;output?:unknown}):{};
+    const value=typeof raw.response==='string'?raw.response:typeof raw.output==='string'?raw.output:null;
+    if(!value)throw Error('Workers AI returned no composition');
+    let composition;try{composition=parseAiComposition(value)}catch{throw Error('Workers AI returned invalid composition')}
+    description=composition.description;design=composition.design;
    }catch(error){
     // Do not log the user's prompt, model response, or credentials.
     const code=error&&typeof error==='object'&&'code' in error?String((error as {code:unknown}).code):'unknown';
@@ -81,9 +87,9 @@ export async function generateWithLocalAi(input:{businessName:string;industry:st
  }else{
  const config=ollamaConfig();const url=config.url;
  const controller=new AbortController();const timeout=setTimeout(()=>controller.abort(),60000);
- try{const response=await fetch(new URL('/api/generate',url),{method:'POST',signal:controller.signal,redirect:'error',headers:{'Content-Type':'application/json',...config.headers},body:JSON.stringify({model:config.model,stream:false,format:{type:'object',properties:{description:{type:'string',minLength:15,maxLength:1800}},required:['description'],additionalProperties:false},keep_alive:'10m',options:{num_predict:240,num_ctx:2048,temperature:0.3},prompt:'Return ONLY a JSON object with one key: description. Write concise accurate marketing copy using only facts supplied by user. Do not invent credentials, customer testimonials, pricing or performance claims. Keep all copy professional and family-friendly, including Halloween and seasonal topics: no graphic horror, gore, sexual content, drug promotion, or disturbing imagery descriptions. Input: '+JSON.stringify(input)})});
+ try{const response=await fetch(new URL('/api/generate',url),{method:'POST',signal:controller.signal,redirect:'error',headers:{'Content-Type':'application/json',...config.headers},body:JSON.stringify({model:config.model,stream:false,format:compositionJsonSchema,keep_alive:'10m',options:{num_predict:360,num_ctx:2048,temperature:0.3},prompt:compositionInstruction+' Input: '+JSON.stringify(input)})});
  if(!response.ok)throw Error('Local AI returned HTTP '+response.status);
- if(response.ok){const payload=await response.json();const raw=String(payload.response||'').trim();const clean=raw.replace(/^```(?:json)?\s*/i,'').replace(/\s*```$/,'');const parsed=CopySchema.safeParse(JSON.parse(clean));if(parsed.success){description=parsed.data.description}else throw Error('Local AI returned an invalid draft')}
+ if(response.ok){const payload=await response.json();const composition=parseAiComposition(String(payload.response||''));description=composition.description;design=composition.design}
  }catch(error){throw new Error('Local AI unavailable: '+(error instanceof Error?error.message:'request failed'))}finally{clearTimeout(timeout)}
  }
  // The model may improve descriptive copy, but cannot rename or reclassify a business.
@@ -91,10 +97,10 @@ export async function generateWithLocalAi(input:{businessName:string;industry:st
  const verifiedDraft:AiDraft={
   businessName:input.businessName.trim(),
   industry:input.industry.trim(),
-  description,
+  description,design,
   services:input.services.map(service=>service.trim())
  };
  const validated=DraftSchema.parse(verifiedDraft);
- return {draft:validated,provider,pages:generateBusinessWebsite({...validated,contactEmail:input.contactEmail}).pages};
+ return {draft:validated,provider,pages:generateBusinessWebsite({...validated,...compositionAppearance(design),contactEmail:input.contactEmail}).pages};
  } finally {activeGenerations--}
 }

@@ -29,7 +29,7 @@ describe('legacy website generation uses mandatory local AI',()=>{
     const prompt=JSON.parse(String(init?.body)).prompt as string;
     assert.match(prompt,/Architecture/);
     assert.match(prompt,/Residential planning/);
-    return new Response(JSON.stringify({response:JSON.stringify({description:'A small creative studio creating distinctive websites for independent brands.'})}),{status:200});
+    return new Response(JSON.stringify({response:JSON.stringify({design:{layout:'editorial',palette:'sand'},description:'A small creative studio creating distinctive websites for independent brands.'})}),{status:200});
    };
    const request=new NextRequest('http://localhost/api/generate',{method:'POST',headers:{'content-type':'application/json','origin':'http://localhost'},body:JSON.stringify({name:'Cedar Studio',description:'A small creative studio creating distinctive websites for independent brands.',template:'ember',industry:'Architecture',services:['Residential planning']})});
    const response=await POST(request);
@@ -53,7 +53,7 @@ describe('legacy website generation uses mandatory local AI',()=>{
    process.env.OLLAMA_URL='http://127.0.0.1:11434';
    globalThis.fetch=async()=>{
     calls++;
-    return new Response(JSON.stringify({response:JSON.stringify({description:'An independent design studio serving local businesses and families.'})}),{status:200});
+    return new Response(JSON.stringify({response:JSON.stringify({design:{layout:'editorial',palette:'sand'},description:'An independent design studio serving local businesses and families.'})}),{status:200});
    };
    const payload=JSON.stringify({name:'Oak Studio',description:'An independent design studio serving local businesses and families.',template:'minimal'});
    const statuses:number[]=[];
@@ -113,7 +113,7 @@ describe('legacy website generation uses mandatory local AI',()=>{
    process.env.OLLAMA_URL='http://127.0.0.1:11434';
    globalThis.fetch=async()=>{
     await gate;
-    return new Response(JSON.stringify({response:JSON.stringify({description:brief.description})}),{status:200});
+    return new Response(JSON.stringify({response:JSON.stringify({design:{layout:'editorial',palette:'sand'},description:brief.description})}),{status:200});
    };
    const request=()=>new NextRequest('http://localhost/api/ai/business',{method:'POST',headers:{'content-type':'application/json','origin':'http://localhost'},body:JSON.stringify(brief)});
    const first=businessPOST(request());
