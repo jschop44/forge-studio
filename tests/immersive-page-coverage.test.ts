@@ -60,7 +60,7 @@ describe('Generated website immersive navigation coverage',()=>{
  });
  it('generates syntactically valid inline JavaScript on every page',()=>{
   for(const page of site.pages){
-   const scripts=[...page.html.matchAll(/<script(?:\\s[^>]*)?>([\\s\\S]*?)<\\/script>/g)];
+   const scripts=[...page.html.matchAll(/<script(?:\s[^>]*)?>([\s\S]*?)<\/script>/g)];
    assert.ok(scripts.length>0,page.slug+' has no inline scripts');
    for(const [,source] of scripts){
     assert.doesNotThrow(()=>new Script(source,{filename:page.slug+'.html'}),page.slug+' contains invalid JavaScript');
