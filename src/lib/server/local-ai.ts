@@ -68,8 +68,15 @@ export async function generateWithLocalAi(input:{businessName:string;industry:st
  let provider:'ollama'|'cloudflare'='ollama';
  const cloudAi=await workersAi();
  if(cloudAi){
-   const response=await cloudAi.run('@cf/meta/llama-3.1-8b-instruct',{messages:[{role:'system',content:'Write one concise professional business website description (15-1800 characters). Use only provided facts. Do not invent claims, prices, testimonials or credentials. Return plain text only.'},{role:'user',content:JSON.stringify(input)}],max_tokens:240,temperature:0.3});
-   description=extractWorkersCopy(response);
+   try{
+    const response=await cloudAi.run('@cf/meta/llama-3.1-8b-instruct',{messages:[{role:'system',content:'Write one concise professional business website description (15-1800 characters). Use only provided facts. Do not invent claims, prices, testimonials or credentials. Return plain text only.'},{role:'user',content:JSON.stringify(input)}],max_tokens:240,temperature:0.3});
+    description=extractWorkersCopy(response);
+   }catch(error){
+    // Do not log the user's prompt, model response, or credentials.
+    const code=error&&typeof error==='object'&&'code' in error?String((error as {code:unknown}).code):'unknown';
+    console.error('Workers AI inference failed',{code,category:error instanceof Error&&error.message.startsWith('Workers AI returned')?'invalid_model_response':'provider_failure'});
+    throw new Error('Workers AI generation failed');
+   }
    provider='cloudflare';
  }else{
  const config=ollamaConfig();const url=config.url;
