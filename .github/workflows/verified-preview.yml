@@ -96,3 +96,12 @@ jobs:
         run: |
           node scripts/smoke-preview-ai.mjs
           echo 'Real Cloudflare AI request returned four validated pages. Queue execution remains unverified.' >> "$GITHUB_STEP_SUMMARY"
+      - name: Verify authenticated worker and advance eligible tasks
+        if: steps.publish.outputs.current == 'true'
+        env:
+          FORGE_WORKER_URL: https://forge-studio-preview.stands-old-3h.workers.dev/api/agents/worker
+          FORGE_WORKER_SECRET: ${{ secrets.FORGE_WORKER_SECRET }}
+        run: |
+          node --test tests/drain-agent-queue.test.mjs
+          node scripts/drain-agent-queue.mjs
+          echo 'Authenticated worker passed. Eligible stages advanced within the batch limit; approval gates were preserved.' >> "$GITHUB_STEP_SUMMARY"
