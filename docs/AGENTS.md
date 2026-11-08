@@ -1,6 +1,11 @@
 # Modular intelligence agents
 The architecture separates LeadFlow enrichment, Growth Lens audits, Forge Studio planning, generation, quality review and publication review.
-Agent decisions are deterministic until an explicitly configured, quota-limited model provider is available.
-The orchestrator currently computes next-step decisions only. It does not run background jobs, fetch websites, send messages, publish websites, or connect to other app databases.
-Required before autonomous operation: authenticated tenant identities, a durable task queue, consent records, idempotent execution, retries, dead-letter handling, observability, and secure service-to-service connectors.
-Publication and outreach remain approval-gated. Paid model usage is disabled by policy.
+Agent decisions are deterministic until an explicitly configured, quota-limited model provider is available. Queue-based site generation currently uses the deterministic business-site generator.
+
+The authenticated worker can claim durable database jobs and enqueue the next stage. It requires ENABLE_AGENT_QUEUE, a configured database and worker secret; its scheduled workflow also requires FORGE_WORKER_URL. Source code and unit tests do not establish that these settings or live cross-app connectors are operational.
+
+Website audits require supplied HTML and a website URL; the worker does not crawl the URL. Generation passes every generated page to quality review. Quality review blocks missing or invalid content, duplicate slugs, broken internal HTML links, document errors and high-severity markup findings. Successful reviews retain per-page audits and timestamped quality evidence in the job result. Markup checks do not verify browser interactions, visual quality, immersive 3D, live deployment or AI generation.
+
+Generation requires plan approval. Publication and outreach remain approval-gated. Paid model usage is disabled by policy.
+
+Before broader autonomous operation, verify tenant isolation, idempotent stage completion and child enqueueing, retries and dead-letter handling, live queue observability, and secure service-to-service connectors. The queue worker is not an autonomous repository code editor.

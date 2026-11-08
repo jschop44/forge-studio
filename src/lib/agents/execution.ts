@@ -2,6 +2,7 @@ import {z} from 'zod';
 import {generateBusinessWebsite} from '../business-site';
 import {auditGeneratedSite} from '../site-audit';
 import type {AgentTask} from './types';
+import {reviewAgentPages} from './quality';
 const Context=z.object({businessName:z.string().min(2).max(100).optional(),industry:z.string().max(80).optional(),summary:z.string().max(1800).optional(),website:z.string().url().optional(),services:z.array(z.string()).optional(),html:z.string().max(250000).optional(),approvedPlan:z.boolean().optional()}).passthrough();
 export type AgentOutput={stage:AgentTask['kind'];summary:string;data:Record<string,unknown>};
 export function executeSafeAgent(task:AgentTask):AgentOutput{
@@ -15,7 +16,7 @@ export function executeSafeAgent(task:AgentTask):AgentOutput{
  const result=generateBusinessWebsite({businessName:context.businessName||'New Business',industry:context.industry||'Services',description:context.summary||'Professional services designed to help customers succeed.',services:context.services?.length?context.services:['Consulting','Customer support']});
  return {stage:task.kind,summary:'Generated four-page site draft',data:{name:result.name,pages:result.pages.map(p=>({slug:p.slug,title:p.title,html:p.html}))}};
  }
- case 'quality-review':return {stage:task.kind,summary:'Reviewed provided HTML',data:context.html?{audit:auditGeneratedSite({html:context.html})}:{requiresContent:true}};
+ case 'quality-review':{const review=reviewAgentPages(task.payload);return {stage:task.kind,summary:'Reviewed '+review.evidence.pageCount+' supplied page(s)',data:review};}
  case 'publish-review':return {stage:task.kind,summary:'Publication requires explicit owner approval',data:{requiresApproval:true}};
  }
 }
