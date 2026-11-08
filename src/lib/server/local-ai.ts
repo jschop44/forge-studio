@@ -69,7 +69,7 @@ export async function generateWithLocalAi(input:{businessName:string;industry:st
  const cloudAi=await workersAi();
  if(cloudAi){
    try{
-    const response=await cloudAi.run('@cf/meta/llama-3.1-8b-instruct',{messages:[{role:'system',content:'Write one concise professional business website description (15-1800 characters). Use only provided facts. Do not invent claims, prices, testimonials or credentials. Return plain text only.'},{role:'user',content:JSON.stringify(input)}],max_tokens:240,temperature:0.3});
+    const response=await cloudAi.run('@cf/meta/llama-3.1-8b-instruct-fp8',{messages:[{role:'system',content:'Write one concise professional business website description (15-1800 characters). Use only provided facts. Do not invent claims, prices, testimonials or credentials. Return plain text only.'},{role:'user',content:JSON.stringify(input)}],max_tokens:240,temperature:0.3});
     description=extractWorkersCopy(response);
    }catch(error){
     // Do not log the user's prompt, model response, or credentials.
