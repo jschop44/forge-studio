@@ -71,3 +71,22 @@ test.describe('touch mesh navigation',()=>{
   await page.touchscreen.tap(point.x,point.y);await expect(page).toHaveURL(/services\.html#offering-1$/);
  });
 });
+
+test('builder preview routes object destinations to the offering and keeps the full business range',async({page})=>{
+ await page.route('**/api/ai/business',async route=>{
+  const input=route.request().postDataJSON();expect(input.experienceStyle).toBe('object-navigation');
+  expect(input.services).toEqual(['Coffee beans','Ceramic mugs','Community events']);
+  await route.fulfill({status:200,json:{provider:'browser-test-fixture',draft:input,pages:generateBusinessWebsite(input).pages}});
+ });
+ await page.goto('/business');
+ await page.getByLabel('Website experience',{exact:true}).selectOption('object-navigation');
+ await page.getByPlaceholder('e.g. Northstar Coffee').fill('Northstar Coffee');
+ await page.getByPlaceholder('Describe what you offer, who you serve and what makes you different.').fill('Industry: Coffee shop\nOfferings: Coffee beans, Ceramic mugs, Community events');
+ await page.getByRole('button',{name:/generate my website/i}).click();
+ await page.frameLocator('iframe[title="Website preview: Home"]').getByRole('link',{name:'Ceramic mugs',exact:true}).click();
+ await expect(page).toHaveURL(/\/business$/);
+ await expect(page.getByRole('navigation',{name:'Website pages'}).getByRole('button',{name:'Menu',exact:true})).toHaveAttribute('aria-current','page');
+ const menu=page.frameLocator('iframe[title="Website preview: Menu"]');
+ await expect(menu.locator('#offering-1')).toContainText('Ceramic mugs');
+ await expect(menu.locator('#offering-2')).toContainText('Community events');
+});
