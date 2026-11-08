@@ -74,6 +74,11 @@ describe('Generated website immersive navigation coverage',()=>{
    assert.match(page.html,/portal\.link\.tabIndex=0/,page.slug);
   }
  });
+ it('registers exactly one transition handler per generated page',()=>{
+  for(const page of site.pages){
+   assert.equal((page.html.match(/document\.addEventListener\('click',event=>/g)||[]).length,1,page.slug);
+  }
+ });
  it('does not duplicate immersive scripts when enhancement is repeated',()=>{
   const again=enhanceImmersivePages(site.pages);
   for(const page of again){
