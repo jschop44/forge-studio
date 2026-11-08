@@ -16,5 +16,10 @@
   "ai": {
     "binding": "AI"
   },
-  "keep_vars": true
+  "keep_vars": true,
+  "vars": {
+    "ENABLE_AGENT_QUEUE": "true",
+    "ENABLE_FORGE_LEARNING_MEMORY": "true",
+    "ENABLE_REGISTRATION": "false"
+  }
 }
