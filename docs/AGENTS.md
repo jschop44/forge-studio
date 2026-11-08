@@ -8,4 +8,6 @@ Website audits require supplied HTML and a website URL; the worker does not craw
 
 Generation requires plan approval. Publication and outreach remain approval-gated. Paid model usage is disabled by policy.
 
-Before broader autonomous operation, verify tenant isolation, idempotent stage completion and child enqueueing, retries and dead-letter handling, live queue observability, and secure service-to-service connectors. The queue worker is not an autonomous repository code editor.
+Stage completion and successor enqueueing use one atomic Postgres statement, guarded by tenant, attempt and the exact claim timestamp. Database write failures leave the claim recoverable by the existing expired-job retry process. Local Postgres tests cover rollback, replay and stale-claim rejection; live queue execution remains unverified.
+
+Before broader autonomous operation, verify live tenant isolation, retries and dead-letter handling, queue observability, and secure service-to-service connectors. The queue worker is not an autonomous repository code editor.
