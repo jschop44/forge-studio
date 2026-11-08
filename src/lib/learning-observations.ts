@@ -51,8 +51,18 @@ export function learningReviewPriorities(input:unknown[]){
  const entries=input.map(item=>LearningObservationSchema.safeParse(item))
   .filter((result):result is {success:true;data:LearningObservation}=>result.success)
   .map(result=>result.data)
-  .filter(item=>item.source==='owner-feedback'&&item.outcome!=='unverified');
- const deduplicated=[...new Map(entries.map(item=>[JSON.stringify([item.projectId,item.category,item.finding,item.outcome,item.recordedAt]),item])).values()];
+  .filter(item=>item.source==='owner-feedback');
+ // A changed timestamp is not independent evidence. For a repeated finding,
+ // use its latest outcome; unverified updates revoke stale helpful evidence.
+ const latest=new Map<string,LearningObservation>();
+ const conservativeRank={helpful:0,unverified:1,unhelpful:2};
+ for(const entry of entries){
+  const key=JSON.stringify([entry.projectId,entry.category,entry.finding.normalize('NFKC').toLowerCase().replace(/\s+/g,' ').trim()]);
+  const previous=latest.get(key);
+  const time=Date.parse(entry.recordedAt),previousTime=previous?Date.parse(previous.recordedAt):-Infinity;
+  if(!previous||time>previousTime||(time===previousTime&&conservativeRank[entry.outcome]>conservativeRank[previous.outcome]))latest.set(key,entry);
+ }
+ const deduplicated=[...latest.values()].filter(entry=>entry.outcome!=='unverified');
  const categories=[...new Set(deduplicated.map(item=>item.category))].sort();
  return categories.flatMap(category=>{
   const evidence=deduplicated.filter(item=>item.category===category);

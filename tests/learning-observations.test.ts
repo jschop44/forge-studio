@@ -44,3 +44,22 @@ test("unverified, automated, contradictory and duplicated evidence does not prom
  assert.deepEqual(learningReviewPriorities([1,2,3].map(i=>feedback('unverified',i))),[]);
  assert.deepEqual(learningReviewPriorities([feedback('helpful',1),feedback('helpful',2),feedback('helpful',3),feedback('unhelpful',4),feedback('unhelpful',5)]),[]);
 });
+
+test("repeated feedback cannot become independent evidence by changing case, whitespace or timestamps",()=>{
+ const repeated=[1,2,3].map((index)=>({...feedback('helpful',1),finding:index===2?'  OWNER   observation 1  ':'Owner observation 1',recordedAt:`2026-11-06T0${index}:00:00Z`}));
+ assert.deepEqual(learningReviewPriorities(repeated),[]);
+});
+test("newer contradictory and unverified outcomes replace stale helpful evidence regardless of input order",()=>{
+ const initial=[1,2,3].map(index=>feedback('helpful',index));
+ for(const outcome of ['unhelpful','unverified'] as const){
+  const update={...feedback(outcome,1),recordedAt:'2026-11-07T04:00:00Z'};
+  assert.deepEqual(learningReviewPriorities([...initial,update]),[]);
+  assert.deepEqual(learningReviewPriorities([update,...initial]),[]);
+ }
+});
+test("conflicting feedback at the same instant resolves conservatively and is independent of record ordering",()=>{
+ const initial=[1,2,3].map(index=>feedback('helpful',index));
+ const update=feedback('unhelpful',1);
+ assert.deepEqual(learningReviewPriorities([...initial,update]),[]);
+ assert.deepEqual(learningReviewPriorities([update,...initial]),[]);
+});
