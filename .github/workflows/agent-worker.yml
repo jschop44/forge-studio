@@ -1,5 +1,11 @@
 name: Forge Agent Policy Worker
 on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/agent-worker.yml'
+      - 'scripts/drain-agent-queue.mjs'
+      - 'tests/drain-agent-queue.test.mjs'
   workflow_dispatch:
   schedule:
     - cron: '17 * * * *'
@@ -7,17 +13,19 @@ permissions:
   contents: read
 jobs:
   evaluate:
-    if: ${{ vars.FORGE_WORKER_URL != '' }}
+    if: ${{ vars.FORGE_WORKER_URL != '' && github.event.repository.private == false }}
     runs-on: ubuntu-latest
     timeout-minutes: 3
     steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: node --test tests/drain-agent-queue.test.mjs
       - name: Evaluate queued agent jobs
         env:
           FORGE_WORKER_URL: ${{ vars.FORGE_WORKER_URL }}
           FORGE_WORKER_SECRET: ${{ secrets.FORGE_WORKER_SECRET }}
-        run: |
-          test -n "$FORGE_WORKER_SECRET" || exit 1
-          curl --fail --show-error --silent --max-time 60 --retry 2 \
-            --request POST \
-            --header "x-forge-worker-key: $FORGE_WORKER_SECRET" \
-            "$FORGE_WORKER_URL"
+        run: node scripts/drain-agent-queue.mjs
