@@ -5,8 +5,7 @@ const DraftSchema=z.object({businessName:z.string().min(2).max(100),industry:z.s
 export type AiDraft=z.infer<typeof DraftSchema>;
 export type AiGenerationResult={draft:AiDraft;provider:'ollama'|'cloudflare';pages:ReturnType<typeof generateBusinessWebsite>['pages']};
 function ollamaConfig(){
- // Free beta: cloud inference is disabled even when a legacy cloud key is configured.
- // Keep all requests on the loopback Ollama service to prevent token charges.
+ // Ollama is used only for local development. Cloudflare Workers AI uses an account binding.
  const url=new URL(process.env.OLLAMA_URL||'http://127.0.0.1:11434');
  if(!['localhost','127.0.0.1','[::1]'].includes(url.hostname)||url.protocol!=='http:'||url.username||url.password||url.search||url.hash||url.pathname!=='/')throw Error('OLLAMA_URL must be a loopback endpoint');
  if(['OPENAI_API_KEY','OPENAI_BASE_URL','OPENAI_MODEL'].some(name=>Boolean(process.env[name]?.trim())))throw Error('OpenAI API configuration is prohibited');
@@ -25,7 +24,7 @@ async function workersAi():Promise<WorkersAiBinding|null>{
   return binding&&typeof binding.run==='function'?binding:null;
  }catch{return null}
 }
-function extractWorkersCopy(output:unknown):string{
+export function extractWorkersCopy(output:unknown):string{
  if(!output||typeof output!=='object')throw Error('Workers AI returned no content');
  const result=output as {response?:unknown;output?:unknown};
  const value=typeof result.response==='string'?result.response:typeof result.output==='string'?result.output:null;
@@ -69,11 +68,9 @@ export async function generateWithLocalAi(input:{businessName:string;industry:st
  let provider:'ollama'|'cloudflare'='ollama';
  const cloudAi=await workersAi();
  if(cloudAi){
-  {
    const response=await cloudAi.run('@cf/meta/llama-3.1-8b-instruct',{messages:[{role:'system',content:'Write one concise professional business website description (15-1800 characters). Use only provided facts. Do not invent claims, prices, testimonials or credentials. Return plain text only.'},{role:'user',content:JSON.stringify(input)}],max_tokens:240,temperature:0.3});
    description=extractWorkersCopy(response);
    provider='cloudflare';
-  }
  }else{
  const config=ollamaConfig();const url=config.url;
  const controller=new AbortController();const timeout=setTimeout(()=>controller.abort(),60000);
