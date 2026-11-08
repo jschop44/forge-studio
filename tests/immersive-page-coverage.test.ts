@@ -79,6 +79,14 @@ describe('Generated website immersive navigation coverage',()=>{
    assert.equal((page.html.match(/document\.addEventListener\('click',event=>/g)||[]).length,1,page.slug);
   }
  });
+ it('interpolates 3D movement and projects portals from the rendered position',()=>{
+  for(const page of site.pages){
+   assert.match(page.html,/let renderWalkX=walkX,renderWalkY=walkY/,page.slug);
+   assert.match(page.html,/renderWalkX\+=\(walkX-renderWalkX\)\*\.16/,page.slug);
+   assert.match(page.html,/gl\.uniform2f\(walkUniform,renderWalkX,renderWalkY\)/,page.slug);
+   assert.match(page.html,/portal\.x-renderWalkX/,page.slug);
+  }
+ });
  it('does not duplicate immersive scripts when enhancement is repeated',()=>{
   const again=enhanceImmersivePages(site.pages);
   for(const page of again){
