@@ -119,3 +119,27 @@ jobs:
         run: |
           curl --fail --silent --show-error --retry 3 --retry-delay 3 --max-time 30 https://forge-studio-preview.stands-old-3h.workers.dev/builds -o /tmp/build-console.html
           grep -q 'Start a build' /tmp/build-console.html
+  local-model-smoke:
+    needs: verify
+    if: ${{ github.event_name == 'push' && github.event.repository.private == false }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: read
+    steps:
+      - name: Install official local Ollama runtime
+        run: |
+          curl --fail --silent --show-error --location https://ollama.com/install.sh -o /tmp/ollama-install.sh
+          sh /tmp/ollama-install.sh
+          ollama serve > /tmp/ollama.log 2>&1 &
+          for i in $(seq 1 30); do curl --fail --silent http://127.0.0.1:11434/api/tags && break || sleep 1; done
+          ollama pull qwen2.5-coder:1.5b
+      - name: Verify real local model inference (no cloud API)
+        run: |
+          node --input-type=module <<'JS'
+          const r=await fetch('http://127.0.0.1:11434/api/generate',{method:'POST',signal:AbortSignal.timeout(300000),headers:{'Content-Type':'application/json'},body:JSON.stringify({model:'qwen2.5-coder:1.5b',stream:false,format:'json',prompt:'Return exactly this JSON object: {"ready":true}',options:{num_predict:32,temperature:0}})});
+          if(!r.ok)throw Error('Ollama request failed');
+          const d=await r.json();
+          if(!d.done||JSON.parse(d.response).ready!==true)throw Error('Local model failed its response check');
+          console.log('Real local CPU inference passed. No paid API or account key was used. This is a model smoke test, not a complete code-proposal verification.');
+          JS
