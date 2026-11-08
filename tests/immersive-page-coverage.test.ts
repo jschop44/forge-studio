@@ -26,6 +26,14 @@ describe('Generated website immersive navigation coverage',()=>{
    }
   }
  });
+ it('restores position using a website-specific session key',()=>{
+  for(const page of site.pages){
+   assert.match(page.html,/const worldStorageKey=/,page.slug);
+   assert.match(page.html,/sessionStorage\.getItem\(worldStorageKey\)/,page.slug);
+   assert.match(page.html,/sessionStorage\.setItem\(worldStorageKey,/,page.slug);
+   assert.match(page.html,/Number\.isFinite\(value\)/,page.slug);
+  }
+ });
  it('does not duplicate immersive scripts when enhancement is repeated',()=>{
   const again=enhanceImmersivePages(site.pages);
   for(const page of again){
