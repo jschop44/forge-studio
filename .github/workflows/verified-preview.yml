@@ -89,13 +89,13 @@ jobs:
           appendFileSync(process.env.GITHUB_STEP_SUMMARY,'Preview health passed. Database/auth readiness: '+(ready?'passed':'blocked; runtime configuration or database access is incomplete')+'.\nThis does not verify real AI generation or live queue execution.\n');
           console.log('Database/auth readiness: '+(ready?'passed':'blocked'));
           JS
-      - name: Verify real preview AI generation
+      - name: Verify live AI generation through agent quality and approval stages
         if: steps.publish.outputs.current == 'true'
         env:
           FORGE_BASE_URL: https://forge-studio-preview.stands-old-3h.workers.dev
         run: |
-          node scripts/smoke-preview-ai.mjs
-          echo 'Real Cloudflare AI request returned four validated pages. Queue execution remains unverified.' >> "$GITHUB_STEP_SUMMARY"
+          node --import tsx scripts/smoke-agent-pipeline.ts
+          echo 'Real Cloudflare AI passed the isolated four-page agent pipeline and quality gate. Publication stopped for approval. This does not persist jobs or publish a site.' >> "$GITHUB_STEP_SUMMARY"
       - name: Verify authenticated worker and advance eligible tasks
         if: steps.publish.outputs.current == 'true'
         env:

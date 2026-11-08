@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { LearningObservationSchema, summarizeLearningObservations, summarizeStoredLearningObservations } from "../src/lib/learning-observations";
+import { LearningObservationSchema, summarizeLearningObservations, summarizeStoredLearningObservations, learningReviewPriorities } from "../src/lib/learning-observations";
 const sample = (outcome: "helpful" | "unhelpful" | "unverified") => ({
   source: "owner-feedback", projectId: "project-1", category: "navigation",
   finding: "Navigation clarity needs improvement", outcome,
@@ -30,4 +30,17 @@ test("empty stored memory reports no learned outcomes", () => {
   assert.equal(summary.total,0);
   assert.deepEqual(summary.categories,[]);
   assert.equal(summary.ignoredInvalid,0);
+});
+
+const feedback=(outcome:"helpful"|"unhelpful"|"unverified",index:number)=>({...sample(outcome),finding:'Owner observation '+index});
+test("memory review priorities need sufficient explicit owner feedback",()=>{
+ assert.deepEqual(learningReviewPriorities([feedback('helpful',1),feedback('helpful',2)]),[]);
+ const priorities=learningReviewPriorities([feedback('helpful',1),feedback('helpful',2),feedback('helpful',3),feedback('unhelpful',4)]);
+ assert.equal(priorities.length,1);assert.equal(priorities[0].category,'navigation');assert.equal(priorities[0].automaticImplementationAllowed,false);
+});
+test("unverified, automated, contradictory and duplicated evidence does not promote priorities",()=>{
+ assert.deepEqual(learningReviewPriorities(Array(3).fill(feedback('helpful',1))),[]);
+ assert.deepEqual(learningReviewPriorities([1,2,3].map(i=>({...feedback('helpful',i),source:'draft-qa'}))),[]);
+ assert.deepEqual(learningReviewPriorities([1,2,3].map(i=>feedback('unverified',i))),[]);
+ assert.deepEqual(learningReviewPriorities([feedback('helpful',1),feedback('helpful',2),feedback('helpful',3),feedback('unhelpful',4),feedback('unhelpful',5)]),[]);
 });

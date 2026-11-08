@@ -40,5 +40,24 @@ export function summarizeStoredLearningObservations(input: unknown[]) {
     if (parsed.success) valid.push(parsed.data);
   }
   return {...summarizeLearningObservations(valid), ignoredInvalid: input.length-valid.length,
-    scope: "returned-records" as const};
+    scope: "returned-records" as const,reviewPriorities:learningReviewPriorities(valid)};
+}
+
+/** Cautious review priorities from explicit owner feedback, never model training.
+ * Three helpful outcomes and at least 75% helpful feedback are required.
+ * Audit observations and unverified feedback cannot promote a priority.
+ */
+export function learningReviewPriorities(input:unknown[]){
+ const entries=input.map(item=>LearningObservationSchema.safeParse(item))
+  .filter((result):result is {success:true;data:LearningObservation}=>result.success)
+  .map(result=>result.data)
+  .filter(item=>item.source==='owner-feedback'&&item.outcome!=='unverified');
+ const deduplicated=[...new Map(entries.map(item=>[JSON.stringify([item.projectId,item.category,item.finding,item.outcome,item.recordedAt]),item])).values()];
+ const categories=[...new Set(deduplicated.map(item=>item.category))].sort();
+ return categories.flatMap(category=>{
+  const evidence=deduplicated.filter(item=>item.category===category);
+  const helpful=evidence.filter(item=>item.outcome==='helpful').length;
+  if(helpful<3||helpful/evidence.length<.75)return [];
+  return [{category,helpful,total:evidence.length,action:'Prioritize owner review of '+category,automaticImplementationAllowed:false as const}];
+ });
 }
