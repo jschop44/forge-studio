@@ -47,7 +47,7 @@ test('standard is the builder default and the selected experience travels with i
   const input=route.request().postDataJSON();expect(input.experienceStyle).toBe('standard');
   await route.fulfill({status:200,json:{provider:'browser-test-fixture',draft:input,pages:generateBusinessWebsite(input).pages}});
  });
- await page.goto('/business');await expect(page.getByLabel('Website experience',{exact:true})).toHaveValue('standard');
+ await page.goto('/business');await expect(page.getByRole('button',{name:/^Standard website/})).toHaveAttribute('aria-pressed','true');
  await page.getByPlaceholder('e.g. Northstar Coffee').fill('Northstar Coffee');
  await page.getByRole('button',{name:/generate my website/i}).click();
  const frame=page.frameLocator('iframe[title="Website preview: Home"]');
@@ -79,7 +79,7 @@ test('builder preview routes object destinations to the offering and keeps the f
   await route.fulfill({status:200,json:{provider:'browser-test-fixture',draft:input,pages:generateBusinessWebsite(input).pages}});
  });
  await page.goto('/business');
- await page.getByLabel('Website experience',{exact:true}).selectOption('object-navigation');
+ await page.getByRole('button',{name:/Interactive 3D navigation/}).click();
  await page.getByPlaceholder('e.g. Northstar Coffee').fill('Northstar Coffee');
  await page.getByPlaceholder('Describe what you offer, who you serve and what makes you different.').fill('Industry: Coffee shop\nOfferings: Coffee beans, Ceramic mugs, Community events');
  await page.getByRole('button',{name:/generate my website/i}).click();
