@@ -45,6 +45,7 @@ describe('Generated website immersive navigation coverage',()=>{
   for(const page of site.pages){
    assert.match(page.html,/forge-world-departing/,page.slug);
    assert.match(page.html,/destination\.origin!==location\.origin/,page.slug);
+   assert.match(page.html,/destination\.pathname\.replace\(/,page.slug);
    assert.match(page.html,/reduced\.matches/,page.slug);
    assert.match(page.html,/pageshow/,page.slug);
   }
