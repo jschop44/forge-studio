@@ -1,3 +1,4 @@
+import {runtimeValue} from '../../../../lib/server/runtime-env';
 import {NextRequest,NextResponse} from 'next/server';
 import {timingSafeEqual} from 'node:crypto';
 import {database} from '../../../../lib/server/db';
@@ -8,8 +9,8 @@ import type {AgentDecision,AgentTask} from '../../../../lib/agents/types';
 import {nextAgentStage} from '../../../../lib/agents/handoff';
 export const runtime='nodejs';
 export async function POST(req:NextRequest){
- if(process.env.ENABLE_AGENT_QUEUE!=='true')return NextResponse.json({error:'Worker disabled'},{status:503});
- const secret=process.env.FORGE_WORKER_SECRET||'',provided=req.headers.get('x-forge-worker-key')||'';
+ if(runtimeValue('ENABLE_AGENT_QUEUE')!=='true')return NextResponse.json({error:'Worker disabled'},{status:503});
+ const secret=runtimeValue('FORGE_WORKER_SECRET')||'',provided=req.headers.get('x-forge-worker-key')||'';
  if(secret.length<32||provided.length!==secret.length||!timingSafeEqual(Buffer.from(secret),Buffer.from(provided)))return NextResponse.json({error:'Unauthorized'},{status:401});
  try{const sql=database();await sql`UPDATE forge_jobs SET status='pending',attempt=attempt+1,updated_at=now() WHERE status='evaluating' AND updated_at<now()-interval '15 minutes' AND attempt<max_attempts`;await sql`UPDATE forge_jobs SET status='blocked',last_error='Maximum retry attempts exceeded',updated_at=now() WHERE status='evaluating' AND updated_at<now()-interval '15 minutes' AND attempt>=max_attempts`;const claimed=await sql`UPDATE forge_jobs SET status='evaluating',updated_at=now() WHERE id IN (SELECT id FROM forge_jobs WHERE status='pending' AND available_at<=now() ORDER BY created_at ASC LIMIT 20 FOR UPDATE SKIP LOCKED) RETURNING id,tenant_id,kind,source,payload,attempt,created_at,updated_at::text AS lease`;
  const results=[];

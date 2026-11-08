@@ -1,10 +1,11 @@
+import {runtimeValue} from '../../../../lib/server/runtime-env';
 import { NextRequest, NextResponse } from "next/server";
 import { currentUserId } from "../../../../lib/server/auth";
 import { sameOrigin } from "../../../../lib/server/request-security";
 import { database } from "../../../../lib/server/db";
 import { LearningObservationSchema, summarizeStoredLearningObservations } from "../../../../lib/learning-observations";
 export const runtime = "nodejs";
-const disabled = () => process.env.ENABLE_FORGE_LEARNING_MEMORY !== "true";
+const disabled = () => runtimeValue('ENABLE_FORGE_LEARNING_MEMORY') !== "true";
 export async function POST(req: NextRequest) {
   if (disabled()) return NextResponse.json({error:"Learning memory disabled"},{status:503});
   if (!sameOrigin(req)) return NextResponse.json({error:"Origin rejected"},{status:403});

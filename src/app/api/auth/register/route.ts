@@ -1,3 +1,4 @@
+import {runtimeValue} from '../../../../lib/server/runtime-env';
 import {NextRequest,NextResponse} from 'next/server';
 import {z} from 'zod';
 import {database} from '../../../../lib/server/db';
@@ -8,7 +9,7 @@ export const runtime='nodejs';
 const Credentials=z.object({email:z.string().email().max(254),password:z.string().min(12).max(256)});
 export async function POST(req:NextRequest){
  if(!sameOrigin(req))return NextResponse.json({error:'Origin rejected'},{status:403});
- if(process.env.ENABLE_REGISTRATION!=='true')return NextResponse.json({error:'Registration is disabled'},{status:503});
+ if(runtimeValue('ENABLE_REGISTRATION')!=='true')return NextResponse.json({error:'Registration is disabled'},{status:503});
  try{const raw=await req.text();if(raw.length>1000)return NextResponse.json({error:'Request too large'},{status:413});const input=Credentials.safeParse(JSON.parse(raw));if(!input.success)return NextResponse.json({error:'Valid email and password of at least 12 characters required'},{status:400});
  const ip=req.headers.get('x-forwarded-for')?.split(',')[0]||'unknown';if(!await allowAuthAttempt(ip,input.data.email))return NextResponse.json({error:'Too many registration attempts'},{status:429});
  const id=crypto.randomUUID(),email=input.data.email.toLowerCase().trim(),hash=hashPassword(input.data.password),sql=database();

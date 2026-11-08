@@ -15,5 +15,6 @@
   },
   "ai": {
     "binding": "AI"
-  }
+  },
+  "keep_vars": true
 }
