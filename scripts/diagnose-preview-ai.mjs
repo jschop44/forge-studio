@@ -2,8 +2,9 @@ import {pathToFileURL} from 'node:url';
 const origin='https://forge-studio-preview.stands-old-3h.workers.dev';
 const allowedCategories=new Set(['provider_rate_limited','provider_auth','provider_server_error','invalid_model_response','provider_timeout','provider_unavailable','provider_failure']);
 // Only report a bounded allowlist from the exact synthetic request. Never expose raw events.
-export function summarizeDiagnostic(event,requestUrl){
- if(event?.event?.request?.url!==requestUrl)return null;
+export function summarizeDiagnostic(event,requestUrl,filteredSubscription=false){
+ if(!Array.isArray(event?.logs))return null;
+ if(!filteredSubscription&&event?.event?.request?.url!==requestUrl)return null;
  const categories=[];
  for(const log of event.logs||[]){
   const message=log.message;
@@ -21,15 +22,16 @@ export async function diagnosePreviewAi(){
  const account=process.env.CLOUDFLARE_ACCOUNT_ID,token=process.env.CLOUDFLARE_API_TOKEN;
  if(!account||!token)throw Error('Cloudflare diagnostic credentials are missing');
  const endpoint=`https://api.cloudflare.com/client/v4/accounts/${encodeURIComponent(account)}/workers/scripts/forge-studio-preview/tails`;
+ const diagnosticId=crypto.randomUUID();
+ const requestUrl=origin+'/api/ai/business?diagnostic='+diagnosticId;
  const headers={Authorization:`Bearer ${token}`,'Content-Type':'application/json'};
  let record,socket;
  try{
-  const response=await fetch(endpoint,{method:'POST',headers,body:JSON.stringify({filters:[]}),signal:AbortSignal.timeout(15000)});
+  const response=await fetch(endpoint,{method:'POST',headers,body:JSON.stringify({filters:[{header:{key:'x-forge-diagnostic-id',query:diagnosticId}}]}),signal:AbortSignal.timeout(15000)});
   if(!response.ok)throw Error('Diagnostic subscription creation failed (HTTP '+response.status+')');
   const payload=await response.json();record=payload.result;
   if(!payload.success||typeof record?.id!=='string'||typeof record?.url!=='string'||new URL(record.url).protocol!=='wss:')throw Error('Diagnostic subscription was rejected');
   socket=new WebSocket(record.url,'trace-v1');
-  const requestUrl=origin+'/api/ai/business?diagnostic='+crypto.randomUUID();
   let finish,receivedEvents=0,parsedEvents=0;
   const eventResult=new Promise(resolve=>{finish=resolve});
   socket.addEventListener('message',async event=>{
@@ -38,7 +40,8 @@ export async function diagnosePreviewAi(){
     const data=typeof event.data==='string'?event.data:await event.data.text();
     if(data.length>1000000)return;
     const parsed=JSON.parse(data);parsedEvents++;
-    const summary=summarizeDiagnostic(parsed,requestUrl);
+    const summary=// Server-side unique-header filtering correlates events even when trace URLs are redacted.
+    const summary=summarizeDiagnostic(parsed,requestUrl,true);
     if(summary)finish(summary);
    }catch{/* Do not disclose websocket payloads. */}
   });
@@ -49,7 +52,7 @@ export async function diagnosePreviewAi(){
   });
   // Allow the server to apply the subscription settings before the probe.
   await new Promise(resolve=>setTimeout(resolve,1000));
-  const generation=await fetch(requestUrl,{method:'POST',headers:{'Content-Type':'application/json',Origin:origin},body:JSON.stringify({businessName:'Forge Diagnostic Studio',industry:'Design',description:'An independent studio designing accessible websites for local businesses.',services:['Website design']}),signal:AbortSignal.timeout(90000)});
+  const generation=await fetch(requestUrl,{method:'POST',headers:{'Content-Type':'application/json',Origin:origin,'x-forge-diagnostic-id':diagnosticId},body:JSON.stringify({businessName:'Forge Diagnostic Studio',industry:'Design',description:'An independent studio designing accessible websites for local businesses.',services:['Website design']}),signal:AbortSignal.timeout(90000)});
   console.log(JSON.stringify({syntheticRequestStatus:generation.status}));
   let timer;
   const summary=await Promise.race([eventResult,new Promise(resolve=>{timer=setTimeout(()=>resolve(null),45000)})]);
