@@ -75,7 +75,7 @@ export async function generateWithLocalAi(input:{businessName:string;industry:st
     // Do not log the user's prompt, model response, or credentials.
     const code=error&&typeof error==='object'&&'code' in error?String((error as {code:unknown}).code):'unknown';
     console.error('Workers AI inference failed',{code,category:error instanceof Error&&error.message.startsWith('Workers AI returned')?'invalid_model_response':'provider_failure'});
-    throw new Error('Workers AI generation failed');
+    throw new Error(error instanceof Error&&error.message.startsWith('Workers AI returned')?'WORKERS_AI_INVALID_RESPONSE':'WORKERS_AI_PROVIDER_FAILURE');
    }
    provider='cloudflare';
  }else{
