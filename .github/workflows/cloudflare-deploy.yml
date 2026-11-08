@@ -36,8 +36,13 @@ jobs:
             cloudflare-next-${{ runner.os }}-
       - name: Verify AI response tests and TypeScript before deployment
         run: |
-          npx tsx --test tests/workers-ai-response.test.ts tests/local-ai.test.ts
-          npm run typecheck
+          set -euo pipefail
+          npx tsx --test tests/workers-ai-response.test.ts tests/local-ai.test.ts &
+          ai_pid=$!
+          npm run typecheck &
+          types_pid=$!
+          wait "$ai_pid"
+          wait "$types_pid"
       - name: Build Next.js for Cloudflare Workers
         run: npm run build:cloudflare
       - name: Upload build diagnostics
