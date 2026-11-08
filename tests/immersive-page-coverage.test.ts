@@ -1,5 +1,6 @@
 import {describe,it} from 'node:test';
 import assert from 'node:assert/strict';
+import {Script} from 'node:vm';
 import {generateBusinessWebsite} from '../src/lib/business-site';
 import {enhanceImmersivePages} from '../src/lib/immersive-showcase';
 
@@ -54,6 +55,15 @@ describe('Generated website immersive navigation coverage',()=>{
    assert.match(page.html,/sessionStorage\.getItem\(cameraStorageKey\)/,page.slug);
    assert.match(page.html,/addEventListener\('pagehide',saveCamera\)/,page.slug);
    assert.match(page.html,/resetPosition\.addEventListener\('click'/,page.slug);
+  }
+ });
+ it('generates syntactically valid inline JavaScript on every page',()=>{
+  for(const page of site.pages){
+   const scripts=[...page.html.matchAll(/<script(?:\\s[^>]*)?>([\\s\\S]*?)<\\/script>/g)];
+   assert.ok(scripts.length>0,page.slug+' has no inline scripts');
+   for(const [,source] of scripts){
+    assert.doesNotThrow(()=>new Script(source,{filename:page.slug+'.html'}),page.slug+' contains invalid JavaScript');
+   }
   }
  });
  it('does not duplicate immersive scripts when enhancement is repeated',()=>{
