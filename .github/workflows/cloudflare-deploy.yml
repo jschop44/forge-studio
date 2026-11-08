@@ -34,6 +34,10 @@ jobs:
           key: cloudflare-next-${{ runner.os }}-${{ hashFiles('package.json', 'src/**/*.ts', 'src/**/*.tsx', 'next.config.*') }}
           restore-keys: |
             cloudflare-next-${{ runner.os }}-
+      - name: Verify AI response tests and TypeScript before deployment
+        run: |
+          npx tsx --test tests/workers-ai-response.test.ts tests/local-ai.test.ts
+          npm run typecheck
       - name: Build Next.js for Cloudflare Workers
         run: npm run build:cloudflare
       - name: Upload build diagnostics
