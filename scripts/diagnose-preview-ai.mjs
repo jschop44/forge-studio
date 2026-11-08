@@ -59,5 +59,11 @@ export async function diagnosePreviewAi(){
  }
 }
 if(process.argv[1]&&import.meta.url===pathToFileURL(process.argv[1]).href){
- diagnosePreviewAi().catch(()=>{console.error('AI diagnostics failed; no private provider output disclosed');process.exitCode=1});
+ // A remote websocket can retain the Node event loop after close(). Cleanup above
+ // deletes the provider subscription; explicitly finish this bounded CLI process.
+ diagnosePreviewAi().then(()=>process.stdout.write('',()=>process.exit(0))).catch(error=>{
+  const message=error instanceof Error?error.message:'';
+  const safe=/^(Cloudflare diagnostic credentials are missing|Diagnostic subscription (creation failed \(HTTP \d{3}\)|was rejected|timed out|connection failed)|No correlated diagnostic event captured|Provider failure remains unclassified)$/.test(message)?message:'Diagnostic network or response failure';
+  process.stderr.write(safe+'; no private provider output disclosed\n',()=>process.exit(1));
+ });
 }
