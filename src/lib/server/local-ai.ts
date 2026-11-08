@@ -30,7 +30,7 @@ function extractWorkersCopy(output:unknown):string{
  const result=output as {response?:unknown;output?:unknown};
  const value=typeof result.response==='string'?result.response:typeof result.output==='string'?result.output:null;
  if(!value)throw Error('Workers AI returned no text');
- const clean=value.trim().replace(/^```(?:json)?\\s*/i,'').replace(/\\s*```$/,'');
+ const clean=value.trim().replace(/^```(?:json)?\s*/i,'').replace(/\s*```$/,'');
  let text=clean;
  try{const parsed=JSON.parse(clean) as {description?:unknown};if(typeof parsed.description==='string')text=parsed.description}catch{/* Plain text is accepted after validation. */}
  const parsed=CopySchema.safeParse({description:text});
@@ -69,12 +69,11 @@ export async function generateWithLocalAi(input:{businessName:string;industry:st
  let provider:'ollama'|'cloudflare'='ollama';
  const cloudAi=await workersAi();
  if(cloudAi){
-  const controller=new AbortController();const timeout=setTimeout(()=>controller.abort(),45000);
-  try{
+  {
    const response=await cloudAi.run('@cf/meta/llama-3.1-8b-instruct',{messages:[{role:'system',content:'Write one concise professional business website description (15-1800 characters). Use only provided facts. Do not invent claims, prices, testimonials or credentials. Return plain text only.'},{role:'user',content:JSON.stringify(input)}],max_tokens:240,temperature:0.3});
    description=extractWorkersCopy(response);
    provider='cloudflare';
-  }finally{clearTimeout(timeout);controller.abort()}
+  }
  }else{
  const config=ollamaConfig();const url=config.url;
  const controller=new AbortController();const timeout=setTimeout(()=>controller.abort(),60000);
