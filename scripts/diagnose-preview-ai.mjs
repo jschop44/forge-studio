@@ -1,14 +1,19 @@
 import {spawn} from 'node:child_process';
 const origin='https://forge-studio-preview.stands-old-3h.workers.dev';
 const child=spawn('npx',['wrangler','tail','forge-studio-preview','--format','json','--sampling-rate','1'],{stdio:['ignore','pipe','pipe'],env:process.env,detached:true});
-let output='';
-child.stdout.on('data',chunk=>{output=(output+chunk.toString()).slice(-1000000)});
+let output='',tailReady=false,tailFailed=false;
+const observe=chunk=>{if(/Connected to|Successfully created tail/i.test(chunk.toString()))tailReady=true};
+child.stdout.on('data',chunk=>{observe(chunk);output=(output+chunk.toString()).slice(-1000000)});
 // Tail output may contain unrelated request metadata. Never forward raw output or errors.
-child.stderr.on('data',()=>{});
-child.on('error',()=>{});
+child.stderr.on('data',observe);
+child.on('error',()=>{tailFailed=true});
+child.on('exit',()=>{tailFailed=true});
 const wait=ms=>new Promise(resolve=>setTimeout(resolve,ms));
 try{
- await wait(7000);
+ // npx startup may exceed seven seconds. Wait for an actual subscription.
+ const deadline=Date.now()+45000;
+ while(!tailReady&&!tailFailed&&Date.now()<deadline)await wait(250);
+ if(!tailReady)throw Error('Diagnostic log subscription did not become ready; no inference request was sent');
  const response=await fetch(origin+'/api/ai/business',{method:'POST',headers:{'Content-Type':'application/json',Origin:origin},body:JSON.stringify({businessName:'Forge Diagnostic Studio',industry:'Design',description:'An independent studio designing accessible websites for local businesses.',services:['Website design']}),signal:AbortSignal.timeout(90000)});
  console.log(JSON.stringify({syntheticRequestStatus:response.status}));
  await wait(5000);
@@ -25,6 +30,10 @@ for(let i=0;i<output.length;i++){
   try{
    const event=JSON.parse(output.slice(start,i+1));
    for(const log of event.logs||[]){
+    if(log.message?.[0]==='Forge AI generation failure category:'){
+     const category=log.message[1];
+     if(['provider_rate_limited','provider_auth','provider_server_error','invalid_model_response','provider_timeout','provider_unavailable'].includes(category))categories.push({category});
+    }
     if(log.message?.[0]!=='Workers AI inference failed')continue;
     const data=log.message[1];
     const item=typeof data==='string'?JSON.parse(data):data;
@@ -33,4 +42,5 @@ for(let i=0;i<output.length;i++){
   }catch{/* Never print malformed provider/event content. */}
  }
 }
-console.log(JSON.stringify({providerDiagnostics:categories,rawEventsDisclosed:false}));
+console.log(JSON.stringify({tailReady,providerDiagnostics:categories,rawEventsDisclosed:false}));
+if(!categories.length)throw Error('No provider diagnostics captured; inference failure remains unresolved');
