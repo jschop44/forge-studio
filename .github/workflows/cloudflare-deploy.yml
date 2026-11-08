@@ -34,10 +34,10 @@ jobs:
           key: cloudflare-next-${{ runner.os }}-${{ hashFiles('package.json', 'src/**/*.ts', 'src/**/*.tsx', 'next.config.*') }}
           restore-keys: |
             cloudflare-next-${{ runner.os }}-
-      - name: Verify AI response tests and TypeScript before deployment
+      - name: Verify AI, immersive page coverage and TypeScript before deployment
         run: |
           set -euo pipefail
-          npx tsx --test tests/workers-ai-response.test.ts tests/local-ai.test.ts &
+          npx tsx --test tests/workers-ai-response.test.ts tests/local-ai.test.ts tests/immersive-page-coverage.test.ts &
           ai_pid=$!
           npm run typecheck &
           types_pid=$!
