@@ -1,5 +1,6 @@
 import {summarizeAiError} from './ai-error';
 import {z} from 'zod';
+import type {WebsiteExperience} from '../website-experience';
 import {generateWorkersComposition,type WorkersAiBinding} from './workers-ai-composition';
 import {DesignSchema,parseAiComposition,compositionAppearance,compositionInstruction,compositionJsonSchema} from '../ai-composition';
 import {generateBusinessWebsite} from '../business-site';
@@ -62,7 +63,7 @@ export async function checkLocalAiReadiness():Promise<{ready:boolean;reason:'rea
 const MAX_ACTIVE_GENERATIONS=2;
 let activeGenerations=0;
 export function localAiCapacity(){return {active:activeGenerations,capacity:MAX_ACTIVE_GENERATIONS}}
-export async function generateWithLocalAi(input:{businessName:string;industry:string;description:string;services:string[];contactEmail?:string}):Promise<AiGenerationResult>{
+export async function generateWithLocalAi(input:{businessName:string;industry:string;description:string;services:string[];contactEmail?:string;experienceStyle?:WebsiteExperience}):Promise<AiGenerationResult>{
  if(activeGenerations>=MAX_ACTIVE_GENERATIONS)throw Error('Local AI capacity exceeded');
  activeGenerations++;
  try {
@@ -98,6 +99,6 @@ export async function generateWithLocalAi(input:{businessName:string;industry:st
   services:input.services.map(service=>service.trim())
  };
  const validated=DraftSchema.parse(verifiedDraft);
- return {draft:validated,provider,pages:generateBusinessWebsite({...validated,...compositionAppearance(design),contactEmail:input.contactEmail}).pages};
+ return {draft:validated,provider,pages:generateBusinessWebsite({...validated,...compositionAppearance(design),contactEmail:input.contactEmail,experienceStyle:input.experienceStyle}).pages};
  } finally {activeGenerations--}
 }

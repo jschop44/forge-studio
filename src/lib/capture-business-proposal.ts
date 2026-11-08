@@ -1,3 +1,4 @@
+import type {WebsiteExperience} from './website-experience';
 import { generateBusinessWebsite } from "./business-site";
 import { auditGeneratedDraft } from "./draft-quality-gate";
 import { prepareBrowserEvidenceGeneration } from "./browser-evidence-generation";
@@ -31,13 +32,14 @@ export function proposeBusinessSiteFromCapture(input: unknown) {
  */
 export function generateReviewedCaptureSite(
   capture: unknown,
-  approved: { industry: string; description: string; services: string[]; contactEmail?: string },
+  approved: { experienceStyle?:WebsiteExperience; industry: string; description: string; services: string[]; contactEmail?: string },
   ownerApproved: boolean,
 ) {
   if (!ownerApproved) throw new Error("Explicit owner approval is required");
   const proposal = proposeBusinessSiteFromCapture(capture);
   const site = generateBusinessWebsite({
     businessName: proposal.businessName,
+    experienceStyle:approved.experienceStyle,
     industry: approved.industry,
     description: approved.description,
     services: approved.services,

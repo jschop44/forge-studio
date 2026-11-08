@@ -24,16 +24,16 @@ export function servicePhoto(service:string,industry:string):string|null{
  if(requiresFamilySafeReview(service+' '+industry))return null;
  const term=service.toLowerCase();
  const subjects:[RegExp,string][]=[
- [/baseball|softball|batting|glove|mitt|bat|cleat/,'photo-1471295253337-3ceaaedca402'],
+ [/\b(?:baseball|softball|batting|gloves?|mitts?|bats?|cleats?)\b/,'photo-1471295253337-3ceaaedca402'],
  [/pastr|croissant|baked|bakery|muffin|cake|bread|dessert/,'photo-1484723091739-30a097e8f929'],
  [/coffee bean|roast|whole bean/,'photo-1447933601403-0c6688de566e'],
  [/espresso|latte|cappuccino|coffee|barista/,'photo-1461023058943-07fcbe16d735'],
- [/tea|matcha/,'photo-1544787219-7f47ccb76574'],
+ [/\b(?:tea|matcha)\b/,'photo-1544787219-7f47ccb76574'],
  [/pizza/,'photo-1513104890138-7c749659a591'],
  [/burger/,'photo-1568901346375-23c9450c58cd'],
  [/salad|vegetable/,'photo-1512621776951-a57141f2eefd'],
  [/property|home|house|listing|real estate/,'photo-1600596542815-ffad4c1539a9'],
- [/car|vehicle|automotive/,'photo-1503376780353-7e6692767b70'],
+ [/\b(?:cars?|vehicles?|automotive)\b/,'photo-1503376780353-7e6692767b70'],
  [/yoga|meditation/,'photo-1544367567-0f2fcb009e0b']
  ];
  const found=subjects.find(([pattern])=>pattern.test(term));

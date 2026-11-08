@@ -8,7 +8,7 @@ async function fixtureGeneration(page:Page){
   const input=route.request().postDataJSON();
   expect(input.businessName).toBe('Northstar Coffee');
   const draft={businessName:input.businessName,industry:input.industry,description:'Freshly roasted coffee and welcoming service for our local community.',services:input.services};
-  await route.fulfill({status:200,json:{draft,provider:'browser-test-fixture',pages:generateBusinessWebsite(draft).pages}});
+  await route.fulfill({status:200,json:{draft,provider:'browser-test-fixture',pages:generateBusinessWebsite({...draft,experienceStyle:input.experienceStyle}).pages}});
  });
 }
 
@@ -22,7 +22,7 @@ test("home page loads with an accessible document heading", async ({ page }) => 
 test("business builder loads and exposes a website generation control", async ({ page }) => {
   await page.goto("/business");
   await expect(page.locator("body")).toBeVisible();
-  await expect(page.getByRole("button", { name: /generate my immersive website/i })).toBeVisible();
+  await expect(page.getByRole("button", { name: /generate my website/i })).toBeVisible();
 });
 
 test("mobile builder does not overflow horizontally", async ({ page }) => {
@@ -39,7 +39,7 @@ test("fixture-backed generation displays preview pages and navigates tabs", asyn
   await fixtureGeneration(page);
   await page.goto("/business");
   await page.getByPlaceholder("e.g. Northstar Coffee").fill("Northstar Coffee");
-  await page.getByRole("button", { name: /generate my immersive website/i }).click();
+  await page.getByRole("button", { name: /generate my website/i }).click();
   const tabs = page.getByRole("navigation", { name: "Website pages" });
   await expect(tabs).toBeVisible({ timeout: 30000 });
   await expect(page.getByText(/Automatic website check:/i)).toBeVisible();
@@ -93,7 +93,7 @@ test("revision version lookup requires a publication ID", async ({ page }) => {
   await fixtureGeneration(page);
   await page.goto("/business");
   await page.getByPlaceholder("e.g. Northstar Coffee").fill("Northstar Coffee");
-  await page.getByRole("button", { name: /generate my immersive website/i }).click();
+  await page.getByRole("button", { name: /generate my website/i }).click();
   await expect(page.getByRole("navigation", { name: "Website pages" })).toBeVisible({timeout:30000});
   const load=page.getByRole("button",{name:"Load current publication version"});
   await expect(load).toBeDisabled();
@@ -112,7 +112,7 @@ for(const status of [503,429]){
   });
   await page.goto('/business');
   await page.getByPlaceholder('e.g. Northstar Coffee').fill('Northstar Coffee');
-  const generate=page.getByRole('button',{name:/generate my immersive website/i});
+  const generate=page.getByRole('button',{name:/generate my website/i});
   await generate.click();
   const message=status===429?/retry in about 7 seconds/i:/generation is temporarily unavailable/i;
   await expect(page.getByText(message)).toBeVisible();
