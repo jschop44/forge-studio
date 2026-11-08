@@ -1,0 +1,98 @@
+name: Deploy verified Forge preview
+on:
+  workflow_run:
+    workflows: [Verify]
+    types: [completed]
+permissions:
+  contents: read
+concurrency:
+  group: cloudflare-preview-refs/heads/main
+  cancel-in-progress: false
+jobs:
+  deploy:
+    if: >-
+      github.event.workflow_run.conclusion == 'success' &&
+      github.event.workflow_run.event == 'push' &&
+      github.event.workflow_run.head_branch == 'main' &&
+      github.event.workflow_run.head_repository.full_name == github.repository &&
+      github.event.repository.private == false
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Check verified revision is still current
+        id: revision
+        env:
+          GH_TOKEN: ${{ github.token }}
+          VERIFIED_SHA: ${{ github.event.workflow_run.head_sha }}
+        run: |
+          current=$(gh api "repos/$GITHUB_REPOSITORY/commits/main" --jq .sha)
+          if test "$current" = "$VERIFIED_SHA"; then
+            echo 'current=true' >> "$GITHUB_OUTPUT"
+          else
+            echo 'current=false' >> "$GITHUB_OUTPUT"
+            echo 'Newer source exists; skipping this older verified revision.'
+          fi
+      - uses: actions/checkout@v4
+        if: steps.revision.outputs.current == 'true'
+        with:
+          ref: ${{ github.event.workflow_run.head_sha }}
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        if: steps.revision.outputs.current == 'true'
+        with:
+          node-version: '22'
+      - if: steps.revision.outputs.current == 'true'
+        run: npm install --no-audit --no-fund
+      - if: steps.revision.outputs.current == 'true'
+        run: npm run build:cloudflare
+      - name: Recheck current revision before publishing
+        id: publish
+        if: steps.revision.outputs.current == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          VERIFIED_SHA: ${{ github.event.workflow_run.head_sha }}
+        run: |
+          current=$(gh api "repos/$GITHUB_REPOSITORY/commits/main" --jq .sha)
+          if test "$current" = "$VERIFIED_SHA"; then
+            echo 'current=true' >> "$GITHUB_OUTPUT"
+          else
+            echo 'current=false' >> "$GITHUB_OUTPUT"
+            echo 'Newer source arrived during packaging; skipping this deployment.'
+          fi
+      - name: Deploy verified source to existing free preview
+        if: steps.publish.outputs.current == 'true'
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          test -n "$CLOUDFLARE_API_TOKEN"
+          test -n "$CLOUDFLARE_ACCOUNT_ID"
+          npm run deploy:cloudflare
+      - name: Sync available runtime configuration
+        if: steps.publish.outputs.current == 'true'
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          AUTH_SECRET: ${{ secrets.AUTH_SECRET }}
+          FORGE_WORKER_SECRET: ${{ secrets.FORGE_WORKER_SECRET }}
+        run: node scripts/sync-preview-secrets.mjs
+      - name: Verify preview health and report database readiness
+        if: steps.publish.outputs.current == 'true'
+        run: |
+          curl --fail --silent --show-error --retry 3 --retry-delay 3 --max-time 30 https://forge-studio-preview.stands-old-3h.workers.dev/api/health -o /tmp/forge-health.json
+          node -e 'const fs=require("node:fs");const r=JSON.parse(fs.readFileSync("/tmp/forge-health.json","utf8"));if(r.ok!==true||r.service!=="forge-studio")process.exit(1)'
+          curl --silent --show-error --max-time 20 https://forge-studio-preview.stands-old-3h.workers.dev/api/health/ready -o /tmp/forge-ready.json
+          node --input-type=module <<'JS'
+          import {readFileSync,appendFileSync} from 'node:fs';
+          const ready=JSON.parse(readFileSync('/tmp/forge-ready.json','utf8')).ready===true;
+          appendFileSync(process.env.GITHUB_STEP_SUMMARY,'Preview health passed. Database/auth readiness: '+(ready?'passed':'blocked; runtime configuration or database access is incomplete')+'.\nThis does not verify real AI generation or live queue execution.\n');
+          console.log('Database/auth readiness: '+(ready?'passed':'blocked'));
+          JS
+      - name: Verify real preview AI generation
+        if: steps.publish.outputs.current == 'true'
+        env:
+          FORGE_BASE_URL: https://forge-studio-preview.stands-old-3h.workers.dev
+        run: |
+          node scripts/smoke-preview-ai.mjs
+          echo 'Real Cloudflare AI request returned four validated pages. Queue execution remains unverified.' >> "$GITHUB_STEP_SUMMARY"
