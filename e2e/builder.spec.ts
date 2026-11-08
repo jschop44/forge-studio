@@ -59,10 +59,11 @@ test("fixture-backed generation displays preview pages and navigates tabs", asyn
   await page.getByPlaceholder("Publication UUID, leave blank for a new website").fill("00000000-0000-4000-8000-000000000001");
   await expect(approvePublish).not.toBeChecked();
   await expect(page.getByRole("button", { name: /publish approved draft/i })).toBeDisabled();
-  await expect(tabs.getByRole("button", { name: "Services" })).toBeVisible();
-  await tabs.getByRole("button", { name: "Services" }).click();
-  await expect(tabs.getByRole("button", { name: "Services" })).toHaveAttribute("aria-current", "page");
-  await expect(page.getByTitle(/Website preview: Services/i)).toBeVisible();
+  await expect(tabs.getByRole("button")).toHaveCount(4);
+  await expect(tabs.getByRole("button", { name: "Products" })).toBeVisible();
+  await tabs.getByRole("button", { name: "Products" }).click();
+  await expect(tabs.getByRole("button", { name: "Products" })).toHaveAttribute("aria-current", "page");
+  await expect(page.getByTitle(/Website preview: Products/i)).toBeVisible();
   await page.getByRole("button", { name: /switch to 390 pixel mobile website preview/i }).click();
   await expect(page.getByRole("button", { name: /switch to 390 pixel mobile website preview/i })).toHaveAttribute("aria-pressed", "true");
 });
