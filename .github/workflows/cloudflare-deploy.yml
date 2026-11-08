@@ -84,6 +84,26 @@ jobs:
           curl --silent --show-error --max-time 20 --output /tmp/forge-ai.json --write-out 'AI status HTTP code: %{http_code}\\n' "$PREVIEW_URL/api/ai/status" || true
           if test -s /tmp/forge-ai.json; then head -c 500 /tmp/forge-ai.json; echo; fi
           echo "- AI generation: not verified by smoke test" >> "$GITHUB_STEP_SUMMARY"
+      - name: Verify real AI website generation
+        if: ${{ inputs.publish }}
+        env:
+          PREVIEW_URL: https://forge-studio-preview.stands-old-3h.workers.dev
+        run: |
+          set -euo pipefail
+          echo "Running one end-to-end AI generation request"
+          status=$(curl --silent --show-error --max-time 100 --output /tmp/forge-generated.json --write-out '%{http_code}' \\
+            --header 'Content-Type: application/json' \\
+            --header "Origin: $PREVIEW_URL" \\
+            --data '{"name":"Cedar Studio","description":"A small creative studio providing professional website design services for local businesses.","template":"minimal","industry":"Design","services":["Website design"]}' \\
+            "$PREVIEW_URL/api/generate")
+          echo "Generation HTTP status: $status"
+          if test "$status" != 200; then
+            head -c 600 /tmp/forge-generated.json || true
+            echo "::error::Mandatory AI generation failed with HTTP $status"
+            exit 1
+          fi
+          node -e 'const fs=require("node:fs");const r=JSON.parse(fs.readFileSync("/tmp/forge-generated.json","utf8"));if(r.site?.name!=="Cedar Studio"||typeof r.site.description!=="string"||r.site.description.length<15||!Array.isArray(r.site.sections)||r.site.sections.length<1){console.error("::error::Generated website failed schema checks");process.exit(1)}console.log("Verified AI-generated website:",r.site.name)'
+          echo "- AI website generation: passed live request and response checks" >> "$GITHUB_STEP_SUMMARY"
       - name: Pipeline timing summary
         if: always()
         run: |
