@@ -34,6 +34,12 @@ describe('Generated website immersive navigation coverage',()=>{
    assert.match(page.html,/Number\.isFinite\(value\)/,page.slug);
   }
  });
+ it('provides a keyboard-accessible reset control for spatial navigation',()=>{
+  for(const page of site.pages){
+   assert.match(page.html,/Reset immersive world position to start/,page.slug);
+   assert.match(page.html,/sessionStorage\.removeItem\(worldStorageKey\)/,page.slug);
+  }
+ });
  it('does not duplicate immersive scripts when enhancement is repeated',()=>{
   const again=enhanceImmersivePages(site.pages);
   for(const page of again){
