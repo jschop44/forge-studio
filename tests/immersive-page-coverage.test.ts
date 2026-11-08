@@ -66,6 +66,13 @@ describe('Generated website immersive navigation coverage',()=>{
    }
   }
  });
+ it('restores navigation when WebGL context is lost',()=>{
+  for(const page of site.pages){
+   assert.match(page.html,/webglcontextlost/,page.slug);
+   assert.match(page.html,/portal\.link\.hidden=false/,page.slug);
+   assert.match(page.html,/portal\.link\.tabIndex=0/,page.slug);
+  }
+ });
  it('does not duplicate immersive scripts when enhancement is repeated',()=>{
   const again=enhanceImmersivePages(site.pages);
   for(const page of again){
