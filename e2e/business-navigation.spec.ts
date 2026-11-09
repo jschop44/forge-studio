@@ -14,6 +14,9 @@ for(const mode of ['standard','cinematic','object-navigation','immersive'] as co
   await page.getByRole('button',{name:/generate my website/i}).click();
   const frame=(title:string)=>page.frameLocator('iframe[title="Website preview: '+title+'"]');
   const nav=(title:string)=>mode==='immersive'?frame(title).locator('[data-world-page="about"]'):frame(title).locator('body>nav').getByRole('link',{name:'About',exact:true});
+  await page.locator('iframe[title="Website preview: Home"]').scrollIntoViewIfNeeded();
+  const previewSize=await page.locator('iframe[title="Website preview: Home"]').boundingBox();
+  expect(previewSize!.height).toBeLessThanOrEqual(page.viewportSize()!.height*.8);
   await nav('Home').click();
   await expect(frame('About').locator('main h1')).toContainText('About Harbor Coffee');
   await expect(frame('About').locator('body')).not.toContainText('AI WEBSITE BUILDER');
