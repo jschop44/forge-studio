@@ -1,13 +1,13 @@
 import {test,expect} from '@playwright/test';
 import {generateBusinessWebsite} from '../src/lib/business-site';
 const cases=[['Horology workshop','We restore antique clocks and repair mechanical watches.','Clock restoration'],['Marine electronics','We install navigation electronics on sailboats.','Navigation installation'],['Art conservation','We conserve historic paintings and paper artworks.','Painting conservation'],['Beekeeping equipment','We supply beekeeping equipment and hive tools.','Hive tools'],['Industrial filtration','We manufacture filtration systems for industrial water.','Water filtration'],['Hospital','We provide patient care and appointment information.','Patient information'],['Restaurant','We prepare fresh meals and welcome guests for dinner.','Dinner menu']];
-const modes=['standard','cinematic','object-navigation','immersive'] as const;
+const modes=['standard','cinematic','immersive'] as const;
 for(const [index,[industry,brief,offering]] of cases.entries())test('an open-ended niche reaches every generation layer: '+industry,async({page})=>{
  const mode=modes[index%modes.length];let recognition=0;
  await page.route('**/api/business/recognize',async route=>{recognition++;expect(route.request().postDataJSON().brief).toBe(brief);return route.fulfill({status:200,json:{status:'identified',industry,services:[offering],evidence:[brief],provider:'fixture'}})});
  await page.route('**/api/business/visuals',route=>route.fulfill({status:200,json:{assets:[]}}));
  await page.route('**/api/ai/business',async route=>{const input=route.request().postDataJSON();expect(input.industry).toBe(industry);expect(input.services).toEqual([offering]);expect(input.experienceStyle).toBe(mode);return route.fulfill({status:200,json:{pages:generateBusinessWebsite(input).pages}})});
- await page.goto('/business');await page.getByRole('button',{name:new RegExp('^'+(['Standard website','Cinematic depth','Interactive 3D navigation','Full immersion'][index%modes.length]))}).click();
+ await page.goto('/business');await page.getByRole('button',{name:new RegExp('^'+(['Standard website','Cinematic depth','3D immersion'][index%modes.length]))}).click();
  await page.getByPlaceholder('e.g. Northstar Coffee').fill('Meridian');await page.getByPlaceholder(/Describe what you offer/).fill(brief);await page.getByRole('button',{name:/generate my website/i}).click();
  const frame=page.frameLocator('iframe[title="Website preview: Home"]');await expect(frame.locator('main h1')).toHaveText('Meridian');
  await expect(page.getByText('Website draft generated for '+industry+'.',{exact:false})).toBeVisible();expect(recognition).toBe(1);

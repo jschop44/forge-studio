@@ -67,12 +67,12 @@ test('a changed source cannot receive the previous website generation result',as
 test('extracted extra pages retain appearance and full-site immersive controls',async({page})=>{
  await page.route('**/api/site-reference',route=>route.fulfill({status:200,json:{...extracted,title:'Harbor Coffee',description:'A neighborhood coffee shop selling roasted coffee beans and ceramic mugs.',headings:['Coffee beans','Ceramic mugs'],pageSummaries:[{path:'/portfolio',label:'Portfolio',title:'Harbor projects',description:'Residential interiors designed around you.',headings:['Selected projects']}]}}));
  await generationFixture(page);await openExtraction(page);
- await page.getByRole('button',{name:/Interactive 3D navigation/}).click();
+ await page.getByRole('button',{name:/^3D immersion/}).click();
  await page.getByRole('button',{name:/generate my website/i}).click();
  await page.getByRole('navigation',{name:'Website pages'}).getByRole('button',{name:'Portfolio',exact:true}).click();
  const frame=page.frameLocator('iframe[title="Website preview: Portfolio"]');
+ await expect(frame.locator('#forge-immersive-world')).toBeVisible();
+ await frame.getByRole('button',{name:'Read Portfolio page',exact:true}).click();
  await expect(frame.getByRole('heading',{name:'Harbor projects'})).toBeVisible();
- await expect(frame.locator('[data-object-navigation]')).toBeVisible();
- await expect(frame.locator('a[href="services.html#offering-0"]')).toHaveCount(1);
  await expect(frame.locator('body')).toHaveCSS('background-color','rgb(17, 34, 51)');
 });
