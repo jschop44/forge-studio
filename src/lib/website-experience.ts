@@ -30,7 +30,7 @@ export function inferBusinessIndustry(name:string,brief:string):string{
   [/\b(gym|fitness|wellness|spa)\b/i,'Health and wellness'],
   [/\b(auto|car|vehicle|automotive)\b/i,'Automotive'],
   [/\b(fashion|jewelry|clothing)\b/i,'Fashion and luxury'],
-  [/\b(software|tech|technology|digital|ai)\b/i,'Technology']
+  [/\b(software|tech|technology|digital|artificial intelligence|ai solutions|saas)\b/i,'Technology']
  ];
  for(const source of [name,brief]){const found=categories.find(([pattern])=>pattern.test(source));if(found)return found[1]}
  return 'Professional services';
