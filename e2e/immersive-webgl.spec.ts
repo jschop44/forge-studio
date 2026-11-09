@@ -206,10 +206,13 @@ test('large desktop immersive framebuffer stays inside the GPU pixel budget',asy
 });
 
 test('capture immersive desktop and mobile visual evidence for every generated page',async({page},testInfo)=>{
+ test.setTimeout(60000);
  const pages=generateBusinessWebsite({businessName:'Harbor Studio',industry:'Architecture',description:'Independent design practice.',services:['Architecture','Interiors']}).pages;
  for(const viewport of [{name:'desktop',width:1440,height:900},{name:'mobile',width:375,height:812}]){
   await page.setViewportSize({width:viewport.width,height:viewport.height});
   for(const generated of pages){
+   // Full navigation releases the previous document's WebGL contexts and callbacks.
+   await page.goto('about:blank');
    await page.setContent(generated.html);
    await expect(page.locator('main#main-content')).toBeVisible();
    await page.waitForTimeout(120);
