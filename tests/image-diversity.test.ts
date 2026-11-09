@@ -24,6 +24,8 @@ describe('business-specific image diversity',()=>{
   assert.deepEqual(industryPhotos('horror attraction'),[]);
   assert.equal(servicePhoto('weapon sales','retail'),null);
  });
+ it('provides four candidates for every curated business category',()=>{for(const [category,ids] of Object.entries(photoLibrary))assert.ok(ids.length>=4,category+' needs at least four alternatives')});
+ it('does not mistake healthcare for automotive',()=>{const healthcare=industryPhotos('healthcare clinic');const automotive=industryPhotos('automotive dealership');assert.notDeepEqual(healthcare,automotive);assert.deepEqual(automotive,photoLibrary.automotive.map(id=>'https://images.unsplash.com/'+id+'?auto=format&fit=crop&w=1400&q=80'))});
  it('keeps all curated category images unique within each category',()=>{
   for(const [category,ids] of Object.entries(photoLibrary))assert.equal(new Set(ids).size,ids.length,category);
  });
