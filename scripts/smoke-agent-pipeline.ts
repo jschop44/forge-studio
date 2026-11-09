@@ -10,14 +10,19 @@ import type {AiGenerationResult} from '../src/lib/server/local-ai';
 // Synthetic, non-persistent regression fixture. Never queues or publishes a real user site.
 async function main(){
 const origin='https://forge-studio-preview.stands-old-3h.workers.dev';
-const task:AgentTask={id:crypto.randomUUID(),tenantId:crypto.randomUUID(),kind:'site-plan',source:'forge-studio',attempt:0,createdAt:new Date().toISOString(),payload:{businessName:'Forge Pipeline Verification Studio',industry:'Design',summary:'An independent studio providing website design services for local businesses.',services:['Website design','Accessibility review']}};
-// Evidence stages use supplied-content fixtures, without remote crawling.
-const enriched=await evaluateAgentTask({...task,kind:'lead-enrichment'});
+let task:AgentTask={id:crypto.randomUUID(),tenantId:crypto.randomUUID(),kind:'site-plan',source:'forge-studio',attempt:0,createdAt:new Date().toISOString(),payload:{businessName:'Forge Pipeline Verification Studio',industry:'Design',summary:'An independent studio providing website design services for local businesses.',services:['Website design','Accessibility review']}};
+// Read only this app's public diagnostic homepage; never queue or publish a real site.
+const lead={...task,kind:'lead-enrichment',payload:{...task.payload,website:origin}} as AgentTask;
+const enriched=await evaluateAgentTask(lead);
 assert.equal(enriched.decision.next,'website-audit');
-assert.equal(enriched.output?.data.businessName,task.payload.businessName);
-const audited=await evaluateAgentTask({...task,kind:'website-audit',payload:{...task.payload,website:'https://example.org',html:'<!doctype html><html lang="en"><head><title>Verification fixture</title></head><body><h1>Supplied evidence fixture</h1></body></html>'}});
-assert.equal(audited.decision.next,'site-plan');
+assert.ok(enriched.output);
+const auditStage=nextAgentStage(lead,enriched.decision,enriched.output)!;
+const audited=await evaluateAgentTask({...lead,...auditStage});
+assert.equal(audited.decision.next,'site-plan',audited.decision.reason);
 assert.ok(audited.output?.data.audit);
+assert.equal(typeof audited.task.payload.html,'string');
+const planned=nextAgentStage(audited.task,audited.decision,audited.output)!;
+task={...task,...planned};
 const planDecision=planNextTask(task);
 const plan=await executeAgent(task);
 const generation=nextAgentStage(task,planDecision,plan)!;
@@ -50,7 +55,7 @@ const publication=nextAgentStage(qualityTask,qualityDecision,quality)!;
 const published=await evaluateAgentTask({...task,...publication});
 assert.equal(published.decision.status,'needs-approval');
 assert.equal(published.output,null);
-console.log(JSON.stringify({stagesVerified:6,evidenceStages:'supplied-content-fixtures',provider:draft.data.provider,pages:(draft.data.pages as unknown[]).length,composition:'model-selected-layout-and-palette',quality:'passed',publication:'needs-approval',persisted:false,published:false}));
+console.log(JSON.stringify({stagesVerified:6,evidenceStages:'permitted-public-diagnostic-homepage',provider:draft.data.provider,pages:(draft.data.pages as unknown[]).length,composition:'model-selected-layout-and-palette',quality:'passed',publication:'needs-approval',persisted:false,published:false}));
 
 }
 main().catch(error=>{console.error(error.message);process.exitCode=1});

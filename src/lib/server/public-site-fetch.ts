@@ -3,6 +3,8 @@ import {request as httpsRequest} from 'node:https';
 import {isIP} from 'node:net';
 import {isPublicAddress} from '../../../workers/public-network-policy.mjs';
 
+export class PublicSiteHttpError extends Error{readonly status:number;constructor(status:number){super('Website returned status '+status);this.status=status}}
+
 type Address={address:string;family:number};
 type Options={timeout:number;maxBytes:number;accept:string;redirects?:number};
 type Dependencies={worker?:boolean;fetcher?:typeof fetch;resolveHost?:(host:string)=>Promise<Address[]>};
@@ -29,7 +31,7 @@ async function boundedBody(response:Response,maxBytes:number){
 async function nodeResource(url:URL,addresses:Address[],options:Options):Promise<{status:number;location:string|null;contentType:string;body:string}>{
  const pinned=addresses.find(item=>item.family===4)||addresses[0];
  return new Promise((resolve,reject)=>{
-  const request=httpsRequest(url,{method:'GET',timeout:options.timeout,headers:{'User-Agent':'ForgeStudioSiteResearch/1.0',Accept:options.accept,'Accept-Encoding':'identity'},lookup:(_hostname,lookupOptions,callback)=>{
+  const request=httpsRequest(url,{method:'GET',timeout:options.timeout,signal:AbortSignal.timeout(options.timeout),headers:{'User-Agent':'ForgeStudioSiteResearch/1.0',Accept:options.accept,'Accept-Encoding':'identity'},lookup:(_hostname,lookupOptions,callback)=>{
    if(typeof lookupOptions==='object'&&lookupOptions.all)callback(null,[pinned]);else (callback as (error:null,address:string,family:number)=>void)(null,pinned.address,pinned.family);
   }},response=>{
    const status=response.statusCode||0,location=typeof response.headers.location==='string'?response.headers.location:null;
@@ -57,7 +59,7 @@ export async function fetchPublicText(input:URL,options:Options,dependencies:Dep
    else result={status,location:null,contentType:response.headers.get('content-type')||'',body:await boundedBody(response,options.maxBytes)};
   }else result=await nodeResource(url,addresses,options);
   if(result.status>=300&&result.status<400){if(!result.location||attempt===(options.redirects??0))throw Error('Website redirect could not be followed');url=publicSiteUrl(result.location,url);continue}
-  if(result.status!==200)throw Error('Website returned status '+result.status);
+  if(result.status!==200)throw new PublicSiteHttpError(result.status);
   if(options.accept==='text/html'&&!result.contentType.toLowerCase().includes('text/html'))throw Error('Website did not return HTML');
   return {url,body:result.body};
  }

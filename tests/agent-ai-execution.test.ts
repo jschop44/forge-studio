@@ -27,3 +27,11 @@ test('non-generation stages remain local and do not invoke a model',async()=>{
  const output=await executeAgent({...task,kind:'site-plan'},async()=>{throw Error('must not call')});
  assert.equal(output.stage,'site-plan');
 });
+
+test('approval cannot turn missing business facts into invented generic offerings',async()=>{
+ for(const field of ['businessName','industry','summary','services']){
+  let called=false;const payload={...task.payload};delete payload[field];
+  await assert.rejects(executeAgent({...task,payload},async()=>{called=true;throw Error('Unexpected model request')}),/Complete business/);
+  assert.equal(called,false);
+ }
+});

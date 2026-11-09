@@ -42,7 +42,7 @@ jobs:
         with:
           node-version: '22'
       - if: steps.revision.outputs.current == 'true'
-        run: npm install --no-audit --no-fund
+        run: npm ci --no-audit --no-fund
       - if: steps.revision.outputs.current == 'true'
         run: npm run build:cloudflare
       - name: Recheck current revision before publishing

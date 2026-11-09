@@ -1,3 +1,4 @@
+import {completeGenerationBrief} from './generation-brief';
 import {AgentTaskSchema,type AgentTask,type AgentDecision} from './types';
 import {reviewAgentPages} from './quality';
 const transitions:Record<AgentTask['kind'],AgentTask['kind']|null>={
@@ -9,6 +10,7 @@ export function planNextTask(input:unknown,review=reviewAgentPages):AgentDecisio
  if(task.kind==='publish-review')return {taskId:task.id,status:'needs-approval',reason:'Publication requires owner approval'};
  if(task.kind==='website-audit'&&!task.payload.website)return {taskId:task.id,status:'blocked',reason:'A verified public website URL is required'};
  if(task.kind==='site-generation'&&!task.payload.approvedPlan)return {taskId:task.id,status:'needs-approval',reason:'A site plan must be approved before generation'};
+ if(task.kind==='site-generation'&&!completeGenerationBrief(task.payload))return {taskId:task.id,status:'blocked',reason:'Complete business name, type, description and services before generation'};
  if(task.kind==='website-audit'&&(typeof task.payload.html!=='string'||!task.payload.html.trim()))return {taskId:task.id,status:'blocked',reason:'Supplied website HTML is required; remote crawling has not been performed'};
  if(task.kind==='quality-review'){
   try{const result=review(task.payload);if(result.evidence.status==='failed')return {taskId:task.id,status:'blocked',reason:'Draft quality checks failed: '+result.evidence.errors.slice(0,3).join('; ')};}

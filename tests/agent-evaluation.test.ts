@@ -17,7 +17,7 @@ test('quality evidence is computed once per evaluation and never shared with edi
 });
 test('all six stages preserve approvals and deterministic execution',async()=>{
  for(const kind of ['lead-enrichment','website-audit','site-plan','site-generation','quality-review','publish-review'] as const){
-  const result=await evaluateAgentTask({...base,kind,payload:{businessName:'Studio',website:'https://example.org'}});
+  const result=await evaluateAgentTask({...base,kind,payload:{businessName:'Studio',website:'https://example.org'}},undefined,undefined,async task=>{if(task.kind==='website-audit')throw Error('Synthetic source unavailable');return task});
   assert.equal(result.decision.status,kind==='website-audit'||kind==='quality-review'?'blocked':kind==='site-generation'||kind==='publish-review'?'needs-approval':'ready');
  }
 });

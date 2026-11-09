@@ -18,8 +18,9 @@ export async function POST(req:NextRequest){
  const results=[];
  for(const job of claimed){
   const task:AgentTask={id:String(job.id),tenantId:String(job.tenant_id),kind:job.kind,source:job.source,payload:job.payload,attempt:Number(job.attempt),createdAt:new Date(job.created_at).toISOString()};
+  let preparedTask=task;
   let decision:AgentDecision,output:AgentOutput|null=null;
-  try{({decision,output}=await evaluateAgentTask(task));}
+  try{({decision,output,task:preparedTask}=await evaluateAgentTask(task));}
   catch(error){
    const delay=agentRetryDelay(error,task.attempt,Number(job.max_attempts));
    if(delay!==null){
@@ -29,7 +30,7 @@ export async function POST(req:NextRequest){
    decision={taskId:task.id,status:'blocked',reason:'Execution failed or retry limit reached; review task before retrying'};
   }
   const status=decision.status==='ready'?'completed':decision.status==='needs-approval'?'needs-approval':'blocked';
-  const next=nextAgentStage(task,decision,output);
+  const next=nextAgentStage(preparedTask,decision,output);
   const settled=await settleAgentJob((text,parameters)=>sql.query(text,parameters),{id:task.id,tenantId:task.tenantId,attempt:task.attempt,lease:String(job.lease)},{status,result:output,reason:decision.reason,next});
   results.push({id:job.id,status:settled?status:'claim-lost'});
  }

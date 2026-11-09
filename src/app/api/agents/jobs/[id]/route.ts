@@ -1,3 +1,7 @@
+import {agentRetryDelay} from '../../../../../lib/agents/retry';
+import {retryAgentJob} from '../../../../../lib/server/agent-job-retry';
+import type {AgentDecision} from '../../../../../lib/agents/types';
+import type {AgentOutput} from '../../../../../lib/agents/execution';
 import {NextRequest,NextResponse} from 'next/server';
 import {database} from '../../../../../lib/server/db';
 import {currentUserId} from '../../../../../lib/server/auth';
@@ -14,9 +18,17 @@ export async function POST(req:NextRequest,{params}:{params:Promise<{id:string}>
  try{const sql=database();const rows=await sql`SELECT * FROM forge_jobs WHERE id=${id}::uuid AND tenant_id=${user}::uuid AND status='pending' LIMIT 1`;
  if(!rows.length)return NextResponse.json({error:'Pending job not found'},{status:404});
  const job=rows[0];const claimed=await sql`UPDATE forge_jobs SET status='evaluating',updated_at=now() WHERE id=${id}::uuid AND tenant_id=${user}::uuid AND status='pending' RETURNING id,updated_at::text AS lease`;if(!claimed.length)return NextResponse.json({error:'Job already claimed'},{status:409});const task:AgentTask={id:String(job.id),tenantId:String(job.tenant_id),kind:job.kind,source:job.source,payload:job.payload,attempt:Number(job.attempt),createdAt:new Date(job.created_at).toISOString()};
- const {decision,output}=await evaluateAgentTask(task);
+ let preparedTask=task;let decision:AgentDecision,output:AgentOutput|null=null;
+ try{({decision,output,task:preparedTask}=await evaluateAgentTask(task))}catch(error){
+  const delay=agentRetryDelay(error,task.attempt,Number(job.max_attempts));
+  if(delay!==null){
+   const retried=await retryAgentJob((text,parameters)=>sql.query(text,parameters),{id:task.id,tenantId:user,attempt:task.attempt,lease:String(claimed[0].lease)},delay);
+   return NextResponse.json({status:retried?'retry-scheduled':'claim-lost',retryAfter:delay},{status:retried?202:409,headers:{'Retry-After':String(delay),'Cache-Control':'no-store'}});
+  }
+  decision={taskId:task.id,status:'blocked',reason:'Execution failed; review task before retrying'};
+ }
  const status=decision.status==='ready'?'completed':decision.status==='needs-approval'?'needs-approval':'blocked';
- const settled=await settleAgentJob((text,parameters)=>sql.query(text,parameters),{id:task.id,tenantId:user,attempt:task.attempt,lease:String(claimed[0].lease)},{status,result:output,reason:decision.reason,next:nextAgentStage(task,decision,output)});
+ const settled=await settleAgentJob((text,parameters)=>sql.query(text,parameters),{id:task.id,tenantId:user,attempt:task.attempt,lease:String(claimed[0].lease)},{status,result:output,reason:decision.reason,next:nextAgentStage(preparedTask,decision,output)});
  if(!settled)return NextResponse.json({error:'Job claim expired; refresh its status'},{status:409});
  return NextResponse.json({decision,status});
  }catch{return NextResponse.json({error:'Job evaluation failed'},{status:503})}

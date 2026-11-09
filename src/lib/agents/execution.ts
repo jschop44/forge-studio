@@ -1,3 +1,4 @@
+import {requireGenerationBrief} from './generation-brief';
 import {generateWithLocalAi} from '../server/local-ai';
 import {z} from 'zod';
 import {generateBusinessWebsite} from '../business-site';
@@ -15,7 +16,8 @@ export function executeSafeAgent(task:AgentTask,review=reviewAgentPages):AgentOu
  case 'site-plan':return {stage:task.kind,summary:'Drafted a four-page website plan',data:createSitePlan(context)};
  case 'site-generation':{
  if(!context.approvedPlan)throw Error('Site plan approval required');
- const result=generateBusinessWebsite({experienceStyle:context.experienceStyle,businessName:context.businessName||'New Business',industry:context.industry||'Services',description:context.summary||'Professional services designed to help customers succeed.',services:context.services?.length?context.services:['Consulting','Customer support']});
+ const brief=requireGenerationBrief(context);
+ const result=generateBusinessWebsite({experienceStyle:context.experienceStyle,businessName:brief.businessName,industry:brief.industry,description:brief.summary,services:brief.services});
  return {stage:task.kind,summary:'Generated four-page site draft',data:{name:result.name,pages:result.pages.map(p=>({slug:p.slug,title:p.title,html:p.html}))}};
  }
  case 'quality-review':{const result=review(task.payload);return {stage:task.kind,summary:'Reviewed '+result.evidence.pageCount+' supplied page(s)',data:result};}
@@ -28,6 +30,7 @@ export async function executeAgent(task:AgentTask,generate=generateWithLocalAi,r
  if(task.kind!=='site-generation')return executeSafeAgent(task,review);
  const context=Context.parse(task.payload);
  if(!context.approvedPlan)throw Error('Site plan approval required');
- const result=await generate({experienceStyle:context.experienceStyle,businessName:context.businessName||'New Business',industry:context.industry||'Services',description:context.summary||'Professional services designed to help customers succeed.',services:context.services?.length?context.services:['Consulting','Customer support']});
+ const brief=requireGenerationBrief(context);
+ const result=await generate({experienceStyle:context.experienceStyle,businessName:brief.businessName,industry:brief.industry,description:brief.summary,services:brief.services});
  return {stage:task.kind,summary:'AI-generated four-page site draft',data:{name:result.draft.businessName,provider:result.provider,draft:result.draft,pages:result.pages.map(page=>({slug:page.slug,title:page.title,html:page.html}))}};
 }
