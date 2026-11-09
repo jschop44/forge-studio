@@ -12,10 +12,34 @@ The self-contained renderer requires no external model, renderer CDN, or paid AP
 
 Acceptance requires real browser tests for mesh selection, drag cancellation, mobile bounds, niche-appropriate routing, keyboard links, reduced motion, and the Standard default. Source code and unit tests alone do not establish visual acceptance.
 
-## Full immersion
+## Business identity and mode separation
 
-Full immersion is a separate optional experience. A full-viewport procedural WebGL environment is shared across core and extracted pages. The explicit industry selects cafe, dining, baseball, property, wellness, technology or gallery scenery; incidental services cannot switch the environment's niche. Lit foreground landmarks open actual generated page destinations. Ordinary links remain available, and a Read page control reveals the page's complete content. All supplied offerings are retained.
+Every mode uses the business industry, supplied offerings and brand direction. Standard uses an editorial page layout. Cinematic uses edge-to-edge photography, large story chapters, chapter navigation and progress. 3D navigation uses a matching interactive object or a spatial showroom of supplied offerings. The immersive option uses a relevant photographic panorama where available and a labeled spatial gallery elsewhere. No primitive diorama is marketed as a finished immersive environment.
 
-The environment renders only in response to interaction, resizing or visibility changes, with a 1.8-million-pixel rendering budget. Pointer dragging changes perspective without activating landmarks. Arrow keys orbit; accessible buttons control zoom and reset. Camera state is bounded and stored under a per-site session key. Mesh picking accounts for scene occlusion and perspective depth. There are no automatic camera animations. Reduced-motion users retain user-directed controls. Printing shows the ordinary page; WebGL failure or context loss restores it automatically. Without JavaScript, the ordinary page remains readable.
+The supported textured sports props are a baseball and a soccer ball, each assigned only to its matching niche. Soccer uses the inflated football asset; it must not receive baseball equipment. Coffee retains its cup-part navigation. Other niches use offering-specific showroom cards rather than an unrelated cup or sports prop.
 
-This is procedural scenery, not photorealistic environment reconstruction. Uploaded worlds, arbitrary model hotspots and client-specific art direction remain future work. Browser acceptance covers actual mesh navigation on desktop/mobile, drag cancellation, keyboard links, camera persistence, readable content, print output, failure recovery, and routing to extracted pages within the builder preview.
+## Panoramic and spatial environments
+
+The panoramic renderer projects real equirectangular images through a WebGL camera. Dragging and arrow keys change the viewing direction; zoom changes field of view. Page hotspots and ordinary page links navigate to actual generated destinations. Read page reveals the complete ordinary page. Camera state is bounded, site-specific and separate from the removed diorama state. There is no automatic camera movement. Reduced-motion users retain user-directed controls. Print output and WebGL/texture failures restore ordinary content.
+
+Baseball uses a baseball stadium panorama, soccer uses a separate soccer stadium, and coffee uses a cafe interior. These are clearly credited illustrative settings, not claims that the pictured venue belongs to the business. Cropped panoramas retain their crop metadata and a constrained vertical field of view. A photographic panorama does not provide walkable reconstructed geometry; arbitrary scene reconstruction remains unimplemented.
+
+## Image relevance and provenance
+
+Hero assets are reserved before selecting service photography. Image identity excludes crop/size URL parameters. Exhausted pools do not repeat images to fill slots; all offerings remain present. Hero photos are not reused as page backgrounds. Home pages use text offering summaries; detailed imagery is assigned to the service page.
+
+Unknown niches do not receive office-photo defaults. Generic training does not mean fitness, medical gloves do not mean baseball, examination rooms do not mean hotel rooms, and home visits do not mean real estate. Salon and wellness imagery are separate. Bakery, medical, legal and other specialized niches cannot inherit broad but unrelated stock images.
+
+The free Commons discovery endpoint retains only image files with source attribution, reusable license metadata and niche evidence. It excludes unrelated metadata, logos, maps, advertising and sensitive clinical imagery. If no suitable asset can be verified, the generator explains the gap and retains the business typography and colors; it must not substitute unrelated stock. Remote asset metadata is excluded from model prompts. Source/creator/license credits remain available in generated pages.
+
+Acceptance includes business-specific desktop and mobile screenshots, actual texture/model loading, niche routing, duplicate-image checks, chapter navigation, camera persistence, fallback recovery and extracted-page routing. Passing structural tests alone does not establish visual quality.
+
+## Reviewed asset sources
+
+- Cafe panorama: Sergej Majboroda, Comfy Cafe, Poly Haven, CC0 — https://polyhaven.com/a/comfy_cafe
+- Soccer panorama: Sergej Majboroda, Stadium 01, Poly Haven, CC0 — https://polyhaven.com/a/stadium_01
+- Baseball panorama: Nesnad, Meiji Jingu Stadium, CC BY 4.0; resized for display — https://commons.wikimedia.org/wiki/File:Meiji_Jingu_Stadium_2024_April_23_-_360_panorama.jpeg
+- Baseball model: Rico Cilliers, Baseball 01, Poly Haven, CC0 — https://polyhaven.com/a/baseball_01
+- Soccer model: Amal Kumar, Football, Poly Haven, CC0 — https://polyhaven.com/a/football
+- Baseball photos: https://unsplash.com/photos/8aE7REdS_rU, https://unsplash.com/photos/kJce0SXcrw0, https://unsplash.com/photos/wdInv4ZcZsM
+- Salon photos: https://unsplash.com/photos/lK8oXGycy88 and https://unsplash.com/photos/JZxYImAay2Y

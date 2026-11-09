@@ -1,3 +1,4 @@
+import type {VisualAsset} from '../visual-assets';
 import {summarizeAiError} from './ai-error';
 import {z} from 'zod';
 import type {WebsiteExperience} from '../website-experience';
@@ -63,17 +64,18 @@ export async function checkLocalAiReadiness():Promise<{ready:boolean;reason:'rea
 const MAX_ACTIVE_GENERATIONS=2;
 let activeGenerations=0;
 export function localAiCapacity(){return {active:activeGenerations,capacity:MAX_ACTIVE_GENERATIONS}}
-export async function generateWithLocalAi(input:{businessName:string;industry:string;description:string;services:string[];contactEmail?:string;experienceStyle?:WebsiteExperience}):Promise<AiGenerationResult>{
+export async function generateWithLocalAi(input:{businessName:string;industry:string;description:string;services:string[];contactEmail?:string;visualAssets?:VisualAsset[];experienceStyle?:WebsiteExperience}):Promise<AiGenerationResult>{
  if(activeGenerations>=MAX_ACTIVE_GENERATIONS)throw Error('Local AI capacity exceeded');
  activeGenerations++;
  try {
+ const {visualAssets,...businessInput}=input;
  let description!:string;
  let design!:z.infer<typeof DesignSchema>;
  let provider:'ollama'|'cloudflare'='ollama';
  const cloudAi=await workersAi();
  if(cloudAi){
    try{
-    const composition=await generateWorkersComposition(cloudAi,input);
+    const composition=await generateWorkersComposition(cloudAi,businessInput);
     description=composition.description;design=composition.design;
    }catch(error){
     // Do not log the user's prompt, model response, or credentials.
@@ -85,7 +87,7 @@ export async function generateWithLocalAi(input:{businessName:string;industry:st
  }else{
  const config=ollamaConfig();const url=config.url;
  const controller=new AbortController();const timeout=setTimeout(()=>controller.abort(),60000);
- try{const response=await fetch(new URL('/api/generate',url),{method:'POST',signal:controller.signal,redirect:'error',headers:{'Content-Type':'application/json',...config.headers},body:JSON.stringify({model:config.model,stream:false,format:compositionJsonSchema,keep_alive:'10m',options:{num_predict:360,num_ctx:2048,temperature:0.3},prompt:compositionInstruction+' Input: '+JSON.stringify(input)})});
+ try{const response=await fetch(new URL('/api/generate',url),{method:'POST',signal:controller.signal,redirect:'error',headers:{'Content-Type':'application/json',...config.headers},body:JSON.stringify({model:config.model,stream:false,format:compositionJsonSchema,keep_alive:'10m',options:{num_predict:360,num_ctx:2048,temperature:0.3},prompt:compositionInstruction+' Input: '+JSON.stringify(businessInput)})});
  if(!response.ok)throw Error('Local AI returned HTTP '+response.status);
  if(response.ok){const payload=await response.json();const composition=parseAiComposition(String(payload.response||''));description=composition.description;design=composition.design}
  }catch(error){throw new Error('Local AI unavailable: '+(error instanceof Error?error.message:'request failed'))}finally{clearTimeout(timeout)}
@@ -99,6 +101,6 @@ export async function generateWithLocalAi(input:{businessName:string;industry:st
   services:input.services.map(service=>service.trim())
  };
  const validated=DraftSchema.parse(verifiedDraft);
- return {draft:validated,provider,pages:generateBusinessWebsite({...validated,...compositionAppearance(design),contactEmail:input.contactEmail,experienceStyle:input.experienceStyle}).pages};
+ return {draft:validated,provider,pages:generateBusinessWebsite({...validated,...compositionAppearance(design),visualAssets:input.visualAssets,contactEmail:input.contactEmail,experienceStyle:input.experienceStyle||'standard'}).pages};
  } finally {activeGenerations--}
 }

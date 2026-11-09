@@ -27,7 +27,7 @@ describe('business-specific image diversity',()=>{
  it('provides four candidates for every curated business category',()=>{for(const [category,ids] of Object.entries(photoLibrary))assert.ok(ids.length>=4,category+' needs at least four alternatives')});
  it('does not mistake healthcare for automotive',()=>{const healthcare=industryPhotos('healthcare clinic');const automotive=industryPhotos('automotive dealership');assert.notDeepEqual(healthcare,automotive);assert.deepEqual(automotive,photoLibrary.automotive.map(id=>'https://images.unsplash.com/'+id+'?auto=format&fit=crop&w=1400&q=80'))});
  it('does not use coffee imagery for a baseball business',()=>{const baseball=industryPhotos('baseball equipment store');const coffee=industryPhotos('coffee shop');assert.ok(baseball.length>=4);assert.equal(baseball.some(image=>coffee.includes(image)),false)});
- it('does not classify a hair salon as a technology business',()=>{assert.deepEqual(industryPhotos('hair salon and beauty studio'),photoLibrary.wellness.map(id=>'https://images.unsplash.com/'+id+'?auto=format&fit=crop&w=1400&q=80'))});
+ it('does not classify a hair salon as a technology business',()=>{assert.deepEqual(industryPhotos('hair salon and beauty studio'),photoLibrary.beauty.map(id=>'https://images.unsplash.com/'+id+'?auto=format&fit=crop&w=1400&q=80'))});
  it('does not use hotel photography for unrelated bathroom design',()=>{assert.equal(servicePhoto('Bathroom design','Interior design'),null);assert.ok(servicePhoto('Hotel suites','Hospitality'))});
  it('keeps all curated category images unique within each category',()=>{
   for(const [category,ids] of Object.entries(photoLibrary))assert.equal(new Set(ids).size,ids.length,category);
@@ -41,4 +41,14 @@ it('does not count alternate crops of the same asset as different photos',()=>{
  assert.equal(selectDiversePhoto(['https://images.unsplash.com/photo-one?w=1400','https://images.unsplash.com/photo-two?w=1000'],used),'https://images.unsplash.com/photo-two?w=1000');
  assert.equal(selectDiversePhoto([first],used),undefined);
  assert.equal(photoIdentity(first),'https://images.unsplash.com/photo-one');
+});
+
+it('ambiguous offering words cannot switch the business niche',()=>{
+ assert.ok(servicePhoto('Soccer training','Soccer club')?.includes('photo-1517466787929'));assert.notEqual(servicePhoto('Soccer training','Soccer club'),servicePhoto('Fitness training','Fitness'));
+ assert.equal(servicePhoto('Sales training','Education'),null);
+ assert.equal(servicePhoto('Surgical gloves','Healthcare'),null);
+ assert.equal(servicePhoto('Examination rooms','Dental practice'),null);
+ assert.equal(servicePhoto('Software suite','Technology')?.includes('photo-1566073771259'),false);
+ assert.equal(servicePhoto('Home visits','Healthcare'),null);
+ assert.equal(servicePhoto('Roast chicken','Restaurant'),null);
 });

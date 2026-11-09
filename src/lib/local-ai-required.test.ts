@@ -52,7 +52,7 @@ test('legacy cloud API key cannot redirect requests to paid Ollama Cloud',async(
   const result=await generateWithLocalAi(brief);
   assert.equal(result.provider,'ollama');
   assert.deepEqual(result.pages.map(page=>page.slug),['index','services','about','contact']);
-  for(const page of result.pages)assert.ok(page.html.includes("getContext('webgl'"));
+  for(const page of result.pages){assert.match(page.html,/data-forge-experience="standard"/);assert.ok(!page.html.includes('forge-home-webgl-controller'));}
  }finally{
   globalThis.fetch=previousFetch;
   if(previousKey===undefined)delete process.env.OLLAMA_API_KEY;else process.env.OLLAMA_API_KEY=previousKey;

@@ -10,9 +10,9 @@ test('objects and their destinations match verified niche and offerings',()=>{
 });
 test('food-page context may use coffee, but general baseball pages and unrelated niches do not',()=>{
  assert.equal(objectNavigationPlan({industry:'Baseball stadium',services:['Coffee beans'],pagePurpose:'food'})?.theme,'coffee');
- assert.equal(objectNavigationPlan({industry:'Baseball stadium',services:['Coffee beans']}),null);
- assert.equal(objectNavigationPlan({industry:'Accountancy',services:['Tax advice']}),null);
- assert.equal(objectNavigationPlan({industry:'Coffee shop',services:['Catering']}),null);
+ assert.equal(objectNavigationPlan({industry:'Baseball stadium',services:['Coffee beans']})?.theme,'collection');
+ assert.equal(objectNavigationPlan({industry:'Accountancy',services:['Tax advice']})?.theme,'collection');
+ assert.equal(objectNavigationPlan({industry:'Coffee shop',services:['Catering']})?.theme,'collection');
 });
 
 const brief={businessName:'Northstar Coffee',industry:'Coffee shop',description:'A neighborhood coffee shop providing coffee beans and ceramic drinkware.',services:['Coffee beans','Ceramic mugs']};
@@ -28,7 +28,7 @@ test('object navigation uses actual offering anchors and refuses unrelated niche
  assert.ok(pages[0].html.includes('services.html#offering-1'));
  assert.ok(pages[1].html.includes('id="offering-1"'));
  assert.ok(!pages[0].html.includes('forge-home-webgl-controller'));
- assert.throws(()=>generateBusinessWebsite({...brief,industry:'Accountancy',services:['Tax advice'],experienceStyle:'object-navigation'}),/supported business niche/);
+ assert.ok(generateBusinessWebsite({...brief,industry:'Accountancy',services:['Tax advice'],experienceStyle:'object-navigation'}).pages[0].html.includes('data-object-family="collection"'));
  const baseball=generateBusinessWebsite({...brief,industry:'Baseball store',services:['Baseball bats','Baseballs','Gloves'],experienceStyle:'object-navigation'}).pages[0].html;
  assert.ok(baseball.includes('"theme":"baseball"'));assert.ok(!baseball.includes('"theme":"coffee"'));
 });
@@ -49,6 +49,13 @@ test('incidental coffee offerings do not reclassify a clear baseball business',(
 });
 
 test('industry inference does not classify ordinary businesses as AI technology',()=>{
- assert.equal(inferBusinessIndustry('Hair & Beauty Studio','Hair styling and wellness services'),'Health and wellness');
+ assert.equal(inferBusinessIndustry('Hair & Beauty Studio','Hair styling and wellness services'),'Hair salon and beauty');
  assert.equal(inferBusinessIndustry('AI Solutions','Custom automation and software'),'Technology');
+});
+
+test('soccer uses a soccer-specific model rather than a baseball or unrelated placeholder',()=>{
+ const plan=objectNavigationPlan({industry:'Soccer club',services:['Soccer training','Teamwear','Match tickets']});
+ assert.equal(plan?.theme,'soccer');assert.equal(plan?.targets[0].href,'services.html#offering-0');
+ const site=generateBusinessWebsite({businessName:'Northside Soccer',industry:'Soccer club',description:'A community soccer club offering training and match tickets.',services:['Soccer training','Teamwear','Match tickets'],experienceStyle:'object-navigation'});
+ for(const page of site.pages){assert.ok(page.html.includes('"theme":"soccer"'));assert.ok(!page.html.includes('"theme":"baseball"'));assert.ok(page.html.includes('polyhaven.com/a/football'))}
 });
