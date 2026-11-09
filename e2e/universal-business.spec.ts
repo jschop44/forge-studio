@@ -31,3 +31,12 @@ for(const industry of ['Healthcare and medical services','Restaurant and hospita
  expect(await links.evaluateAll(links=>links.map(link=>{const r=link.getBoundingClientRect();return [r.x,r.y]}))).toEqual(positions);
  await root.locator('[data-world-page="about"]').click();await expect(page).toHaveURL(/about\.html$/);await expect(page.locator('#forge-immersive-world .world-copy h2')).toHaveText('About');
 });
+
+test('a specific business name is recognized even when it also matches an older broad category',async({page})=>{
+ let recognized=0;
+ await page.route('**/api/business/recognize',route=>{recognized++;expect(route.request().postDataJSON().brief).toBe('');return route.fulfill({status:200,json:{status:'identified',industry:'Japanese restaurant',services:[],evidence:['Japanese restaurant'],provider:'fixture'}})});
+ await page.route('**/api/business/visuals',route=>route.fulfill({status:200,json:{assets:[]}}));
+ await page.route('**/api/ai/business',route=>{const input=route.request().postDataJSON();expect(input.industry).toBe('Japanese restaurant');return route.fulfill({status:200,json:{pages:generateBusinessWebsite(input).pages}})});
+ await page.goto('/business');await page.getByPlaceholder('e.g. Northstar Coffee').fill('Japanese restaurant');await page.getByRole('button',{name:/generate my website/i}).click();
+ await expect(page.frameLocator('iframe[title="Website preview: Home"]').locator('main h1')).toHaveText('Japanese restaurant');expect(recognized).toBe(1);
+});

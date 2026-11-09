@@ -52,3 +52,5 @@ test('a matching panorama supplies a projected photographic hero when regular ph
  const site=generateBusinessWebsite({businessName:'Northside Hospital',industry:'Healthcare and medical services',description:'Patient information and care coordination for our community.',services:['Patient information'],experienceStyle:'standard'});
  assert.match(site.pages[0].html,/forge-business-photo-controller/);assert.match(site.pages[0].html,/hospital_room_2/);assert.ok(!site.pages[0].html.includes('id="forge-immersive-world"'));
 });
+
+test('unreviewed specialties cannot inherit broad stock imagery',()=>{for(const niche of ['Japanese restaurant','Nail salon','Weightlifting gym','Affordable housing real estate','Electric vehicle dealership'])assert.deepEqual(industryPhotos(niche),[],niche)});

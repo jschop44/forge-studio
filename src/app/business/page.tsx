@@ -245,7 +245,7 @@ export default function BusinessGenerator(){
    const sourceBrief=designMode!=='new'&&evidence?[evidence.url,evidence.title,evidence.description,...evidence.headings.slice(0,3),...(evidence.pageSummaries||[]).flatMap(page=>[page.description,...page.headings.slice(0,2)])].filter(Boolean).join('. ').slice(0,1500):'';
    const effectiveBrief=!inspected&&evidence?sourceBrief:brief.trim()||sourceBrief;
    const inferred=infer(generationName,effectiveBrief);let recognizedActivity=false;
-   if(!/(?:^|\n)\s*(?:industry|business type|category)\s*:/i.test(effectiveBrief)&&(inferred.industry==='Professional services'||effectiveBrief.trim().length>=15)){
+   if(!/(?:^|\n)\s*(?:industry|business type|category)\s*:/i.test(effectiveBrief)){
     setStatus('Understanding your business and its specific niche…');
     let identified=false,recognitionAnswered=false;
     try{
