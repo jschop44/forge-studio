@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import {evaluateAgentTask} from '../src/lib/agents/evaluate';
 import {executeAgent} from '../src/lib/agents/execution';
 import {planNextTask} from '../src/lib/agents/orchestrator';
 import {nextAgentStage} from '../src/lib/agents/handoff';
@@ -10,6 +11,13 @@ import type {AiGenerationResult} from '../src/lib/server/local-ai';
 async function main(){
 const origin='https://forge-studio-preview.stands-old-3h.workers.dev';
 const task:AgentTask={id:crypto.randomUUID(),tenantId:crypto.randomUUID(),kind:'site-plan',source:'forge-studio',attempt:0,createdAt:new Date().toISOString(),payload:{businessName:'Forge Pipeline Verification Studio',industry:'Design',summary:'An independent studio providing website design services for local businesses.',services:['Website design','Accessibility review']}};
+// Evidence stages use supplied-content fixtures, without remote crawling.
+const enriched=await evaluateAgentTask({...task,kind:'lead-enrichment'});
+assert.equal(enriched.decision.next,'website-audit');
+assert.equal(enriched.output?.data.businessName,task.payload.businessName);
+const audited=await evaluateAgentTask({...task,kind:'website-audit',payload:{...task.payload,website:'https://example.org',html:'<!doctype html><html lang="en"><head><title>Verification fixture</title></head><body><h1>Supplied evidence fixture</h1></body></html>'}});
+assert.equal(audited.decision.next,'site-plan');
+assert.ok(audited.output?.data.audit);
 const planDecision=planNextTask(task);
 const plan=await executeAgent(task);
 const generation=nextAgentStage(task,planDecision,plan)!;
@@ -34,13 +42,15 @@ const draft=await executeAgent(approved,async input=>{
 });
 const qualityStage=nextAgentStage(approved,planNextTask(approved),draft)!;
 const qualityTask={...task,...qualityStage} as AgentTask;
-const qualityDecision=planNextTask(qualityTask);
+const {decision:qualityDecision,output:quality}=await evaluateAgentTask(qualityTask);
 assert.equal(qualityDecision.status,'ready',qualityDecision.reason);
-const quality=await executeAgent(qualityTask);
+assert.ok(quality);
 assert.equal((quality.data.audits as unknown[]).length,4);
 const publication=nextAgentStage(qualityTask,qualityDecision,quality)!;
-assert.equal(planNextTask({...task,...publication}).status,'needs-approval');
-console.log(JSON.stringify({provider:draft.data.provider,pages:(draft.data.pages as unknown[]).length,composition:'model-selected-layout-and-palette',quality:'passed',publication:'needs-approval',persisted:false,published:false}));
+const published=await evaluateAgentTask({...task,...publication});
+assert.equal(published.decision.status,'needs-approval');
+assert.equal(published.output,null);
+console.log(JSON.stringify({stagesVerified:6,evidenceStages:'supplied-content-fixtures',provider:draft.data.provider,pages:(draft.data.pages as unknown[]).length,composition:'model-selected-layout-and-palette',quality:'passed',publication:'needs-approval',persisted:false,published:false}));
 
 }
 main().catch(error=>{console.error(error.message);process.exitCode=1});
