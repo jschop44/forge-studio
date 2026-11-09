@@ -59,6 +59,7 @@ test('builder exposes full immersion and carries it into core and extracted page
  await page.goto('/business');await page.getByRole('button',{name:/^Full immersion/}).click();
  await page.getByRole('combobox',{name:/^Design approach/}).selectOption('redesign');await page.getByPlaceholder('e.g. disney.com').fill('reference.example');
  await page.getByRole('button',{name:/generate my website/i}).click();
+ await page.locator('iframe[title="Website preview: Home"]').scrollIntoViewIfNeeded();
  const frame=page.frameLocator('iframe[title="Website preview: Home"]');
  await expect(frame.locator('#forge-immersive-world')).toBeVisible();await frame.locator('[data-world-page="events"]').click();
  const events=page.frameLocator('iframe[title="Website preview: Events"]');await expect(events.locator('#forge-immersive-world')).toBeVisible();
