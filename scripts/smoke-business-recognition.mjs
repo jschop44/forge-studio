@@ -4,7 +4,7 @@ const origin='https://forge-studio-preview.stands-old-3h.workers.dev';
 const cases=[
  {label:'hospital',businessName:'Northside Hospital',brief:'',industry:/hospital/i},
  {label:'restaurant',businessName:'Basil Restaurant',brief:'',industry:/restaurant/i},
- {label:'unlisted niche',businessName:'Meridian',brief:'We restore antique clocks and repair mechanical watches.',industry:/clock|watch/i},
+ {label:'unlisted niche',businessName:'Meridian',brief:'We restore antique clocks and repair mechanical watches.',industry:/clock|watch|horolog/i},
  {label:'ambiguous brand',businessName:'XQ Meridian',brief:'',industry:null}
 ];
 const normalize=value=>value.toLowerCase().replace(/\s+/g,' ').trim();
@@ -17,6 +17,7 @@ for(const sample of cases){
  if(sample.industry){
   assert.equal(result.status,'identified',sample.label);
   assert.match(result.industry,sample.industry,sample.label+': preserve the specific activity');
+  if(sample.label==='unlisted niche')assert.ok(Array.isArray(result.services)&&result.services.some(service=>/clock|watch/i.test(service)&&/restor|repair/i.test(service)),sample.label+': keep the supported repair/restoration offering');
   assert.ok(Array.isArray(result.evidence)&&result.evidence.length>0,sample.label+': evidence');
   const source=normalize(sample.businessName+' '+sample.brief);
   for(const quote of result.evidence)assert.ok(source.includes(normalize(quote)),sample.label+': evidence must come from the brief');
