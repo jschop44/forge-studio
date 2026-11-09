@@ -23,6 +23,7 @@ for(const business of businesses){
     }else{await expect(page.locator('#forge-immersive-world')).toBeHidden();await expect(page.locator('main h1')).toContainText(business.businessName)}
    }else{
     await expect(page.locator('main h1')).toContainText(business.businessName);
+    if(await page.locator('#forge-business-photo').count())await expect(page.locator('#forge-business-photo')).toHaveAttribute('data-loaded','true',{timeout:40000});
     if(experienceStyle==='cinematic')await expect(page.getByRole('navigation',{name:'Story chapters'})).toBeVisible();
     if(experienceStyle==='object-navigation'){await expect(page.locator('[data-object-navigation]')).toBeVisible();if(business.industry==='Baseball store'||business.industry==='Soccer club')await expect(page.locator('[data-object-navigation]')).toHaveAttribute('data-model-quality','textured-asset',{timeout:30000});}
     await page.waitForFunction(()=>Array.from(document.images).filter(image=>{const rect=image.getBoundingClientRect();return rect.width>0&&rect.height>0&&rect.top<innerHeight*1.5}).every(image=>image.complete&&image.naturalWidth>0),{},{timeout:25000});

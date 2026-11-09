@@ -36,7 +36,7 @@ for(const industry of industries){
    assert.match(page.html,/<h1>/);
    assert.doesNotMatch(page.html,/src="undefined"|url\("undefined"\)/i);
    for(const script of page.html.matchAll(/<script\b([^>]*)>/gi)){
-    assert.match(script[1],/\b(?:type="application\/ld\+json"|id="forge-(?:home-webgl-controller|spatial-controller)")/,'Only structured data and trusted Forge WebGL scripts are allowed');
+    assert.match(script[1],/\b(?:type="application\/ld\+json"|id="forge-(?:home-webgl-controller|spatial-controller|business-photo-controller)")/,'Only structured data and trusted Forge WebGL scripts are allowed');
    }
    assert.doesNotMatch(page.html,/pornograph|erotic|graphic gore|illicit drugs/i);
    assert.match(page.html,/Example Business/);

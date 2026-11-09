@@ -5,6 +5,8 @@ import {recognizeBusinessWithLocalAi,localAiCapacity} from '../src/lib/server/lo
 import {analyzeSiteEvidence} from '../src/lib/forge-intelligence';
 import {inferBusinessIndustry} from '../src/lib/website-experience';
 import {findBusinessPanorama} from '../src/lib/environment-catalog';
+import {generateBusinessWebsite} from '../src/lib/business-site';
+import {industryPhotos,photoLibrary} from '../src/lib/industry-photos';
 import {businessArtDirection} from '../src/lib/business-art-direction';
 const niches=[['Horology workshop','We restore antique clocks and repair mechanical watches.'],['Marine electronics','We install navigation electronics on sailboats.'],['Microfluidic laboratory','We design and manufacture microfluidic chips for research.'],['Art conservation','We conserve historic paintings and paper artworks.'],['Piano tuning','We tune and restore acoustic pianos.'],['Tea shop','We sell loose leaf tea and tea accessories.'],['Custom orthotics','We fabricate custom orthotic devices.'],['Industrial filtration','We manufacture filtration systems for industrial water.']];
 test('recognition accepts grounded niches outside every built-in category',()=>{
@@ -41,4 +43,12 @@ test('unsupported service claims are discarded while supported paraphrases remai
  const input={businessName:'Meridian',brief:'We restore antique clocks and repair mechanical watches.'};
  const result=parseBusinessRecognition({status:'identified',industry:'Horology workshop',services:['Clock restoration','Watch repair','Same day delivery','Heart surgery'],evidence:[input.brief]},input);
  assert.deepEqual(result.services,['Clock restoration','Watch repair']);
+});
+
+test('restaurant identity outranks the ambiguous hospitality label in image selection',()=>{
+ assert.deepEqual(industryPhotos('Restaurant and hospitality'),photoLibrary.food.map(id=>'https://images.unsplash.com/'+id+'?auto=format&fit=crop&w=3840&q=90'));
+});
+test('a matching panorama supplies a projected photographic hero when regular photos are unavailable',()=>{
+ const site=generateBusinessWebsite({businessName:'Northside Hospital',industry:'Healthcare and medical services',description:'Patient information and care coordination for our community.',services:['Patient information'],experienceStyle:'standard'});
+ assert.match(site.pages[0].html,/forge-business-photo-controller/);assert.match(site.pages[0].html,/hospital_room_2/);assert.ok(!site.pages[0].html.includes('id="forge-immersive-world"'));
 });
