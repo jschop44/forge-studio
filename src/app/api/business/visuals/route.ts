@@ -2,7 +2,7 @@ import {NextRequest,NextResponse} from 'next/server';
 import {z} from 'zod';
 import {sameOrigin} from '../../../../lib/server/request-security';
 import {discoverBusinessVisuals} from '../../../../lib/server/business-visuals';
-const Input=z.object({industry:z.string().trim().min(3).max(100)}).strict();
+const Input=z.object({industry:z.string().trim().min(2).max(100)}).strict();
 export async function POST(request:NextRequest){
  if(!sameOrigin(request))return NextResponse.json({error:'Origin rejected'},{status:403});
  const raw=await request.text();if(raw.length>500)return NextResponse.json({error:'Request too large'},{status:413});

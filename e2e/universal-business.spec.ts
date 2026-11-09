@@ -40,3 +40,12 @@ test('a specific business name is recognized even when it also matches an older 
  await page.goto('/business');await page.getByPlaceholder('e.g. Northstar Coffee').fill('Japanese restaurant');await page.getByRole('button',{name:/generate my website/i}).click();
  await expect(page.frameLocator('iframe[title="Website preview: Home"]').locator('main h1')).toHaveText('Japanese restaurant');expect(recognized).toBe(1);
 });
+
+test('short explicit industry labels remain authoritative',async({page})=>{
+ let recognitionCalls=0;
+ await page.route('**/api/business/recognize',route=>{recognitionCalls++;return route.abort()});
+ await page.route('**/api/business/visuals',route=>route.fulfill({status:200,json:{assets:[]}}));
+ await page.route('**/api/ai/business',route=>{const input=route.request().postDataJSON();expect(input.industry).toBe('IT');expect(input.services).toEqual(['Managed networks']);return route.fulfill({status:200,json:{pages:generateBusinessWebsite(input).pages}})});
+ await page.goto('/business');await page.getByPlaceholder('e.g. Northstar Coffee').fill('Meridian');await page.getByPlaceholder(/Describe what you offer/).fill('Industry: IT\nOfferings: Managed networks');await page.getByRole('button',{name:/generate my website/i}).click();
+ await expect(page.frameLocator('iframe[title="Website preview: Home"]').locator('main h1')).toHaveText('Meridian');expect(recognitionCalls).toBe(0);
+});

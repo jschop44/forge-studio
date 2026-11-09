@@ -23,7 +23,7 @@ import type {WebsiteExperience} from '../../lib/website-experience';
 type Brief={businessName:string;industry:string;description:string;services:string[];contactEmail?:string};
 function infer(name:string,brief:string):Brief{
  const text=(name+' '+brief).toLowerCase();
- const declaredIndustry=brief.match(/(?:^|\n)\s*(?:industry|business type|category)\s*:\s*([^\n]{3,80})/i)?.[1]?.trim();
+ const declaredIndustry=brief.match(/(?:^|\n)\s*(?:industry|business type|category)\s*:\s*([^\n]{2,80})/i)?.[1]?.trim();
  const industry=declaredIndustry||inferBusinessIndustry(name,brief);
  const copy=brief.split('\n').filter(line=>!/^\s*(?:industry|business type|category|services|products|offerings|menu)\s*:/i.test(line)).join(' ').trim();
  const description=copy.length>=15?copy:brief.trim().length>=15?name+' offers '+(brief.match(/(?:services|products|offerings|menu)\s*:\s*([^\n]+)/i)?.[1]||industry.toLowerCase())+'.':'Explore what '+name+' offers and find the information you need for your next step.';
