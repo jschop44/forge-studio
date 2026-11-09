@@ -1,18 +1,34 @@
 import {relevantVisualAssets,nicheTerms,type VisualAsset} from '../visual-assets';
-const cache=new Map<string,{until:number;assets:VisualAsset[]}>();
+type ResearchState={cache:Map<string,{until:number;assets:VisualAsset[]}>;pending:Map<string,Promise<VisualAsset[]>>};
+const providers=new WeakMap<typeof fetch,ResearchState>();
 const clean=(value:unknown)=>typeof value==='string'?value.replace(/<[^>]*>/g,' ').replace(/&(?:amp|quot|lt|gt);/g,' ').replace(/\s+/g,' ').trim():'';
 /** Free Commons discovery, restricted to image files with a reusable license and niche evidence. */
 export async function discoverBusinessVisuals(industry:string,fetcher:typeof fetch=fetch):Promise<VisualAsset[]>{
  const terms=nicheTerms(industry);if(!terms.length)return [];
- const preferred:[RegExp,string][]=[[/dental|dentist/i,'dental chair'],[/\bhospitals?\b|medical|healthcare/i,'medical clinic interior'],[/pharmacy/i,'pharmacy interior'],[/plumb/i,'plumbing equipment'],[/roof/i,'roofing work'],[/legal|law/i,'law library'],[/account|bookkeep/i,'accounting desk'],[/educat|school|tutor/i,'classroom teacher'],[/veterinar/i,'veterinarian clinic']];
- const query=preferred.find(([pattern])=>pattern.test(industry))?.[1]||terms.join(' ');
- const key=terms.join(' '),saved=cache.get(key);if(saved&&saved.until>Date.now())return saved.assets;
- const url=new URL('https://commons.wikimedia.org/w/api.php');url.search=new URLSearchParams({action:'query',generator:'search',gsrnamespace:'6',gsrsearch:query+' filetype:bitmap -filetype:svg',gsrlimit:'10',prop:'imageinfo',iiprop:'url|extmetadata|mime',iiurlwidth:'3840',format:'json'}).toString();
+ const query=terms.join(' '),key=query;
+ let state=providers.get(fetcher);if(!state){state={cache:new Map(),pending:new Map()};providers.set(fetcher,state)}
+ const {cache,pending}=state,saved=cache.get(key);if(saved&&saved.until>Date.now())return structuredClone(saved.assets);
+ const existing=pending.get(key);if(existing)return structuredClone(await existing);
+ // Bound external requests without retaining an unbounded queue on the free tier.
+ if(pending.size>=4)return [];
+ const operation=research();pending.set(key,operation);
+ try{return structuredClone(await operation)}finally{pending.delete(key)}
+ async function research():Promise<VisualAsset[]>{
+ const remember=(assets:VisualAsset[],ttl:number)=>{if(cache.size>=100)cache.delete(cache.keys().next().value!);cache.set(key,{until:Date.now()+ttl,assets});return assets};
+ const url=new URL('https://commons.wikimedia.org/w/api.php');url.search=new URLSearchParams({action:'query',generator:'search',gsrnamespace:'6',gsrsearch:query+' filetype:bitmap -filetype:svg',gsrlimit:'10',prop:'imageinfo',iiprop:'url|size|extmetadata|mime',iiurlwidth:'3840',format:'json'}).toString();
  try{
   const response=await fetcher(url,{headers:{'User-Agent':'ForgeStudio/1.0 (business visual research; https://forge-studio-preview.stands-old-3h.workers.dev)','Accept':'application/json'},signal:AbortSignal.timeout(4500),redirect:'error'});
-  if(!response.ok)return [];const raw=await response.text();if(raw.length>300000)return [];
-  const data=JSON.parse(raw) as {query?:{pages?:Record<string,{title?:string;imageinfo?:{mime?:string;thumburl?:string;url?:string;descriptionurl?:string;extmetadata?:Record<string,{value?:string}>}[]}>}};
-  const candidates=Object.values(data.query?.pages||{}).flatMap(page=>{const info=page.imageinfo?.[0],meta=info?.extmetadata;if(!info||!/^image\/(jpeg|png|webp)$/.test(info.mime||''))return [];return [{url:info.thumburl||info.url,title:(clean(page.title?.replace(/^File:/,''))+' '+clean(meta?.ImageDescription?.value)).slice(0,350),credit:clean(meta?.Artist?.value).slice(0,250),source:info.descriptionurl,license:clean(meta?.LicenseShortName?.value)}]});
-  const assets=relevantVisualAssets(industry,candidates);if(cache.size>=100)cache.delete(cache.keys().next().value!);cache.set(key,{until:Date.now()+3600000,assets});return assets;
- }catch{return []}
+  if(!response.ok){await response.body?.cancel();return remember([],30000);}const raw=await readBoundedText(response);
+  const data=JSON.parse(raw) as {query?:{pages?:Record<string,{title?:string;imageinfo?:{mime?:string;width?:number;height?:number;thumburl?:string;url?:string;descriptionurl?:string;extmetadata?:Record<string,{value?:string}>}[]}>}};
+  const candidates=Object.values(data.query?.pages||{}).flatMap(page=>{const info=page.imageinfo?.[0],meta=info?.extmetadata;if(!info||!/^image\/(jpeg|png|webp)$/.test(info.mime||''))return [];const width=Number(info.width)||0,height=Number(info.height)||0;if(Math.max(width,height)<3840||Math.min(width,height)<2160)return [];return [{url:info.thumburl||info.url,title:(clean(page.title?.replace(/^File:/,''))+' '+clean(meta?.ImageDescription?.value)).trim().slice(0,350),credit:clean(meta?.Artist?.value).slice(0,250),source:info.descriptionurl,license:clean(meta?.LicenseShortName?.value)}]});
+  return remember(relevantVisualAssets(industry,candidates),3600000);
+ }catch{return remember([],30000)}
+ }
+}
+
+async function readBoundedText(response:Response){
+ if(Number(response.headers.get('content-length'))>300000){await response.body?.cancel();throw Error('Visual metadata exceeds limit')}
+ const reader=response.body?.getReader();if(!reader)throw Error('Visual metadata missing');
+ const decoder=new TextDecoder();let bytes=0,text='';
+ try{while(true){const {done,value}=await reader.read();if(done)break;bytes+=value.byteLength;if(bytes>300000){await reader.cancel();throw Error('Visual metadata exceeds limit')}text+=decoder.decode(value,{stream:true})}return text+decoder.decode()}finally{reader.releaseLock()}
 }
