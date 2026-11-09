@@ -8,7 +8,7 @@ export function businessArtDirection(industry:string,businessName:string){
   {match:/restaurant|bakery|dining|food/,key:'dining',paper:'#f8efe4',ink:'#3a211b',accent:'#a44c33',night:'#241410',font:'Georgia',mood:'Food, ingredients and the dining experience'},
   {match:/real estate|property|architect|interior|construction/,key:'property',paper:'#eeece5',ink:'#2a3431',accent:'#587666',night:'#13211d',font:'Georgia',mood:'Material, space and considered design'},
   {match:/beauty|salon|hair|barber|skincare/,key:'beauty',paper:'#f5eae7',ink:'#422d36',accent:'#955866',night:'#291c23',font:'Georgia',mood:'Personal style, detail and care'},
-  {match:/medical|healthcare|dental|pharmacy/,key:'clinical',paper:'#eef5f6',ink:'#1b3b48',accent:'#287995',night:'#102c3b',font:'Arial',mood:'Clarity, trust and accessible care'},
+  {match:/\bhospitals?\b|medical|healthcare|dental|pharmacy/,key:'clinical',paper:'#eef5f6',ink:'#1b3b48',accent:'#287995',night:'#102c3b',font:'Arial',mood:'Clarity, trust and accessible care'},
   {match:/legal|attorney|law firm/,key:'legal',paper:'#f1eee5',ink:'#192f43',accent:'#987340',night:'#102235',font:'Georgia',mood:'Authority, discretion and clear guidance'},
   {match:/finance|financial|account|insurance/,key:'finance',paper:'#edf1eb',ink:'#193a32',accent:'#557f63',night:'#102c25',font:'Georgia',mood:'Order, confidence and long-term planning'},
   {match:/education|school|tutor|learning/,key:'education',paper:'#f5f0dc',ink:'#26395a',accent:'#a36e19',night:'#162746',font:'Arial',mood:'Discovery, curiosity and clear learning paths'},

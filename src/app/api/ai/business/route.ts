@@ -12,7 +12,7 @@ export async function POST(req:NextRequest){
  try{const raw=await req.text();if(raw.length>8000)return NextResponse.json({error:'Brief too large'},{status:413});
  let parsed:unknown;try{parsed=JSON.parse(raw)}catch{return NextResponse.json({error:'Malformed JSON request'},{status:400})}
  const input=Input.safeParse(parsed);if(!input.success)return NextResponse.json({error:'Invalid business brief'},{status:400});
- if(input.data.experienceStyle==='object-navigation'&&!objectNavigationPlan(input.data))return NextResponse.json({error:'Object navigation is available for coffee and baseball offerings that match the brief. Choose standard or cinematic for other businesses.'},{status:422});
+ if(input.data.experienceStyle==='object-navigation'&&!objectNavigationPlan(input.data))return NextResponse.json({error:'Add at least one business offering for interactive navigation.'},{status:422});
  if(isExcludedBusiness(input.data))return NextResponse.json({error:'This business category is not supported'},{status:422});
  const result=await generateWithLocalAi(input.data);return NextResponse.json(result,{headers:{'Cache-Control':'no-store'}});
  }catch(error){

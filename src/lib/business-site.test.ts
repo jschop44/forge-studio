@@ -57,7 +57,7 @@ test('rejects prohibited business categories without rejecting legitimate pharma
 test('contact page never invents contact details',()=>{
  const site=generateBusinessWebsite(brief('Accounting and bookkeeping'));
  const contact=site.pages.find(p=>p.slug==='contact')!.html;
- assert.match(contact,/Contact information has not been supplied/);
+ assert.match(contact,/Contact details are being updated/);
  assert.doesNotMatch(contact,/mailto:|<form/i);
 });
 test('verified business contact email is escaped and linked',()=>{
@@ -66,7 +66,7 @@ test('verified business contact email is escaped and linked',()=>{
  assert.match(contact,/href="mailto:hello@example\.com"/);
  assert.match(contact,/href="mailto:hello@example\.com\?subject=Inquiry%20for%20Example%20Business"/);
  assert.match(contact,/>Email Example Business →<\/a>/);
- assert.doesNotMatch(contact,/Contact information has not been supplied/);
+ assert.doesNotMatch(contact,/Contact details are being updated/);
 });
 test('untrusted business content is escaped before appearing in generated HTML',()=>{
  const site=generateBusinessWebsite({businessName:'Example <script>alert(1)</script>',industry:'Professional consulting',description:'A trusted team offering <img src=x onerror=alert(1)> services locally.',services:['<svg onload=alert(1)>']});

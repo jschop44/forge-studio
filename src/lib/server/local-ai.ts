@@ -104,3 +104,21 @@ export async function generateWithLocalAi(input:{businessName:string;industry:st
  return {draft:validated,provider,pages:generateBusinessWebsite({...validated,...compositionAppearance(design),visualAssets:input.visualAssets,contactEmail:input.contactEmail,experienceStyle:input.experienceStyle||'standard'}).pages};
  } finally {activeGenerations--}
 }
+
+/** Open-vocabulary recognition uses the same free, bounded providers as generation. */
+export async function recognizeBusinessWithLocalAi(input:{businessName:string;brief:string}){
+ if(activeGenerations>=MAX_ACTIVE_GENERATIONS)throw Error('Local AI capacity exceeded');
+ activeGenerations++;
+ try{
+  const {recognitionInstruction,recognitionJsonSchema,parseBusinessRecognition}=await import('../business-recognition');
+  const cloud=await workersAi();
+  if(cloud){
+   const output=await cloud.run('@cf/meta/llama-3.3-70b-instruct-fp8-fast',{messages:[{role:'system',content:recognitionInstruction},{role:'user',content:JSON.stringify(input)}],response_format:{type:'json_schema',json_schema:recognitionJsonSchema},max_tokens:400,temperature:0.1}) as {response?:unknown;output?:unknown};
+   return {...parseBusinessRecognition(output?.response??output?.output,input),provider:'cloudflare'};
+  }
+  const config=ollamaConfig();
+  const response=await fetch(new URL('/api/generate',config.url),{method:'POST',redirect:'error',signal:AbortSignal.timeout(30000),headers:{'Content-Type':'application/json'},body:JSON.stringify({model:config.model,stream:false,format:recognitionJsonSchema,keep_alive:'10m',options:{num_predict:400,num_ctx:2048,temperature:0.1},prompt:recognitionInstruction+' Input: '+JSON.stringify(input)})});
+  if(!response.ok)throw Error('Business recognition provider unavailable');
+  const output=await response.json();return {...parseBusinessRecognition(output.response,input),provider:'ollama'};
+ }finally{activeGenerations--}
+}

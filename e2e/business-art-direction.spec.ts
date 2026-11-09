@@ -1,6 +1,7 @@
 import {test,expect} from '@playwright/test';
+import {businessEnvironment} from '../src/lib/business-environments';
 import {generateBusinessWebsite} from '../src/lib/business-site';
-const businesses=[{businessName:'Harbor Coffee',industry:'Coffee shop',description:'A neighborhood cafe selling coffee beans and ceramic mugs.',services:['Coffee beans','Ceramic mugs','Community events']},{businessName:'Baseball Supply',industry:'Baseball store',description:'A baseball shop supplying baseball bats, baseballs and gloves.',services:['Baseball bats','Baseballs','Gloves']},{businessName:'Northside Soccer',industry:'Soccer club',description:'A soccer club offering soccer training, teamwear and match tickets.',services:['Soccer training','Teamwear','Match tickets']}];
+const businesses=[{businessName:'Harbor Coffee',industry:'Coffee shop',description:'A neighborhood cafe selling coffee beans and ceramic mugs.',services:['Coffee beans','Ceramic mugs','Community events']},{businessName:'Baseball Supply',industry:'Baseball store',description:'A baseball shop supplying baseball bats, baseballs and gloves.',services:['Baseball bats','Baseballs','Gloves']},{businessName:'Northside Soccer',industry:'Soccer club',description:'A soccer club offering soccer training, teamwear and match tickets.',services:['Soccer training','Teamwear','Match tickets']},{businessName:'Northside Hospital',industry:'Healthcare and medical services',description:'Patient information and care coordination for our community.',services:['Care services','Patient information','Care coordination']},{businessName:'Basil Kitchen',industry:'Restaurant and hospitality',description:'Seasonal dining and thoughtfully prepared food in a welcoming setting.',services:['Seasonal menu','Private dining','Dinner reservations']},{businessName:'Meridian Horology',industry:'Clock restoration',description:'Restoration and maintenance of antique clocks and mechanical timepieces.',services:['Clock restoration','Mechanical servicing','Restoration consultations']}];
 for(const business of businesses){
  for(const experienceStyle of ['standard','cinematic','object-navigation','immersive'] as const){
   test(`${business.businessName}: ${experienceStyle} has a relevant, distinct mobile presentation`,async({page})=>{
@@ -10,11 +11,16 @@ for(const business of businesses){
    const errors:string[]=[];page.on('pageerror',error=>errors.push(error.message));
    await page.goto('https://design.test/index.html',{waitUntil:'domcontentloaded'});
    if(experienceStyle==='immersive'){
-    await expect(page.locator('#forge-immersive-world')).toHaveAttribute('data-loaded','true',{timeout:40000});
-    await expect(page.locator('#forge-immersive-world')).toHaveAttribute('data-environment','panorama');
-    await expect(page.locator('#forge-immersive-world canvas')).toBeVisible();
-    const resolution=await page.locator('#forge-immersive-world').evaluate(root=>({source:Number((root as HTMLElement).dataset.sourceWidth),texture:Number((root as HTMLElement).dataset.textureWidth)}));
-    expect(resolution.source).toBeGreaterThanOrEqual(7680);expect(resolution.texture).toBeGreaterThanOrEqual(7680);
+    const scene=businessEnvironment(business.industry);
+    if(scene.url){
+     await expect(page.locator('#forge-immersive-world')).toHaveAttribute('data-loaded','true',{timeout:40000});
+     await expect(page.locator('#forge-immersive-world')).toHaveAttribute('data-environment',scene.kind);
+     await expect(page.locator('#forge-immersive-world canvas')).toBeVisible();
+     if(scene.kind==='panorama'){
+      const resolution=await page.locator('#forge-immersive-world').evaluate(root=>({source:Number((root as HTMLElement).dataset.sourceWidth),texture:Number((root as HTMLElement).dataset.textureWidth)}));
+      expect(resolution.source).toBeGreaterThanOrEqual(7680);expect(resolution.texture).toBeGreaterThanOrEqual(7680);
+     }
+    }else{await expect(page.locator('#forge-immersive-world')).toBeHidden();await expect(page.locator('main h1')).toContainText(business.businessName)}
    }else{
     await expect(page.locator('main h1')).toContainText(business.businessName);
     if(experienceStyle==='cinematic')await expect(page.getByRole('navigation',{name:'Story chapters'})).toBeVisible();

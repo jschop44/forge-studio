@@ -18,7 +18,7 @@ const categories=[
  {industry:'Fashion and luxury',pattern:/fashion|jewelry|clothing|apparel|luxury goods/i,services:['Collections','About','Contact']},
  {industry:'Technology',pattern:/software|technology|cloud computing|saas|digital platform/i,services:['Solutions','Products','Contact']},
  {industry:'Sporting goods retail',pattern:/baseball|softball|sporting goods|sports equipment|baseball bats?|baseball gloves?|batting cages?/i,services:['Shop equipment','Product categories','Contact']},
- {industry:'Healthcare and medical services',pattern:/medical clinic|healthcare|physician|doctor|pediatric|dental|dentist|physical therapy|urgent care/i,services:['Care services','Patient information','Contact']},
+ {industry:'Healthcare and medical services',pattern:/\bhospitals?\b|medical clinic|healthcare|physician|doctor|pediatric|dental|dentist|physical therapy|urgent care/i,services:['Care services','Patient information','Contact']},
  {industry:'Pharmacy',pattern:/pharmacy|pharmacist|prescriptions?|medication refill/i,services:['Pharmacy services','Refill information','Contact']},
  {industry:'Education and tutoring',pattern:/school|tutoring|education|learning center|training academy|lessons/i,services:['Programs','Enrollment information','Contact']},
  {industry:'Home and trade services',pattern:/plumbing|electrician|roofing|landscaping|hvac|heating and cooling|home renovation|contractor/i,services:['Our services','Request an estimate','Contact']},
@@ -32,7 +32,8 @@ const categories=[
 export function analyzeSiteEvidence(input:SiteEvidence):IntelligenceFinding{
  const primary=[input.title,input.description,...input.headings].join(' ');
  const secondary=[input.url,...(input.pageSummaries||[]).flatMap(p=>[p.title,p.description,...p.headings]),...(input.navigation||[]).map(p=>p.label)].join(' ');
- const scored=categories.map(category=>({category,score:(primary.match(new RegExp(category.pattern.source,'gi'))||[]).length*2+(secondary.match(new RegExp(category.pattern.source,'gi'))||[]).length}));
+ const animalCare=/animal hospital|veterinar|pet clinic/i.test(primary);
+ const scored=categories.map(category=>({category,score:animalCare&&category.industry==='Healthcare and medical services'?0:(primary.match(new RegExp(category.pattern.source,'gi'))||[]).length*2+(secondary.match(new RegExp(category.pattern.source,'gi'))||[]).length}));
  scored.sort((a,b)=>b.score-a.score);
  const winner=scored[0];
  const runnerUp=scored[1]?.score||0;

@@ -1,4 +1,5 @@
 'use client';
+import {BusinessRecognitionSchema,literalBusinessActivity} from '../../lib/business-recognition';
 import {businessPreviewHtml} from '../../lib/business-preview';
 import {industryPhotos} from '../../lib/industry-photos';
 import {VisualAssetSchema,type VisualAsset} from '../../lib/visual-assets';
@@ -24,11 +25,12 @@ function infer(name:string,brief:string):Brief{
  const text=(name+' '+brief).toLowerCase();
  const declaredIndustry=brief.match(/(?:^|\n)\s*(?:industry|business type|category)\s*:\s*([^\n]{3,80})/i)?.[1]?.trim();
  const industry=declaredIndustry||inferBusinessIndustry(name,brief);
- const description=brief.trim().length>=15?brief.trim():name+' provides thoughtful, professional solutions for customers seeking quality and dependable service.';
+ const copy=brief.split('\n').filter(line=>!/^\s*(?:industry|business type|category|services|products|offerings|menu)\s*:/i.test(line)).join(' ').trim();
+ const description=copy.length>=15?copy:brief.trim().length>=15?name+' offers '+(brief.match(/(?:services|products|offerings|menu)\s*:\s*([^\n]+)/i)?.[1]||industry.toLowerCase())+'.':'Explore what '+name+' offers and find the information you need for your next step.';
  const serviceLine=brief.split('\n').find(line=>/^(services|products|offerings|menu)\s*:/i.test(line.trim()));
  const listed=serviceLine?serviceLine.replace(/^[^:]+:/,'').split(/[,;]/).map(part=>part.trim()).filter(part=>part.length>=3&&part.length<=65).slice(0,12):[];
 
- const services=listed.length>=1?listed:/soccer|football club/.test(industry)?['Soccer training','Teamwear and equipment','Match information']:declaredIndustry?['Explore '+declaredIndustry.toLowerCase()+' offerings','About our business','Contact us'] :/disney|theme park|entertainment|movies|characters|streaming/.test(industry)?['Explore entertainment','Discover destinations','Browse stories']:/coffee|espresso|roast|barista|café|cafe/.test(industry)?['Coffee menu','Visit our café','Contact the team']:/baseball|softball|batting|sports? equipment|sporting goods|baseball bat|baseball glove/.test(industry)?['Shop baseball equipment','Explore bats and gloves','Contact the store']:/restaurant|pizza|food|bakery/.test(industry)?['Explore the menu','Visit us','Ask a question']:/real estate|realtor|property/.test(industry)?['Explore properties','Discuss your goals','Contact an agent']:/gym|fitness|wellness|spa/.test(industry)?['Explore programs','Ask about availability','Contact the team']:['Explore services','Discuss your project','Contact the team'];
+ const services=listed.length>=1?listed:/soccer|football club/.test(industry)?['Soccer training','Teamwear and equipment','Match information']:declaredIndustry?['Explore '+declaredIndustry.toLowerCase()+' offerings','About our business','Contact us'] :/disney|theme park|entertainment|movies|characters|streaming/.test(industry)?['Explore entertainment','Discover destinations','Browse stories']:/coffee|espresso|roast|barista|café|cafe/.test(industry)?['Coffee menu','Visit our café','Contact the team']:/baseball|softball|batting|sports? equipment|sporting goods|baseball bat|baseball glove/.test(industry)?['Shop baseball equipment','Explore bats and gloves','Contact the store']:/restaurant|pizza|food|bakery/.test(industry)?['Explore the menu','Visit us','Ask a question']:/real estate|realtor|property/.test(industry)?['Explore properties','Discuss your goals','Contact an agent']:/gym|fitness|wellness|spa/.test(industry)?['Explore programs','Ask about availability','Contact the team']:/\bhospitals?\b|healthcare|medical|clinic/.test(industry)?['Care services','Patient information','Contact the team']:['Explore services','Discuss your project','Contact the team'];
  return {businessName:name.trim(),industry,description,services};
 }
 type StyleReference={background?:string;accent?:string;fontFamily?:string};
@@ -236,20 +238,30 @@ export default function BusinessGenerator(){
   try{
    let evidence=inspected;
    if(designMode!=='new'&&!evidence&&!referenceMarkup.trim()){evidence=await inspectWebsite();if(!evidence)return}
+   const generationEpoch=inspectionEpoch.current;
    const generationName=!inspected&&evidence?extractedName(evidence):name.trim()||(evidence?extractedName(evidence):'');
    if(generationName.length<2){setStatus('Enter your business name to get started.');return}
    setStatus('Building your website and choosing its design automatically…');
    const sourceBrief=designMode!=='new'&&evidence?[evidence.url,evidence.title,evidence.description,...evidence.headings.slice(0,3),...(evidence.pageSummaries||[]).flatMap(page=>[page.description,...page.headings.slice(0,2)])].filter(Boolean).join('. ').slice(0,1500):'';
    const effectiveBrief=!inspected&&evidence?sourceBrief:brief.trim()||sourceBrief;
-   const inferred=infer(generationName,effectiveBrief);
-   if(inferred.industry==='Professional services'&&effectiveBrief.trim().length<15){setStatus('Tell Forge what this business does so its design, images and 3D experience can match. For example: Industry: Soccer club; Offerings: Training, Teamwear, Match tickets.');return}
+   const inferred=infer(generationName,effectiveBrief);let recognizedActivity=false;
+   if(!/(?:^|\n)\s*(?:industry|business type|category)\s*:/i.test(effectiveBrief)&&(inferred.industry==='Professional services'||effectiveBrief.trim().length>=15)){
+    setStatus('Understanding your business and its specific niche…');
+    let identified=false,recognitionAnswered=false;
+    try{
+     const response=await fetch('/api/business/recognize',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({businessName:generationName,brief:effectiveBrief}),signal:AbortSignal.timeout(35000)});
+     if(response.ok){recognitionAnswered=true;const recognized=BusinessRecognitionSchema.parse(await response.json().then(({provider,...identity})=>identity));if(recognized.status==='identified'){identified=true;recognizedActivity=true;inferred.industry=recognized.industry;if(recognized.services.length&&!/(?:^|\n)\s*(?:services|products|offerings|menu)\s*:/i.test(effectiveBrief))inferred.services=recognized.services}else{inferred.industry='Professional services'}}
+    }catch{}
+    if(!identified&&!recognitionAnswered&&inferBusinessIndustry(generationName,'')==='Professional services'){const activity=literalBusinessActivity(effectiveBrief);if(activity){inferred.industry=activity;if(!/(?:^|\n)\s*(?:services|products|offerings|menu)\s*:/i.test(effectiveBrief))inferred.services=['Explore '+activity.slice(0,60).toLowerCase(),'About our business','Contact the team']}}
+   }
+   if(inferred.industry==='Professional services'){setStatus('Tell Forge what this business does so its design, images and 3D experience can match. For example: Industry: Soccer club; Offerings: Training, Teamwear, Match tickets.');return}
+   if(generationEpoch!==inspectionEpoch.current){setStatus('Website address changed during recognition. Generate again using the current website.');return}
    const explicitIndustry=/(?:^|\n)\s*(?:industry|business type|category)\s*:/i.test(effectiveBrief);
    const explicitOfferings=/(?:^|\n)\s*(?:services|products|offerings|menu)\s*:/i.test(effectiveBrief);
    const intelligence=evidence&&designMode!=='new'?analyzeSiteEvidence(evidence):null;
    const researchedServices=evidence&&designMode!=='new'?[...evidence.headings,...(evidence.pageSummaries||[]).flatMap(page=>[page.label,...page.headings])].map(heading=>heading.replace(/\s+/g,' ').trim()).filter(heading=>heading.length>=5&&heading.length<=65&&!/^(home|about|contact|welcome|menu|explore|learn more|our story)$/i.test(heading)).filter((heading,index,all)=>all.findIndex(other=>other.toLowerCase()===heading.toLowerCase())===index).slice(0,3):[];
    const appearance={...referenceStyle,...evidence?.styleReference,...parseStyleReference(referenceMarkup)};
-   const input={...inferred,experienceStyle,visualAssets:[] as VisualAsset[],...(intelligence&&intelligence.confidence!=='low'?{...(!explicitIndustry?{industry:intelligence.industry}:{}),...(!explicitOfferings?{services:intelligence.services}:{})}:{}),...(!explicitOfferings&&researchedServices.length>=2?{services:researchedServices}:{}),designMode,...(designMode!=='new'&&evidence?.visualSignals?{visualSignals:evidence.visualSignals}:{}),...(contactEmail.trim()?{contactEmail:contactEmail.trim()}:{}),...(designMode==='inspired'?{styleReference:appearance}:{})};
-   const generationEpoch=inspectionEpoch.current;
+   const input={...inferred,experienceStyle,visualAssets:[] as VisualAsset[],...(intelligence&&intelligence.confidence!=='low'?{...(!explicitIndustry&&!recognizedActivity?{industry:intelligence.industry}:{}),...(!explicitOfferings?{services:intelligence.services}:{})}:{}),...(!explicitOfferings&&researchedServices.length>=2?{services:researchedServices}:{}),designMode,...(designMode!=='new'&&evidence?.visualSignals?{visualSignals:evidence.visualSignals}:{}),...(contactEmail.trim()?{contactEmail:contactEmail.trim()}:{}),...(designMode==='inspired'?{styleReference:appearance}:{})};
    let visualNotice='';
    if(!industryPhotos(input.industry).length){
     setStatus('Finding images that match '+input.industry+'…');
@@ -262,7 +274,7 @@ export default function BusinessGenerator(){
    if(response.status===429){const retrySeconds=Math.min(30,Math.max(1,Number(response.headers.get('retry-after'))||5));setStatus('AI is processing other websites. Please retry in about '+retrySeconds+' seconds.');return}
    if(!response.ok){const failure=await response.json();throw Error(response.status===503?'Website generation is temporarily unavailable. Please try again.':failure.error||'AI generation unavailable')}
    const result=await response.json();if(generationEpoch!==inspectionEpoch.current){setStatus('Website address changed during generation. Generate again using the current website.');return}const extractedPages=additionalPages(evidence);const extras=applyExtractedExperience(extractedPages,experienceStyle,input);const combined=[...result.pages,...extras];const generated=experienceStyle==='immersive'?enhanceImmersiveWorld(combined,input):combined;
-   revealGeneratedPreview.current=true;setPages(automaticallyOptimizeMetadata(automaticallyApplyBrand(generated,appearance)));setActive('index');setStatus('Website draft generated. Review its content and design before publishing.'+visualNotice);
+   revealGeneratedPreview.current=true;setPages(automaticallyOptimizeMetadata(automaticallyApplyBrand(generated,appearance)));setActive('index');setStatus('Website draft generated for '+input.industry+'. Review its content and design before publishing.'+visualNotice);
   }catch(error){setStatus(error instanceof Error?error.message:'Website generation is temporarily unavailable.')}finally{setBusy(false)}
  }
  return <div className="business-generator forge-auto">
