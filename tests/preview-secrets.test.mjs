@@ -24,3 +24,13 @@ test('provider failures are fatal without including provider output or secret va
   assert.equal(error.message.includes('fake-test-secret'),false);return true;
  });
 });
+
+
+test('the ecosystem signing key uses protected stdin and rejects short configuration',()=>{
+ const secret='synthetic-integration-key'.repeat(2);
+ assert.equal(runtimeSecrets({FORGE_INTEGRATION_SECRET:secret}).FORGE_INTEGRATION_SECRET,secret);
+ assert.throws(()=>runtimeSecrets({FORGE_INTEGRATION_SECRET:'too-short'}),/at least 32/);
+ syncPreviewSecrets({FORGE_INTEGRATION_SECRET:secret},(command,args,options)=>{
+  assert.ok(!args.join(' ').includes(secret));assert.equal(JSON.parse(options.input).FORGE_INTEGRATION_SECRET,secret);return {status:0};
+ });
+});

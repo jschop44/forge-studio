@@ -11,7 +11,7 @@ const html='<!doctype html><html lang="en"><head><title>Example Studio</title></
 
 test('URL-only external handoffs collect permitted HTML and preserve evidence into planning',async()=>{
  const calls:string[]=[];
- const read:typeof fetchPublicText=async(url,options)=>{calls.push(url.pathname);assert.equal(options.redirects,0);assert.ok(options.maxBytes<=250000);return {url,body:url.pathname==='/robots.txt'?'User-agent: *\nAllow: /':html}};
+ const read:typeof fetchPublicText=async(url,options)=>{calls.push(url.pathname);assert.equal(options.redirects,2);assert.ok(options.maxBytes<=250000);return {url,body:url.pathname==='/robots.txt'?'User-agent: *\nAllow: /':html}};
  const prepare=(input:AgentTask)=>prepareAgentAudit(input,website=>collectAgentAuditSource(website,read),async()=>({status:'identified',industry:'Website design',services:['Website design']}));
  const result=await evaluateAgentTask(task,undefined,undefined,prepare);
  assert.deepEqual(calls,['/robots.txt','/']);assert.equal(result.decision.next,'site-plan');assert.ok(result.output?.data.audit);
@@ -62,4 +62,18 @@ test('ambiguous identity stays blocked for owner clarification rather than using
  const prepare=(input:AgentTask)=>prepareAgentAudit(input,async website=>({website,html,observedAt:'2026-11-09T00:00:00Z'}),async()=>({status:'needs-context',industry:'Unclear',services:[]}));
  const result=await evaluateAgentTask(task,undefined,undefined,prepare);
  assert.equal(result.decision.status,'blocked');assert.equal(result.output,null);assert.match(result.decision.reason,/owner confirmation/);
+});
+
+
+test('redirect destinations require their own policy check and disallowed destinations remain unfetched',async()=>{
+ const calls:string[]=[];
+ const read:typeof fetchPublicText=async(url,options)=>{
+  calls.push(url.href);
+  if(url.pathname==='/robots.txt')return {url,body:url.hostname==='destination.example.org'?'User-agent: *\nDisallow: /private':'User-agent: *\nAllow: /'};
+  await options.beforeRequest?.(url);
+  await options.beforeRequest?.(new URL('https://destination.example.org/private'));
+  throw Error('A disallowed destination must not be fetched');
+ };
+ await assert.rejects(collectAgentAuditSource('https://example.org',read),/disallows automated/);
+ assert.deepEqual(calls,['https://example.org/robots.txt','https://example.org/','https://destination.example.org/robots.txt']);
 });

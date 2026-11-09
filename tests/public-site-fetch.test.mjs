@@ -35,3 +35,10 @@ test('public extraction URL validation rejects credentials, private literals and
  for(const value of ['http://example.com','https://127.0.0.1','https://example.com:8443','https://user:secret@example.com','https://host.local'])assert.throws(()=>publicSiteUrl(value));
  assert.equal(publicSiteUrl('example.com').href,'https://example.com/');
 });
+
+
+test('a redirect authorization failure stops before fetching its destination',async()=>{
+ const checked=[];let fetched=0;
+ await assert.rejects(fetchPublicText(new URL('https://first.example'),{...options,beforeRequest:async url=>{checked.push(url.href);if(url.hostname==='second.example')throw Error('Destination policy disallows research')}},{worker:true,resolveHost:publicHost,fetcher:async()=>{fetched++;return new Response(null,{status:302,headers:{location:'https://second.example/private'}})}}),/policy disallows/);
+ assert.equal(fetched,1);assert.deepEqual(checked,['https://first.example/','https://second.example/private']);
+});

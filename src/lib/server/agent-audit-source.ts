@@ -7,22 +7,30 @@ const AGENT='ForgeStudioSiteResearch/1.0';
 let active=0;
 export class AuditSourceError extends Error{readonly retryable:boolean;constructor(message:string,retryable=false){super(message);this.retryable=retryable}}
 
-/** One permitted public page. Never sends credentials, follows redirects, or bypasses robots. */
+/** One permitted public page. Never sends credentials or bypasses robots; rechecks every redirect destination. */
 export async function collectAgentAuditSource(website:string,read:typeof fetchPublicText=fetchPublicText){
  const url=publicSiteUrl(website);
  if(active>=2)throw new AuditSourceError('Website research capacity reached',true);
  active++;
  try{
-  const robotsUrl=new URL('/robots.txt',url);let rules='';
-  try{rules=(await read(robotsUrl,{timeout:3000,maxBytes:100000,accept:'text/plain',redirects:0})).body}
-  catch(error){if(!(error instanceof PublicSiteHttpError&&error.status===404))throw new AuditSourceError('Website access policy could not be verified',transient(error))}
-  if(/<(?:!doctype|html|body)\b/i.test(rules))throw new AuditSourceError('Website access policy could not be verified');
-  const policy=robotsParser(robotsUrl.href,rules);
-  if(policy.isAllowed(url.href,AGENT)!==true)throw new AuditSourceError('Website policy disallows automated research; supply permitted HTML');
-  const delay=policy.getCrawlDelay(AGENT)||0;
-  if(delay>3)throw new AuditSourceError('Website crawl delay exceeds the research budget; supply permitted HTML');
-  if(delay>0)await new Promise(resolve=>setTimeout(resolve,delay*1000));
-  let page;try{page=await read(url,{timeout:7000,maxBytes:250000,accept:'text/html',redirects:0})}catch(error){throw new AuditSourceError('Website page could not be retrieved safely; supply permitted HTML or retry later',transient(error))}
+  const policies=new Map<string,{policy:ReturnType<typeof robotsParser>;lastRequest:number}>();
+  const allow=async(target:URL)=>{
+   const checked=publicSiteUrl(target.href);let cached=policies.get(checked.origin);
+   if(!cached){
+    const robotsUrl=new URL('/robots.txt',checked);let rules='';
+    try{rules=(await read(robotsUrl,{timeout:3000,maxBytes:100000,accept:'text/plain',redirects:2})).body}
+    catch(error){if(!(error instanceof PublicSiteHttpError&&error.status===404))throw new AuditSourceError('Website access policy could not be verified',transient(error))}
+    if(/<(?:!doctype|html|body)\b/i.test(rules))throw new AuditSourceError('Website access policy could not be verified');
+    cached={policy:robotsParser(robotsUrl.href,rules),lastRequest:Date.now()};policies.set(checked.origin,cached);
+   }
+   if(cached.policy.isAllowed(checked.href,AGENT)!==true)throw new AuditSourceError('Website policy disallows automated research; supply permitted HTML');
+   const delay=cached.policy.getCrawlDelay(AGENT)||0;
+   if(delay>3)throw new AuditSourceError('Website crawl delay exceeds the research budget; supply permitted HTML');
+   const wait=delay*1000-(Date.now()-cached.lastRequest);if(wait>0)await new Promise(resolve=>setTimeout(resolve,wait));
+   cached.lastRequest=Date.now();
+  };
+  await allow(url);let initial=true;
+  let page;try{page=await read(url,{timeout:7000,maxBytes:250000,accept:'text/html',redirects:2,beforeRequest:async target=>{if(initial&&target.href===url.href){initial=false;return}initial=false;await allow(target)}})}catch(error){if(error instanceof AuditSourceError)throw error;throw new AuditSourceError('Website page could not be retrieved safely; supply permitted HTML or retry later',transient(error))}
   if(!page.body.trim())throw new AuditSourceError('Website returned no usable HTML');
   return {html:page.body,website:page.url.href,observedAt:new Date().toISOString()};
  }finally{active--}

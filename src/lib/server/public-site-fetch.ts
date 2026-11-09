@@ -6,7 +6,7 @@ import {isPublicAddress} from '../../../workers/public-network-policy.mjs';
 export class PublicSiteHttpError extends Error{readonly status:number;constructor(status:number){super('Website returned status '+status);this.status=status}}
 
 type Address={address:string;family:number};
-type Options={timeout:number;maxBytes:number;accept:string;redirects?:number};
+type Options={timeout:number;maxBytes:number;accept:string;redirects?:number;beforeRequest?:(url:URL)=>Promise<void>};
 type Dependencies={worker?:boolean;fetcher?:typeof fetch;resolveHost?:(host:string)=>Promise<Address[]>};
 export function publicSiteUrl(value:string,base?:URL):URL{
  const url=new URL(base?value:/^https?:\/\//i.test(value)?value:'https://'+value,base);
@@ -49,6 +49,7 @@ async function nodeResource(url:URL,addresses:Address[],options:Options):Promise
 export async function fetchPublicText(input:URL,options:Options,dependencies:Dependencies={}){
  const worker=dependencies.worker??isWorkerNetwork();let url=publicSiteUrl(input.href);
  for(let attempt=0;attempt<=(options.redirects??0);attempt++){
+  if(options.beforeRequest)await options.beforeRequest(url);
   const addresses=await (dependencies.resolveHost?dependencies.resolveHost(url.hostname):publicAddresses(url.hostname,worker));assertAddresses(addresses);
   let result:{status:number;location:string|null;contentType:string;body:string};
   if(worker){

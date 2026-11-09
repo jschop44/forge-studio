@@ -76,6 +76,7 @@ jobs:
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
           AUTH_SECRET: ${{ secrets.AUTH_SECRET }}
           FORGE_WORKER_SECRET: ${{ secrets.FORGE_WORKER_SECRET }}
+          FORGE_INTEGRATION_SECRET: ${{ secrets.FORGE_INTEGRATION_SECRET }}
         run: node scripts/sync-preview-secrets.mjs
       - name: Verify preview health and report database readiness
         if: steps.publish.outputs.current == 'true'
