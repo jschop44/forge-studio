@@ -4,7 +4,7 @@ import {relevantVisualAssets} from '../src/lib/visual-assets';
 import {discoverBusinessVisuals} from '../src/lib/server/business-visuals';
 import {businessArtDirection} from '../src/lib/business-art-direction';
 import {businessEnvironment} from '../src/lib/business-environments';
-import {industryPhotos} from '../src/lib/industry-photos';
+import {industryPhotos,photoLibrary,servicePhoto} from '../src/lib/industry-photos';
 const asset=(title:string)=>({url:'https://upload.wikimedia.org/wikipedia/commons/a/ab/'+title.replace(/ /g,'_')+'.jpg',title,credit:'Example photographer',source:'https://commons.wikimedia.org/wiki/File:Example.jpg',license:'CC BY 4.0'});
 test('subject evidence and reusable licenses are required before niche imagery is selected',()=>{
  const valid=asset('Dental practice treatment room');
@@ -25,3 +25,5 @@ test('free discovery discards unrelated file results and retains attribution evi
  const result=await discoverBusinessVisuals('Dental photography',async input=>{calls++;const url=new URL(String(input));assert.equal(url.hostname,'commons.wikimedia.org');assert.equal(url.searchParams.get('gsrlimit'),'10');return new Response(JSON.stringify({query:{pages:{1:{title:'File:Dental treatment room.jpg',imageinfo:[{mime:'image/jpeg',thumburl:'https://upload.wikimedia.org/wikipedia/commons/a/a1/dental.jpg',descriptionurl:'https://commons.wikimedia.org/wiki/File:Dental_treatment_room.jpg',extmetadata:{LicenseShortName:{value:'CC BY-SA 4.0'},Artist:{value:'<a>Jane Photographer</a>'}}}]},2:{title:'File:Office lobby.jpg',imageinfo:[{mime:'image/jpeg',thumburl:'https://upload.wikimedia.org/wikipedia/commons/b/b2/office.jpg',descriptionurl:'https://commons.wikimedia.org/wiki/File:Office.jpg',extmetadata:{LicenseShortName:{value:'CC0'}}}]}}}}))});
  assert.equal(calls,1);assert.equal(result.length,1);assert.equal(result[0].credit,'Jane Photographer');assert.equal(result[0].license,'CC BY-SA 4.0');
 });
+
+test('specialized niches never borrow broad stock imagery',()=>{for(const niche of ['Construction','Jewelry','Spa','Motorcycle','Auto repair','Software','Sushi restaurant','Vegan restaurant'])assert.deepEqual(industryPhotos(niche),[],niche);assert.equal(servicePhoto('Software development','Software'),null);assert.equal(servicePhoto('Gym training','Fitness'),null);assert.ok(!photoLibrary.entertainment.includes('photo-1500534623283-312aade485b7' as never))});
