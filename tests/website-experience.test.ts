@@ -47,3 +47,8 @@ test('incidental coffee offerings do not reclassify a clear baseball business',(
  assert.equal(inferBusinessIndustry('Baseball Supply','We sell bats, gloves, and coffee at our concession counter.'),'Baseball and sporting goods');
  assert.equal(inferBusinessIndustry('Northstar Coffee','Coffee, baked goods, events, and neighborhood gatherings.'),'Coffee shop and cafe');
 });
+
+test('industry inference does not classify ordinary businesses as AI technology',()=>{
+ assert.equal(inferBusinessIndustry('Hair & Beauty Studio','Hair styling and wellness services'),'Health and wellness');
+ assert.equal(inferBusinessIndustry('AI Solutions','Custom automation and software'),'Technology');
+});
