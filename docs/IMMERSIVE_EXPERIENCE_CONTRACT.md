@@ -43,3 +43,9 @@ Acceptance includes business-specific desktop and mobile screenshots, actual tex
 - Soccer model: Amal Kumar, Football, Poly Haven, CC0 — https://polyhaven.com/a/football
 - Baseball photos: https://unsplash.com/photos/8aE7REdS_rU, https://unsplash.com/photos/kJce0SXcrw0, https://unsplash.com/photos/wdInv4ZcZsM
 - Salon photos: https://unsplash.com/photos/lK8oXGycy88 and https://unsplash.com/photos/JZxYImAay2Y
+
+## Image detail and preview navigation
+
+Generated stock images request 3840-pixel widths at quality 90; Commons discovery requests up to 3840 pixels, subject to original source size. Sports model textures use 4096-pixel assets. Panoramic textures retain up to 8192 pixels across (4096 pixels vertically for a full spherical image), constrained by the device GPU limit. No source image is enlarged in the texture upload. The renderer allows retina density up to 3 and a 3840 × 2160 framebuffer budget; devices below that capability may render at a lower resolution. A 4K source spanning a full sphere is not equivalent to a 4K photograph of the visible view. Source, texture and framebuffer dimensions are checked separately in browser evidence.
+
+Builder previews install their navigation handler in the head before experience controllers. Filename, root-relative, extensionless and fragment links resolve against emitted pages; they never fall through into the Forge builder. Unknown internal destinations are prevented. External and contact links retain their explicit destinations. Preview tabs clear stale offering anchors. Downloaded pages retain normal portable HTML links without the preview bridge.

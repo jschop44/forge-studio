@@ -4,7 +4,7 @@ const businesses=[{businessName:'Harbor Coffee',industry:'Coffee shop',descripti
 for(const business of businesses){
  for(const experienceStyle of ['standard','cinematic','object-navigation','immersive'] as const){
   test(`${business.businessName}: ${experienceStyle} has a relevant, distinct mobile presentation`,async({page})=>{
-   test.setTimeout(60000);await page.setViewportSize({width:390,height:844});
+   test.setTimeout(90000);await page.setViewportSize({width:390,height:844});
    const site=generateBusinessWebsite({...business,experienceStyle});
    await page.route('https://design.test/**',route=>{const slug=new URL(route.request().url()).pathname.split('/').pop()?.replace('.html','')||'index';return route.fulfill({status:200,contentType:'text/html',body:site.pages.find(p=>p.slug===slug)?.html||''})});
    const errors:string[]=[];page.on('pageerror',error=>errors.push(error.message));
@@ -13,6 +13,8 @@ for(const business of businesses){
     await expect(page.locator('#forge-immersive-world')).toHaveAttribute('data-loaded','true',{timeout:40000});
     await expect(page.locator('#forge-immersive-world')).toHaveAttribute('data-environment','panorama');
     await expect(page.locator('#forge-immersive-world canvas')).toBeVisible();
+    const resolution=await page.locator('#forge-immersive-world').evaluate(root=>({source:Number((root as HTMLElement).dataset.sourceWidth),texture:Number((root as HTMLElement).dataset.textureWidth)}));
+    expect(resolution.source).toBeGreaterThanOrEqual(7680);expect(resolution.texture).toBeGreaterThanOrEqual(7680);
    }else{
     await expect(page.locator('main h1')).toContainText(business.businessName);
     if(experienceStyle==='cinematic')await expect(page.getByRole('navigation',{name:'Story chapters'})).toBeVisible();
@@ -29,4 +31,16 @@ test('unclear business names request context instead of silently producing an of
  let calls=0;await page.route('**/api/ai/business',route=>{calls++;return route.abort()});
  await page.goto('/business');await page.getByPlaceholder('e.g. Northstar Coffee').fill('Soccet');await page.getByRole('button',{name:/generate my website/i}).click();
  await expect(page.getByText(/Tell Forge what this business does/)).toBeVisible();expect(calls).toBe(0);
+});
+
+test('panorama preserves the 8K source and renders a true 4K viewport',async({page})=>{
+ test.setTimeout(90000);await page.setViewportSize({width:3840,height:2160});
+ const site=generateBusinessWebsite({...businesses[0],experienceStyle:'immersive'});
+ await page.route('https://sharpness.test/**',route=>route.fulfill({status:200,contentType:'text/html',body:site.pages[0].html}));
+ await page.goto('https://sharpness.test/',{waitUntil:'domcontentloaded'});
+ const root=page.locator('#forge-immersive-world');await expect(root).toHaveAttribute('data-loaded','true',{timeout:60000});
+ const result=await root.evaluate(root=>{const canvas=root.querySelector('canvas')!;return {sourceWidth:Number((root as HTMLElement).dataset.sourceWidth),textureWidth:Number((root as HTMLElement).dataset.textureWidth),textureHeight:Number((root as HTMLElement).dataset.textureHeight),renderWidth:canvas.width,renderHeight:canvas.height}});
+ expect(result).toEqual({sourceWidth:8192,textureWidth:8192,textureHeight:4096,renderWidth:3840,renderHeight:2160});
+ await test.info().attach('panorama-resolution-evidence',{body:JSON.stringify(result),contentType:'application/json'});
+ await test.info().attach('Harbor Coffee-panorama-4k',{body:await page.screenshot(),contentType:'image/png'});
 });
