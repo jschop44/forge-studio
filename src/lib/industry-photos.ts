@@ -17,7 +17,7 @@ export const photoLibrary={
 } as const;
 /** Family-friendly visual policy: avoid using unreviewed stock imagery for sensitive themes. */
 export function requiresFamilySafeReview(topic:string):boolean{return /halloween|haunted|horror|scary|spooky|gore|blood|violence|weapon|adult|erotic|drug|cannabis|marijuana/i.test(topic)}
-export function industryPhotos(industry:string){if(requiresFamilySafeReview(industry))return [];const term=industry.toLowerCase();const category=/entertainment|theme park|movie|cinema|film|media|streaming/.test(term)?'entertainment':/coffee|espresso|roast|barista|café|cafe/.test(term)?'coffee':/baseball|softball|batting|sporting goods|sports? equipment/.test(term)?'baseball':/\b(?:cars?|automotive|auto repair|auto dealership|vehicles?|motors?|motorcycle|car dealership)\b/.test(term)?'automotive':/hotel|travel|resort|stay|hospitality/.test(term)?'hospitality':/fashion|jewel|clothing|luxury/.test(term)?'fashion':/food|restaurant|pizza|cafe|bakery/.test(term)?'food':/real.?estate|home|property|construction/.test(term)?'realestate':/tech|software|digital|ai|computer/.test(term)?'technology':/health|fitness|wellness|spa|beauty/.test(term)?'wellness':'general';return photoLibrary[category].map(id=>'https://images.unsplash.com/'+id+'?auto=format&fit=crop&w=1400&q=80')}
+export function industryPhotos(industry:string){if(requiresFamilySafeReview(industry))return [];const term=industry.toLowerCase();const category=/entertainment|theme park|movie|cinema|film|media|streaming/.test(term)?'entertainment':/coffee|espresso|roast|barista|café|cafe/.test(term)?'coffee':/baseball|softball|batting|sporting goods|sports? equipment/.test(term)?'baseball':/\b(?:cars?|automotive|auto repair|auto dealership|vehicles?|motors?|motorcycle|car dealership)\b/.test(term)?'automotive':/hotel|travel|resort|stay|hospitality/.test(term)?'hospitality':/fashion|jewel|clothing|luxury/.test(term)?'fashion':/food|restaurant|pizza|cafe|bakery/.test(term)?'food':/real.?estate|home|property|construction/.test(term)?'realestate':/\b(?:technology|tech|software|digital|artificial intelligence|ai solutions|computer|computing|saas)\b/.test(term)?'technology':/\b(?:health|healthcare|fitness|wellness|spa|beauty|salon|barber|hairdresser|hair styling|skincare)\b/.test(term)?'wellness':'general';return photoLibrary[category].map(id=>'https://images.unsplash.com/'+id+'?auto=format&fit=crop&w=1400&q=80')}
 
 /** Match each offering to its own subject rather than reusing an industry hero. */
 export function servicePhoto(service:string,industry:string):string|null{
@@ -38,7 +38,7 @@ export function servicePhoto(service:string,industry:string):string|null{
  [/property|home|house|listing|real estate/,'photo-1600596542815-ffad4c1539a9'],
  [/\b(?:cars?|vehicles?|automotive)\b/,'photo-1503376780353-7e6692767b70'],
  [/yoga|meditation/,'photo-1544367567-0f2fcb009e0b'],
- [/hotel|room|suite|accommodation/,'photo-1566073771259-6a8506099945'],
+ [/\b(?:hotels?|rooms?|suites?|accommodations?|lodging)\b/,'photo-1566073771259-6a8506099945'],
  [/fashion|clothing|apparel|wardrobe/,'photo-1483985988355-763728e1935b'],
  [/software|technology|electronics|computer/,'photo-1518770660439-4636190af475'],
  [/fitness|gym|workout|training/,'photo-1506126613408-eca07ce68773']
