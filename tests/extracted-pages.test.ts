@@ -19,5 +19,5 @@ test('all extracted pages retain the chosen business-specific navigation experie
   assert.match(page.html,/services.html#offering-0/);assert.match(page.html,/services.html#offering-1/);
  }
  for(const page of applyExtractedExperience(pages,'cinematic',business))assert.match(page.html,/forge-cinematic-controller/);
- assert.deepEqual(applyExtractedExperience(pages,'standard',business),pages);
+ for(const page of applyExtractedExperience(pages,'standard',business)){assert.match(page.html,/forge-extracted-business-theme/);assert.match(page.html,/Harbor Coffee/);assert.ok(!page.html.includes('forge-object-navigation-controller'));}
 });

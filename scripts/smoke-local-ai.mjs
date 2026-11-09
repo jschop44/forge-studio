@@ -36,7 +36,7 @@ for(const slug of ['index','services','about','contact']){
  const page=pages.get(slug);
  if(!page||typeof page.html!=='string'||!page.html.includes('<html')||!page.html.includes('</html>'))throw Error('Missing valid '+slug+' page');
  if(!page.html.includes('data-forge-layout="'+design.layout+'"'))throw Error('Model layout not rendered on '+slug+' page');
- if(!page.html.includes('forge-home-webgl-controller')&&!page.html.includes('forge-spatial-controller'))throw Error('Missing immersive controller asset on '+slug+' page');
+ if(!page.html.includes('data-forge-experience="standard"'))throw Error('Generation must retain the Standard default on '+slug+' page');
  if(!page.html.includes('prefers-reduced-motion'))throw Error('Missing reduced-motion styling on '+slug+' page');
 }
 const accent={sand:'#e3c89e',mint:'#9ee3bf',sky:'#9ed8f5'}[design.palette];

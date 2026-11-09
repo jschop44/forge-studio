@@ -5,7 +5,7 @@ async function fixture(page:Page,brief=coffee,expectCanvas=true){
  const pages=generateBusinessWebsite(brief).pages;
  await page.route('https://objects.test/**',route=>{const slug=new URL(route.request().url()).pathname.split('/').pop()?.replace('.html','')||'index';return route.fulfill({status:200,contentType:'text/html',body:pages.find(p=>p.slug===slug)?.html||'Missing fixture'})});
  await page.goto('https://objects.test/index.html');
- if(expectCanvas)await expect(page.locator('[data-object-navigation] canvas')).toBeVisible();
+ if(expectCanvas){await expect(page.locator('[data-object-navigation] canvas')).toBeVisible();await page.locator('[data-object-navigation] canvas').scrollIntoViewIfNeeded();}
 }
 async function meshPoint(page:Page,point:[number,number,number]){
  return page.locator('[data-object-navigation] canvas').evaluate((canvas,point)=>{

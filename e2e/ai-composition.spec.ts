@@ -2,13 +2,13 @@ import {test,expect} from '@playwright/test';
 import {generateBusinessWebsite} from '../src/lib/business-site';
 import {createContextualShowcase} from '../src/lib/immersive-showcase';
 test.use({reducedMotion:'reduce'});
-const brief={businessName:'Cedar Studio',industry:'Design',description:'A design studio providing website services for local businesses.',services:['Website design']};
+const brief={businessName:'Cedar Studio',industry:'Real estate',description:'A real estate studio providing property services for local families.',services:['Property consultation']};
 for(const width of [1280,390]){
  test('model-selected image-led layout adapts to '+width+'px',async({page})=>{
   await page.setViewportSize({width,height:900});
   await page.route('https://images.unsplash.com/**',route=>route.abort());
   const documents=[
-   {html:generateBusinessWebsite({...brief,layout:'image-led',accent:'#9ee3bf'}).pages[0].html,hero:'.site-hero',image:'.editorial-photo'},
+   {html:generateBusinessWebsite({...brief,experienceStyle:'standard',layout:'image-led',accent:'#9ee3bf'}).pages[0].html,hero:'.site-hero',image:'.editorial-photo'},
    {html:createContextualShowcase({...brief,design:{layout:'image-led',palette:'mint'}})[0].html,hero:'.hero',image:'.ai-hero-visual'}
   ];
   for(const fixture of documents){

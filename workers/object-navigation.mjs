@@ -41,10 +41,11 @@ function objectNavigationRuntime(config){
  canvas.addEventListener('keydown',e=>{if(e.key==='ArrowLeft')yaw-=.15;else if(e.key==='ArrowRight')yaw+=.15;else if(e.key==='ArrowUp')pitch=Math.min(1.1,pitch+.12);else if(e.key==='ArrowDown')pitch=Math.max(-.2,pitch-.12);else return;e.preventDefault();draw()});
  root.querySelector('[data-reset-object]').addEventListener('click',()=>{yaw=-.35;pitch=.4;zoom=1;draw()});
  async function loadBall(){
+  root.dataset.modelQuality='loading';status.textContent='Loading the detailed '+(config.theme==='soccer'?'soccer ball':'baseball')+'…';
   try{
    const base='https://dl.polyhaven.org/file/ph-assets/Models/',soccer=config.theme==='soccer',asset=soccer?'football':'baseball_01',center=soccer?[0,.75,0]:[.55,.65,.2],diameter=soccer?1.7:.86;
    const [documentResponse,bufferResponse]=await Promise.all([fetch(base+'gltf/1k/'+asset+'/'+asset+'_1k.gltf'),fetch(base+'gltf/'+(soccer?'4k':'8k')+'/'+asset+'/'+asset+'.bin')]);
-   if(!documentResponse.ok||!bufferResponse.ok)return;
+   if(!documentResponse.ok||!bufferResponse.ok)throw Error('Model asset unavailable');
    const model=await documentResponse.json(),bytes=await bufferResponse.arrayBuffer();
    function read(index){const accessor=model.accessors[index],view=model.bufferViews[accessor.bufferView],width={SCALAR:1,VEC2:2,VEC3:3}[accessor.type],size={5126:4,5125:4,5123:2,5121:1}[accessor.componentType];if(!width||!size||accessor.count>50000)throw Error('Model bounds');const data=new DataView(bytes),start=(view.byteOffset||0)+(accessor.byteOffset||0),stride=view.byteStride||width*size;return Array.from({length:accessor.count},(_,i)=>Array.from({length:width},(_,j)=>{const offset=start+i*stride+j*size;return accessor.componentType===5126?data.getFloat32(offset,true):accessor.componentType===5125?data.getUint32(offset,true):accessor.componentType===5123?data.getUint16(offset,true):data.getUint8(offset)}))}
    const mesh=soccer?(model.meshes.find(mesh=>/inflated/i.test(mesh.name)&&!/deflated/i.test(mesh.name))||model.meshes[0]):model.meshes[0];const primitive=mesh.primitives[0],positions=read(primitive.attributes.POSITION),normals=read(primitive.attributes.NORMAL),uvs=read(primitive.attributes.TEXCOORD_0),indices=read(primitive.indices).flat();
@@ -54,8 +55,8 @@ function objectNavigationRuntime(config){
    if(!live)return;gl.bindTexture(gl.TEXTURE_2D,modelTexture);gl.texImage2D(gl.TEXTURE_2D,0,gl.RGB,gl.RGB,gl.UNSIGNED_BYTE,image);
    const keep=faces.filter(face=>face.part!=='ball');faces.length=0;faces.push(...keep);
    for(let i=0;i<indices.length;i+=3){const ids=indices.slice(i,i+3);faces.push({points:ids.map(id=>points[id]),normal:[0,1,0],normals:ids.map(id=>normals[id]),uvs:ids.map(id=>uvs[id]),color:[1,1,1],part:'ball',textured:true})}
-   root.dataset.modelQuality='textured-asset';draw();
-  }catch{canvas.hidden=true;root.querySelector('[data-reset-object]').hidden=true;status.textContent='The detailed model could not load. Use the offering links below.';}
+   root.dataset.modelQuality='textured-asset';status.textContent='Drag to turn. Select a part to open its offering.';draw();
+  }catch{root.dataset.modelQuality='unavailable';canvas.hidden=true;root.querySelector('[data-reset-object]').hidden=true;status.textContent='The detailed model could not load. Use the offering links below.';}
  }
  if(config.theme==='baseball'||config.theme==='soccer')void loadBall();
  const resize=new ResizeObserver(draw);resize.observe(canvas);document.addEventListener('visibilitychange',draw);

@@ -1,3 +1,5 @@
+import {businessArtDirection} from './business-art-direction';
+import {relevantVisualAssets,type VisualAsset} from './visual-assets';
 import {objectNavigationMarkup} from '../../workers/object-navigation.mjs';
 import {enhanceCinematicPages,objectNavigationPlan,type WebsiteExperience} from './website-experience';
 import {escapeHtml as esc} from './export';
@@ -24,8 +26,13 @@ export function createExtractedPages(evidence:SiteEvidence,businessName:string):
  });
 }
 
-export function applyExtractedExperience(pages:GeneratedPage[],experience:WebsiteExperience,business:{industry:string;services:string[]}):GeneratedPage[]{
- if(experience==='cinematic')return enhanceCinematicPages(pages);
- const plan=experience==='object-navigation'?objectNavigationPlan(business):null;
- return plan?pages.map(page=>({...page,html:page.html.replace('<main>','<main>'+objectNavigationMarkup(plan))})):pages;
+export function applyExtractedExperience(pages:GeneratedPage[],experience:WebsiteExperience,business:{businessName?:string;industry:string;services:string[];visualAssets?:VisualAsset[]}):GeneratedPage[]{
+ const direction=businessArtDirection(business.industry,business.businessName||'Business');
+ const dark=experience!=='standard';
+ const css='<style id="forge-extracted-business-theme">body{background:'+(dark?direction.night:direction.paper)+';color:'+(dark?direction.paper:direction.ink)+';font-family:\''+direction.font+'\',sans-serif}h1,h2{font-family:\''+direction.font+'\',serif;letter-spacing:-.04em}a{color:'+(dark?direction.paper:direction.accent)+'}nav{border-bottom:1px solid '+(dark?'#ffffff30':'#00000025')+'}main{padding-bottom:100px}</style>';
+ const branded=pages.map(page=>({...page,html:page.html.replace(/<style id="forge-extracted-business-theme">[\s\S]*?<\/style>/g,'').replace('</head>',css+'</head>')}));
+ if(experience==='cinematic')return enhanceCinematicPages(branded);
+ const images=relevantVisualAssets(business.industry,business.visualAssets||[]).map(asset=>asset.url);
+ const plan=experience==='object-navigation'?objectNavigationPlan({...business,images}):null;
+ return plan?branded.map(page=>({...page,html:page.html.replace('<main>','<main>'+objectNavigationMarkup(plan))})):branded;
 }

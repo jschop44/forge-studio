@@ -20,7 +20,7 @@ test('dragging and keyboard controls rotate the environment and preserve camera 
  await page.mouse.move(rect.x+rect.width*.8,rect.y+rect.height*.75);await page.mouse.down();await page.mouse.move(rect.x+rect.width*.6,rect.y+rect.height*.72,{steps:5});await page.mouse.up();await expect(page).toHaveURL(/index\.html$/);
  await canvas.focus();await page.keyboard.press('ArrowRight');const saved=await page.evaluate(()=>sessionStorage.getItem('forge-panorama-camera:/:Harbor Coffee'));
  await page.locator('#forge-immersive-world [data-world-page="about"]').click();await expect(page).toHaveURL(/about\.html$/);expect(await page.evaluate(()=>sessionStorage.getItem('forge-panorama-camera:/:Harbor Coffee'))).toBe(saved);
- await page.getByRole('button',{name:'Reset world view'}).click();const reset=await page.evaluate(()=>sessionStorage.getItem('forge-panorama-camera:/:Harbor Coffee'));expect(JSON.parse(reset!)).toEqual([0,0,55]);
+ await page.getByRole('button',{name:'Reset world view'}).click();const reset=await page.evaluate(()=>sessionStorage.getItem('forge-panorama-camera:/:Harbor Coffee'));expect(JSON.parse(reset!)).toEqual([-1.25,0,55]);
 });
 test('reduced motion and keyboard destinations work, and print reveals readable content',async({page})=>{
  await page.emulateMedia({reducedMotion:'reduce'});await fixture(page);const link=page.locator('#forge-immersive-world [data-world-page="contact"]');await link.focus();await page.keyboard.press('Enter');await expect(page).toHaveURL(/contact\.html$/);

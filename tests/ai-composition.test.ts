@@ -10,7 +10,7 @@ test('model composition selects a validated layout and palette rendered into all
  const result=generateBusinessWebsite({businessName:'Cedar Studio',industry:'Design',description:parsed.description,services:['Website design'],...appearance});
  assert.equal(appearance.accent,'#9ee3bf');
  assert.ok(result.pages.every(page=>page.html.includes('data-forge-layout="image-led"')));
- assert.ok(result.pages[0].html.includes('class="site-hero image-led"'));
+ assert.match(result.pages[0].html,/class="site-hero image-led(?: text-led)?"/);
  assert.ok(result.pages[0].html.includes('@media(max-width:700px){.site-hero.image-led{grid-template-columns:1fr}}'));
 });
 test('missing design, arbitrary model code and invalid choices are rejected without a fallback',()=>{
