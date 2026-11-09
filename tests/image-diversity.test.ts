@@ -33,3 +33,12 @@ describe('business-specific image diversity',()=>{
   for(const [category,ids] of Object.entries(photoLibrary))assert.equal(new Set(ids).size,ids.length,category);
  });
 });
+
+import {photoIdentity,selectDiversePhoto} from '../src/lib/industry-photos';
+it('does not count alternate crops of the same asset as different photos',()=>{
+ const used=new Set<string>();const first='https://images.unsplash.com/photo-one?w=1000';
+ assert.equal(selectDiversePhoto([first],used),first);
+ assert.equal(selectDiversePhoto(['https://images.unsplash.com/photo-one?w=1400','https://images.unsplash.com/photo-two?w=1000'],used),'https://images.unsplash.com/photo-two?w=1000');
+ assert.equal(selectDiversePhoto([first],used),undefined);
+ assert.equal(photoIdentity(first),'https://images.unsplash.com/photo-one');
+});

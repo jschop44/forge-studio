@@ -51,3 +51,28 @@ test('a failed extraction stays visible and is never replaced by misleading extr
  await expect(page.locator('.forge-auto-cta')).toBeEnabled();expect(generations).toBe(0);
  await expect(page.getByText(/Click Extract website appearance\/details before generating/)).toHaveCount(0);
 });
+
+test('a changed source cannot receive the previous website generation result',async({page})=>{
+ let release!:()=>void;const pending=new Promise<void>(resolve=>{release=resolve});
+ await page.route('**/api/site-reference',route=>route.fulfill({status:200,json:extracted}));
+ await page.route('**/api/ai/business',async route=>{const input=route.request().postDataJSON();await pending;await route.fulfill({status:200,json:{pages:generateBusinessWebsite(input).pages}})});
+ await openExtraction(page);await page.getByRole('button',{name:'Extract website appearance',exact:true}).click();
+ await expect(page.getByText(/Ready to generate/)).toBeVisible();
+ await page.getByRole('button',{name:/generate my website/i}).click();
+ await page.getByPlaceholder('e.g. disney.com').fill('another.example');release();
+ await expect(page.getByText('Website address changed during generation. Generate again using the current website.',{exact:true})).toBeVisible();
+ await expect(page.locator('iframe[title^="Website preview:"]')).toHaveCount(0);
+});
+
+test('extracted extra pages retain appearance and full-site immersive controls',async({page})=>{
+ await page.route('**/api/site-reference',route=>route.fulfill({status:200,json:{...extracted,title:'Harbor Coffee',description:'A neighborhood coffee shop selling roasted coffee beans and ceramic mugs.',headings:['Coffee beans','Ceramic mugs'],pageSummaries:[{path:'/portfolio',label:'Portfolio',title:'Harbor projects',description:'Residential interiors designed around you.',headings:['Selected projects']}]}}));
+ await generationFixture(page);await openExtraction(page);
+ await page.getByRole('button',{name:/Interactive 3D navigation/}).click();
+ await page.getByRole('button',{name:/generate my website/i}).click();
+ await page.getByRole('navigation',{name:'Website pages'}).getByRole('button',{name:'Portfolio',exact:true}).click();
+ const frame=page.frameLocator('iframe[title="Website preview: Portfolio"]');
+ await expect(frame.getByRole('heading',{name:'Harbor projects'})).toBeVisible();
+ await expect(frame.locator('[data-object-navigation]')).toBeVisible();
+ await expect(frame.locator('a[href="services.html#offering-0"]')).toHaveCount(1);
+ await expect(frame.locator('body')).toHaveCSS('background-color','rgb(17, 34, 51)');
+});

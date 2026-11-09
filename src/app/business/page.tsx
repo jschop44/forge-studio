@@ -1,4 +1,5 @@
 'use client';
+import {createExtractedPages,applyExtractedExperience} from '../../lib/extracted-pages';
 import {applyReferenceAppearance,websiteAddressKey} from '../../lib/reference-appearance';
 import {useEffect,useRef,useState} from 'react';
 import Link from 'next/link';
@@ -9,7 +10,7 @@ import {capturePreviewPages} from '../../lib/capture-preview';
 import {navigationQualityRecommendations} from '../../lib/navigation-quality-recommendations';
 import type {BrowserEvidence} from '../../lib/browser-evidence';
 import {downloadText} from '../../lib/export';
-import {enhanceCinematicPages,inferBusinessIndustry} from '../../lib/website-experience';
+import {inferBusinessIndustry} from '../../lib/website-experience';
 import {analyzeSiteEvidence,inspectionCoverage} from '../../lib/forge-intelligence';
 import {inspectionToBrowserEvidence} from '../../lib/inspection-evidence-adapter';
 import {proposeBusinessSiteFromCapture,generateReviewedCaptureSite} from '../../lib/capture-business-proposal';
@@ -203,7 +204,9 @@ export default function BusinessGenerator(){
    setStatus('Review-only four-page draft generated from inspected metadata and your confirmed facts. No screenshot reconstruction or publication was performed.');
   }catch{setStatus('Unable to create the reviewed draft. Check the source and supplied business facts.')}
  }
- function additionalPages(evidence:Inspection|null=inspected){if(designMode==='new'||!evidence)return [] as GeneratedPage[];const used=new Set(['index','services','about','contact']);return (evidence.pageSummaries||[]).map(page=>{const segments=page.path.split('/').filter(Boolean);const slug=segments.join('-').toLowerCase().replace(/[^a-z0-9-]/g,'-').slice(0,48)||'';if(!slug||used.has(slug))return null;used.add(slug);const safe=(v:string)=>v.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');const title=safe(page.title||page.label);const summary=safe(page.description||'Content extracted from a public page; verify before publishing.');const headings=page.headings.slice(0,5).map(h=>'<li>'+safe(h)+'</li>').join('');const pageNav=(evidence.pageSummaries||[]).map(other=>{const otherSlug=other.path.split('/').filter(Boolean).join('-').toLowerCase().replace(/[^a-z0-9-]/g,'-').slice(0,48);return otherSlug&&otherSlug!==slug?'<a href="'+safe(otherSlug)+'.html">'+safe(other.label)+'</a>':''}).join('');return {slug,title:page.label,html:'<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>'+title+'</title><style>body{margin:0;background:#151923;color:#f7f5ef;font:18px system-ui,sans-serif}nav{padding:25px 7%;display:flex;gap:24px;flex-wrap:wrap}a{color:#d9c7a4}main{max-width:900px;margin:10vh auto;padding:0 7%}h1{font-size:clamp(36px,7vw,80px)}p{line-height:1.7}li{margin:16px 0}</style></head><body><nav><a href="index.html">Home</a><a href="services.html">Services</a><a href="about.html">About</a><a href="contact.html">Contact</a>'+pageNav+'</nav><main><h1>'+title+'</h1><p>'+summary+'</p><ul>'+headings+'</ul><p>Reconstructed content summary, not a copy of the original page or its functionality.</p></main></body></html>'} as GeneratedPage}).filter((page):page is GeneratedPage=>page!==null)}
+ function additionalPages(evidence:Inspection|null=inspected){
+  return designMode==='new'||!evidence?[]:createExtractedPages(evidence,name.trim()||extractedName(evidence));
+ }
  function automaticallyOptimizeMetadata(generated:GeneratedPage[]):GeneratedPage[]{
   return generated.map(page=>{
    const doc=new DOMParser().parseFromString(page.html,'text/html');
@@ -238,10 +241,11 @@ export default function BusinessGenerator(){
    const researchedServices=evidence&&designMode!=='new'?[...evidence.headings,...(evidence.pageSummaries||[]).flatMap(page=>[page.label,...page.headings])].map(heading=>heading.replace(/\s+/g,' ').trim()).filter(heading=>heading.length>=5&&heading.length<=65&&!/^(home|about|contact|welcome|menu|explore|learn more|our story)$/i.test(heading)).filter((heading,index,all)=>all.findIndex(other=>other.toLowerCase()===heading.toLowerCase())===index).slice(0,3):[];
    const appearance={...referenceStyle,...evidence?.styleReference,...parseStyleReference(referenceMarkup)};
    const input={...inferred,experienceStyle,...(intelligence&&intelligence.confidence!=='low'?{...(!explicitIndustry?{industry:intelligence.industry}:{}),...(!explicitOfferings?{services:intelligence.services}:{})}:{}),...(!explicitOfferings&&researchedServices.length>=2?{services:researchedServices}:{}),designMode,...(designMode!=='new'&&evidence?.visualSignals?{visualSignals:evidence.visualSignals}:{}),...(contactEmail.trim()?{contactEmail:contactEmail.trim()}:{}),...(designMode==='inspired'?{styleReference:appearance}:{})};
+   const generationEpoch=inspectionEpoch.current;
    const response=await fetch('/api/ai/business',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(input),signal:AbortSignal.timeout(75000)});
    if(response.status===429){const retrySeconds=Math.min(30,Math.max(1,Number(response.headers.get('retry-after'))||5));setStatus('AI is processing other websites. Please retry in about '+retrySeconds+' seconds.');return}
    if(!response.ok){const failure=await response.json();throw Error(response.status===503?'Website generation is temporarily unavailable. Please try again.':failure.error||'AI generation unavailable')}
-   const result=await response.json();const extras=experienceStyle==='cinematic'?enhanceCinematicPages(additionalPages(evidence)):additionalPages(evidence);const generated=[...result.pages,...extras];
+   const result=await response.json();if(generationEpoch!==inspectionEpoch.current){setStatus('Website address changed during generation. Generate again using the current website.');return}const extractedPages=additionalPages(evidence);const extras=applyExtractedExperience(extractedPages,experienceStyle,input);const generated=[...result.pages,...extras];
    setPages(automaticallyOptimizeMetadata(automaticallyApplyBrand(generated,appearance)));setActive('index');setStatus('Website draft generated. Review its content and design before publishing.');
   }catch(error){setStatus(error instanceof Error?error.message:'Website generation is temporarily unavailable.')}finally{setBusy(false)}
  }

@@ -48,3 +48,15 @@ export function servicePhoto(service:string,industry:string):string|null{
  // Do not attach an unrelated stock photo to an unrecognized offering.
  return null;
 }
+
+/** Compare the asset itself, independent of delivery size and quality parameters. */
+export function photoIdentity(url:string):string{
+ try{const parsed=new URL(url);return parsed.origin+parsed.pathname}catch{return url.split('?')[0]}
+}
+/** Prefer offering imagery, then unused industry images; never repeat an exhausted asset. */
+export function selectDiversePhoto(candidates:(string|null|undefined)[],used:Set<string>,reserved:Set<string>=new Set()):string|undefined{
+ const available=candidates.filter((url):url is string=>Boolean(url)&&!used.has(photoIdentity(url!)));
+ const selected=available.find(url=>!reserved.has(photoIdentity(url)))||available[0];
+ if(selected)used.add(photoIdentity(selected));
+ return selected;
+}
