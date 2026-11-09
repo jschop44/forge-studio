@@ -27,7 +27,7 @@ export function inferBusinessIndustry(name:string,brief:string):string{
   [/\b(coffee|espresso|roast(?:er|ery)?|barista|caf[eé])\b/i,'Coffee shop and cafe'],
   [/\b(restaurant|pizza|bakery|dining)\b/i,'Restaurant and hospitality'],
   [/\b(real estate|realtor|property)\b/i,'Real estate'],
-  [/\b(gym|fitness|wellness|spa)\b/i,'Health and wellness'],
+  [/\b(gym|fitness|wellness|spa|beauty|salon|hair styling|hairdresser|barber)\b/i,'Health and wellness'],
   [/\b(auto|car|vehicle|automotive)\b/i,'Automotive'],
   [/\b(fashion|jewelry|clothing)\b/i,'Fashion and luxury'],
   [/\b(software|tech|technology|digital|artificial intelligence|ai solutions|saas)\b/i,'Technology']
