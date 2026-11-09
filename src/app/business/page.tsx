@@ -255,7 +255,7 @@ export default function BusinessGenerator(){
     if(!identified&&!recognitionAnswered&&inferBusinessIndustry(generationName,'')==='Professional services'){const activity=literalBusinessActivity(effectiveBrief);if(activity){inferred.industry=activity;if(!/(?:^|\n)\s*(?:services|products|offerings|menu)\s*:/i.test(effectiveBrief))inferred.services=['Explore '+activity.slice(0,60).toLowerCase(),'About our business','Contact the team']}}
    }
    if(inferred.industry==='Professional services'){setStatus('Tell Forge what this business does so its design, images and 3D experience can match. For example: Industry: Soccer club; Offerings: Training, Teamwear, Match tickets.');return}
-   if(generationEpoch!==inspectionEpoch.current){setStatus('Website address changed during recognition. Generate again using the current website.');return}
+   if(generationEpoch!==inspectionEpoch.current){setStatus('Website address changed during generation. Generate again using the current website.');return}
    const explicitIndustry=/(?:^|\n)\s*(?:industry|business type|category)\s*:/i.test(effectiveBrief);
    const explicitOfferings=/(?:^|\n)\s*(?:services|products|offerings|menu)\s*:/i.test(effectiveBrief);
    const intelligence=evidence&&designMode!=='new'?analyzeSiteEvidence(evidence):null;

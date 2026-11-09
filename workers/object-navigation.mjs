@@ -39,7 +39,7 @@ function objectNavigationRuntime(config){
  canvas.addEventListener('pointerup',e=>{if(!drag||drag.id!==e.pointerId)return;const moved=drag.moved;drag=null;if(canvas.hasPointerCapture(e.pointerId))canvas.releasePointerCapture(e.pointerId);if(moved<=6){const r=canvas.getBoundingClientRect();navigate(pick(e.clientX-r.left,e.clientY-r.top))}});
  canvas.addEventListener('pointercancel',()=>{drag=null});
  canvas.addEventListener('keydown',e=>{if(e.key==='ArrowLeft')yaw-=.15;else if(e.key==='ArrowRight')yaw+=.15;else if(e.key==='ArrowUp')pitch=Math.min(1.1,pitch+.12);else if(e.key==='ArrowDown')pitch=Math.max(-.2,pitch-.12);else return;e.preventDefault();draw()});
- root.querySelector('[data-reset-object]').addEventListener('click',()=>{yaw=-.35;pitch=.4;zoom=1;draw()});
+ root.querySelector('[data-reset-object]').addEventListener('click',()=>{yaw=-.35;pitch=.4;zoom=1;canvas.scrollIntoView({block:'nearest',behavior:'instant'});draw()});
  async function loadBall(){
   root.dataset.modelQuality='loading';status.textContent='Loading the detailed '+(config.theme==='soccer'?'soccer ball':'baseball')+'…';
   try{

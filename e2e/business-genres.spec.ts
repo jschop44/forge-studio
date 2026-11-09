@@ -36,9 +36,11 @@ for(const genre of genres){
     expect(await page.locator('img:not([alt])').count()).toBe(0);
     expect(await page.locator('a:not([href]), a[href=""], a[href="#"]').count()).toBe(0);
     const localLinks=await page.locator('a[href]').evaluateAll(anchors=>anchors.map(a=>a.getAttribute('href')).filter((href):href is string=>Boolean(href)&&!href!.startsWith('mailto:')&&!href!.startsWith('tel:')&&!href!.startsWith('http')&&!href!.startsWith('#')));
-    const validPages=new Set(generated.pages.map(p=>p.slug+'.html'));
+    const destinationIds=await page.evaluate(pages=>Object.fromEntries(pages.map(p=>[p.slug+'.html',Array.from(new DOMParser().parseFromString(p.html,'text/html').querySelectorAll('[id]')).map(element=>element.id)])),generated.pages);
     for(const href of localLinks){
-      expect(validPages.has(href),'broken internal link '+href+' in '+genre+'/'+generatedPage.slug).toBe(true);
+      const destination=new URL(href,'https://fixture.test/');const filename=destination.pathname.slice(1);
+      expect(Object.hasOwn(destinationIds,filename),'broken internal page '+href+' in '+genre+'/'+generatedPage.slug).toBe(true);
+      if(destination.hash)expect(destinationIds[filename].includes(decodeURIComponent(destination.hash.slice(1))),'missing destination anchor '+href+' in '+genre+'/'+generatedPage.slug).toBe(true);
     }
     expect(await page.locator('main').count()).toBe(1);
     expect(await page.locator('nav[aria-label="Main navigation"]').count()).toBe(1);
