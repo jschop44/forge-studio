@@ -2,8 +2,8 @@ import {runtimeValue} from '../../../../lib/server/runtime-env';
 import {NextRequest,NextResponse} from 'next/server';
 import {timingSafeEqual} from 'node:crypto';
 import {database} from '../../../../lib/server/db';
-import {planNextTask} from '../../../../lib/agents/orchestrator';
-import {executeAgent,type AgentOutput} from '../../../../lib/agents/execution';
+import {evaluateAgentTask} from '../../../../lib/agents/evaluate';
+import {type AgentOutput} from '../../../../lib/agents/execution';
 import {settleAgentJob} from '../../../../lib/server/agent-job-settlement';
 import type {AgentDecision,AgentTask} from '../../../../lib/agents/types';
 import {agentRetryDelay} from '../../../../lib/agents/retry';
@@ -19,7 +19,7 @@ export async function POST(req:NextRequest){
  for(const job of claimed){
   const task:AgentTask={id:String(job.id),tenantId:String(job.tenant_id),kind:job.kind,source:job.source,payload:job.payload,attempt:Number(job.attempt),createdAt:new Date(job.created_at).toISOString()};
   let decision:AgentDecision,output:AgentOutput|null=null;
-  try{decision=planNextTask(task);if(decision.status==='ready')output=await executeAgent(task);}
+  try{({decision,output}=await evaluateAgentTask(task));}
   catch(error){
    const delay=agentRetryDelay(error,task.attempt,Number(job.max_attempts));
    if(delay!==null){
