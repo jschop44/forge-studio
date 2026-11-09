@@ -1,4 +1,4 @@
-export type WebsiteExperience='standard'|'cinematic'|'object-navigation';
+export type WebsiteExperience='standard'|'cinematic'|'object-navigation'|'immersive';
 export type ObjectNavigationPlan={theme:'coffee'|'baseball';targets:{part:string;label:string;href:string}[]};
 /** Explicit industry and supplied offerings determine objects; incidental prose cannot switch niches. */
 export function objectNavigationPlan(input:{industry:string;services:string[];pagePurpose?:'general'|'food'}):ObjectNavigationPlan|null{

@@ -1,10 +1,11 @@
+import {enhanceImmersiveWorld} from './immersive-world';
 import {objectNavigationPlan,enhanceCinematicPages} from './website-experience';
 import {objectNavigationMarkup} from '../../workers/object-navigation.mjs';
 import {z} from 'zod';
 import {escapeHtml} from './export';
 import {industryPhotos,servicePhoto,requiresFamilySafeReview,photoIdentity,selectDiversePhoto} from './industry-photos';
 import {enhanceImmersivePages} from './immersive-showcase';
-const BriefSchema=z.object({experienceStyle:z.enum(['standard','cinematic','object-navigation']).default('cinematic'),layout:z.enum(['editorial','image-led']).default('editorial'),businessName:z.string().trim().min(2).max(100),industry:z.string().trim().min(2).max(80),description:z.string().trim().min(15).max(1800),services:z.array(z.string().trim().min(2).max(100)).max(12),contactEmail:z.string().email().max(254).optional(),accent:z.string().regex(/^#[0-9a-fA-F]{6}$/).default('#b7a182'),improvements:z.array(z.enum(['relevance','conversion','content','mobile','seo','contact'])).optional()});
+const BriefSchema=z.object({experienceStyle:z.enum(['standard','cinematic','object-navigation','immersive']).default('cinematic'),layout:z.enum(['editorial','image-led']).default('editorial'),businessName:z.string().trim().min(2).max(100),industry:z.string().trim().min(2).max(80),description:z.string().trim().min(15).max(1800),services:z.array(z.string().trim().min(2).max(100)).max(12),contactEmail:z.string().email().max(254).optional(),accent:z.string().regex(/^#[0-9a-fA-F]{6}$/).default('#b7a182'),improvements:z.array(z.enum(['relevance','conversion','content','mobile','seo','contact'])).optional()});
 export type BusinessBrief=z.infer<typeof BriefSchema>;
 export function isExcludedBusiness(input:{businessName:string;industry:string;description:string;services:string[]}):boolean{
  const text=[input.businessName,input.industry,input.description,...input.services].join(' ').toLowerCase();
@@ -18,7 +19,7 @@ export function generateBusinessWebsite(input:unknown):{name:string;pages:Genera
  if(b.experienceStyle==='object-navigation'&&!objectPlan)throw Error('Object navigation needs a supported business niche and matching offerings. Choose standard or cinematic for this brief.');
  const objectMarkup=objectPlan?objectNavigationMarkup(objectPlan):'';
  const explicitCinematic=(input as {experienceStyle?:unknown}).experienceStyle==='cinematic';
- const enhance=b.experienceStyle==='cinematic'?(explicitCinematic?enhanceCinematicPages:enhanceImmersivePages):<T extends {slug:string;html:string}>(pages:T[])=>pages;
+ const enhance=b.experienceStyle==='immersive'?<T extends GeneratedPage>(pages:T[])=>enhanceImmersiveWorld(pages,b):b.experienceStyle==='cinematic'?(explicitCinematic?enhanceCinematicPages:enhanceImmersivePages):<T extends {slug:string;html:string}>(pages:T[])=>pages;
 if(isExcludedBusiness(b))throw new Error('Unsupported business category');const enabled=(id:'relevance'|'conversion'|'content'|'mobile'|'seo'|'contact')=>!b.improvements||b.improvements.includes(id);
  const photos=industryPhotos(enabled('relevance')?b.industry:'general');const visual=(url:string|undefined,alt:string)=>url?'<figure class="editorial-photo"><img src="'+s(url)+'" alt="'+s(alt)+'" loading="lazy"></figure>':'';
  const brand=s(b.businessName),desc=s(b.description),industry=s(b.industry),accent=b.accent;

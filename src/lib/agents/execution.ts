@@ -5,7 +5,7 @@ import {auditGeneratedSite} from '../site-audit';
 import type {AgentTask} from './types';
 import {reviewAgentPages} from './quality';
 import {createSitePlan} from './site-plan';
-const Context=z.object({experienceStyle:z.enum(['standard','cinematic','object-navigation']).optional(),businessName:z.string().min(2).max(100).optional(),industry:z.string().max(80).optional(),summary:z.string().max(1800).optional(),website:z.string().url().optional(),services:z.array(z.string()).optional(),html:z.string().max(250000).optional(),approvedPlan:z.boolean().optional()}).passthrough();
+const Context=z.object({experienceStyle:z.enum(['standard','cinematic','object-navigation','immersive']).optional(),businessName:z.string().min(2).max(100).optional(),industry:z.string().max(80).optional(),summary:z.string().max(1800).optional(),website:z.string().url().optional(),services:z.array(z.string()).optional(),html:z.string().max(250000).optional(),approvedPlan:z.boolean().optional()}).passthrough();
 export type AgentOutput={stage:AgentTask['kind'];summary:string;data:Record<string,unknown>};
 export function executeSafeAgent(task:AgentTask):AgentOutput{
  const context=Context.parse(task.payload);
