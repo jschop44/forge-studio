@@ -38,7 +38,7 @@ export function servicePhoto(service:string,industry:string):string|null{
  [/property|home|house|listing|real estate/,'photo-1600596542815-ffad4c1539a9'],
  [/\b(?:cars?|vehicles?|automotive)\b/,'photo-1503376780353-7e6692767b70'],
  [/yoga|meditation/,'photo-1544367567-0f2fcb009e0b'],
- [/hotel|room|suite|accommodation/,'photo-1566073771259-6a8506099945'],
+ [/\b(?:hotels?|rooms?|suites?|accommodations?|lodging)\b/,'photo-1566073771259-6a8506099945'],
  [/fashion|clothing|apparel|wardrobe/,'photo-1483985988355-763728e1935b'],
  [/software|technology|electronics|computer/,'photo-1518770660439-4636190af475'],
  [/fitness|gym|workout|training/,'photo-1506126613408-eca07ce68773']
