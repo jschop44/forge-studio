@@ -89,6 +89,9 @@ jobs:
           appendFileSync(process.env.GITHUB_STEP_SUMMARY,'Preview health passed. Database/auth readiness: '+(ready?'passed':'blocked; runtime configuration or database access is incomplete')+'.\nThis does not verify real AI generation or live queue execution.\n');
           console.log('Database/auth readiness: '+(ready?'passed':'blocked'));
           JS
+      - name: Verify live open-ended business recognition
+        if: steps.publish.outputs.current == 'true'
+        run: node scripts/smoke-business-recognition.mjs
       - name: Verify live AI generation through agent quality and approval stages
         if: steps.publish.outputs.current == 'true'
         env:
