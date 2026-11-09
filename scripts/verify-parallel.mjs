@@ -21,9 +21,9 @@ const results=await Promise.all(jobs.map(([name,command,args])=>new Promise(reso
 for(const result of results){
  console.log('['+result.name+'] '+(result.code===0?'PASS':'FAIL')+' '+result.seconds.toFixed(1)+'s');
  if(result.code!==0){
-  const lines=result.output.split('\\n');
-  const failures=lines.flatMap((line,index)=>/^\\s*not ok \\d+ - /.test(line)?[lines.slice(Math.max(0,index-1),Math.min(lines.length,index+24)).join('\\n')]:[]);
-  if(failures.length)console.error('['+result.name+'] failing TAP assertions:\\n'+failures.join('\\n---\\n'));
+  const lines=result.output.split('\n');
+  const failures=lines.flatMap((line,index)=>/^\s*not ok \d+ - /.test(line)?[lines.slice(Math.max(0,index-1),Math.min(lines.length,index+24)).join('\n')]:[]);
+  if(failures.length)console.error('['+result.name+'] failing TAP assertions:\n'+failures.join('\n---\n'));
   console.error(result.output.slice(-12000));
  }
  else if(process.env.VERIFY_VERBOSE==='1')console.log(result.output.slice(-12000));
