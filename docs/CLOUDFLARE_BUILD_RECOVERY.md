@@ -15,13 +15,19 @@ The `Inspect Cloudflare dashboard build configuration` GitHub workflow ran on 20
 
 The repository already has `.github/workflows/verified-preview.yml`. It deploys the correctly named `forge-studio-preview` Worker **only for a successful push to `main`**, and then checks health and AI functionality.
 
-1. Sign in to Cloudflare, select **Workers & Pages**, then select the Worker **forge-studio** (the one identified by the failing GitHub check, **not** `forge-studio-preview`).
-2. Open **Settings → Builds** and confirm this Worker is connected to `jschop44/forge-studio`. If it is, select **Disconnect** for the Git repository. This disconnects that Worker's automatic *Git builds*; it does **not** delete or rename a Worker.
+1. The extra `forge-studio` Worker was deleted on November 10, but Cloudflare continued posting a failed GitHub preview check: **Preview creation failed: This Worker does not exist on your account.** Deleting the Worker alone does not remove the GitHub App's orphaned preview trigger.
+2. In GitHub **Settings → Applications → Installed GitHub Apps**, configure **Cloudflare Workers and Pages**. Choose **Only select repositories** and exclude `jschop44/forge-studio`, while retaining other repos that still use Cloudflare Git builds. Leave `forge-studio-preview` intact. This change was reported complete by the account owner; verify success on a **new commit**, not against historical check results.
 3. Leave `forge-studio-preview` and its runtime environment, bindings, secrets, routes, and deployment intact. Do **not** remove the entire Cloudflare GitHub app, since other projects might use it.
 4. Keep using `Verify` followed by `Deploy verified Forge preview` in GitHub Actions after merging. Confirm the deploy workflow succeeds and `/api/health` returns the expected service.
 5. On a fresh commit, confirm the mismatched `Workers Builds: forge-studio` check no longer appears. A historical failed check will remain visible on earlier commits. If repository rules require this removed check, update the required-check rule to rely on the verified GitHub Actions checks instead (without bypassing application tests).
 
 This removes the duplicate, incorrectly targeted Cloudflare build path and retains automatic free GitHub Actions-to-Cloudflare deployment.
+
+## Verification after repository access is revoked
+
+On a new branch commit, verify the GitHub checks list has the first-party `Verify`, browser groups, Worker packaging, builder UI, local Ollama, and live AI smoke checks, **without** a new `Workers Builds: forge-studio` result. Confirm the read-only diagnostic still reports HTTP 200 for `forge-studio-preview`. Historical failed checks cannot be removed from old commits by a new configuration change.
+
+If the stale Cloudflare check remains on a new commit after revoking repository access, consult Cloudflare support with GitHub repository `jschop44/forge-studio`, deleted Worker `forge-studio`, and failing build `882c3af8-4001-4a0d-973e-15fa8ea775c9`. Do not recreate the deleted Worker, rename the live Worker, or disable real application tests just to get a green badge.
 
 ## Alternative: use Cloudflare dashboard builds instead of GitHub deploy
 
