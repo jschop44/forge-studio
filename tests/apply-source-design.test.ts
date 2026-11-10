@@ -40,3 +40,32 @@ test('preserve mode carries observed centered hero composition without applying 
  assert.ok(preserved.includes('.site-hero{grid-template-columns:1fr;text-align:center;justify-items:center}'));
  assert.ok(!redesigned.includes('.site-hero{grid-template-columns:1fr;text-align:center;justify-items:center}'));
 });
+
+test('a source content photograph is not repeated across distinct website pages',()=>{
+ const source=extractWebsiteDesignDna(
+  '<img src="/brand.png" class="company-logo" alt="Chicken wings logo"><img src="/wings-a.jpg" alt="Chicken wings with spicy sauce"><img src="/wings-b.jpg" alt="Chicken wings with hot sauce">',
+  'https://restaurant.example/');
+ const pages=[
+  {slug:'index',title:'Chicken wings',html:wrap('<h1>Chicken wings</h1><figure class="editorial-photo"><img src="https://stock.example/a.jpg" alt="Chicken wings photograph"></figure>')},
+  {slug:'services',title:'Menu',html:wrap('<article><h2>Chicken wings</h2><img src="https://stock.example/b.jpg" alt="Chicken wings photograph"></article>')},
+  {slug:'about',title:'About',html:wrap('<h1>Chicken wings</h1><figure class="editorial-photo"><img src="https://stock.example/c.jpg" alt="Chicken wings photograph"></figure>')}
+ ];
+ const result=applySourceDesign(pages,source,'redesign');
+ const allContentUrls=[...result.pages.flatMap(page=>[...page.html.matchAll(/data-forge-source-image src="([^"]+)"/g)].map(match=>match[1]))];
+ assert.equal(allContentUrls.length,2,'only two source content photographs are available');
+ assert.equal(new Set(allContentUrls).size,allContentUrls.length,'source content photographs must be unique across pages');
+ for(const page of result.pages)assert.match(page.html,/src="https:\/\/restaurant\.example\/brand\.png"/,'business logo is intentionally reused');
+ assert.match(result.pages[2].html,/src="https:\/\/stock\.example\/c\.jpg"/,'an unmatched page keeps its original image rather than repeating a source photograph');
+});
+
+test('service photos are not replaced by unrelated source assets when a matching photo was used earlier',()=>{
+ const source=extractWebsiteDesignDna('<img src="/wings.jpg" alt="Chicken wings"><img src="/fruit.jpg" alt="Fruit bowl">','https://restaurant.example/');
+ const pages=[
+  {slug:'index',title:'Chicken wings',html:wrap('<h1>Chicken wings</h1><figure class="editorial-photo"><img src="https://stock.example/wings.jpg" alt="Chicken wings"></figure>')},
+  {slug:'services',title:'Menu',html:wrap('<article><h2>Chicken wings</h2><img src="https://stock.example/menu.jpg" alt="Menu photograph"></article>')}
+ ];
+ const result=applySourceDesign(pages,source,'redesign');
+ assert.match(result.pages[0].html,/src="https:\/\/restaurant\.example\/wings\.jpg"/);
+ assert.match(result.pages[1].html,/src="https:\/\/stock\.example\/menu\.jpg"/);
+ assert.doesNotMatch(result.pages[1].html,/src="https:\/\/restaurant\.example\/fruit\.jpg"/);
+});
