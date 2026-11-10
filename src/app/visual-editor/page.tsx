@@ -1,5 +1,5 @@
 'use client';
-import {useState} from 'react';
+import {useEffect,useState} from 'react';
 import Link from 'next/link';
 import {prepareVisualEditorDocument} from '../../lib/visual-editor-adapter';
 import {downloadText} from '../../lib/export';
@@ -10,6 +10,7 @@ export default function VisualEditor(){
  const [body,setBody]=useState('');
  const [css,setCss]=useState('');
  const [message,setMessage]=useState('');
+ useEffect(()=>{try{const raw=sessionStorage.getItem('forge:visual-editor:handoff');if(!raw)return;sessionStorage.removeItem('forge:visual-editor:handoff');if(raw.length>2_000_000){setMessage('Transferred page exceeds the editor size limit.');return}const candidate=JSON.parse(raw) as GeneratedPage;if(!candidate||typeof candidate.html!=='string'||typeof candidate.slug!=='string'||typeof candidate.title!=='string'){setMessage('Invalid transferred website page.');return}const doc=prepareVisualEditorDocument(candidate);if(!doc.bodyHtml){setMessage(doc.warnings.join(' ')||'Unable to open this page safely.');return}setPage(candidate);setBody(doc.bodyHtml);setCss(doc.css);setMessage('Generated page loaded. Edits are local until you export them.')}catch{setMessage('Unable to load transferred page.')}},[]);
  async function load(file:File){
   if(file.size>2_000_000){setMessage('HTML file exceeds 2 MB limit.');return}
   const html=await file.text();
