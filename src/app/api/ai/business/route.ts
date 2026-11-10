@@ -8,7 +8,7 @@ import {generateWithLocalAi} from '../../../../lib/server/local-ai';
 import {businessGenerationResponse} from '../../../../lib/server/business-generation-response';
 import {objectNavigationPlan} from '../../../../lib/website-experience';
 import {isExcludedBusiness} from '../../../../lib/business-site';
-import {planAdaptiveDesign} from '../../../../lib/design-engine';
+import {DESIGN_PATTERNS,planAdaptiveDesign} from '../../../../lib/design-engine';
 export const runtime='nodejs';
 const Input=z.object({designMode:z.enum(['new','inspired','redesign']).optional(),visualDesignMode:z.enum(['auto','library']).optional(),designPatternId:z.string().trim().max(80).optional(),immersive3d:z.boolean().optional(),experienceStyle:z.enum(['standard','cinematic','object-navigation','immersive']).optional(),businessName:z.string().trim().min(2).max(100),industry:z.string().trim().min(2).max(80),description:z.string().trim().min(15).max(1800),services:z.array(z.string().trim().min(2).max(100)).min(1).max(12),visualAssets:z.array(VisualAssetSchema).max(12).optional(),contactEmail:z.string().email().max(254).optional()});
 export async function POST(req:NextRequest){
@@ -23,7 +23,9 @@ export async function POST(req:NextRequest){
  // Existing callers retain their explicit experience style. The new design
  // options opt into immersive or cinematic generation when supported.
  const experienceStyle=generationInput.experienceStyle||(immersive3d===true&&design.immersive3d?'immersive':design.motion==='cinematic'&&visualDesignMode?'cinematic':'standard');
- const result=await generateWithLocalAi({...generationInput,experienceStyle});
+ const pattern=DESIGN_PATTERNS.find(item=>item.id===design.patternId);
+ const designLayout=pattern?.layout==='showcase'||pattern?.layout==='catalog'?'image-led':'editorial';
+ const result=await generateWithLocalAi({...generationInput,experienceStyle,...(visualDesignMode?{designLayout}: {})});
  const response=businessGenerationResponse(result);
  if(!response.ok)return response;
  const payload=await response.json();
