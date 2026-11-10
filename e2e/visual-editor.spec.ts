@@ -123,3 +123,19 @@ test('visual designer uses a single-column layout on narrow mobile screens',asyn
  await expect.poll(()=>grid.evaluate(element=>getComputedStyle(element).gridTemplateColumns.split(' ').length)).toBe(1);
  await expect(page.getByRole('button',{name:'Insert heading block'})).toBeEnabled();
 });
+
+test('visual editor has polished scoped styling and no mobile horizontal overflow',async({page})=>{
+ await page.setViewportSize({width:390,height:844});
+ const initial={slug:'index',title:'Home',html:'<!doctype html><html><body><h1>Accessible bakery</h1></body></html>'};
+ await page.goto('/visual-editor');
+ await page.evaluate(initial=>sessionStorage.setItem('forge:visual-editor:handoff',JSON.stringify(initial)),initial);
+ await page.reload();
+ const editor=page.locator('main.forge-visual-editor');
+ await expect(editor).toBeVisible();
+ await expect.poll(()=>editor.evaluate(element=>getComputedStyle(element).backgroundImage)).toContain('linear-gradient');
+ await expect.poll(()=>page.evaluate(()=>document.documentElement.scrollWidth<=window.innerWidth+1)).toBe(true);
+ const iframe=page.frameLocator('iframe[title="Edited website preview"]');
+ await expect(iframe.locator('h1')).toHaveText('Accessible bakery');
+ const iframeBackground=await iframe.locator('body').evaluate(element=>getComputedStyle(element).backgroundImage);
+ expect(iframeBackground).toBe('none');
+});
