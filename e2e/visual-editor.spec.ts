@@ -75,18 +75,18 @@ test('GrapesJS designer opens with editable canvas and block palette',async({pag
  await expect(page.getByRole('region',{name:'Drag and drop page designer'})).toHaveCount(0);
 });
 
-test('GrapesJS can drag a heading block onto the website canvas',async({page})=>{
+test('Forge designer drag-and-drop reliably inserts a heading into the website',async({page})=>{
  const initial={slug:'index',title:'Home',html:'<!doctype html><html><head><style>body{color:black}</style></head><body><main><h1>Canvas bakery</h1></main></body></html>'};
  await page.goto('/visual-editor');
  await page.evaluate(initial=>sessionStorage.setItem('forge:visual-editor:handoff',JSON.stringify(initial)),initial);
  await page.reload();
  await page.getByRole('button',{name:'Open drag-and-drop designer'}).click();
- const block=page.locator('#forge-grapes-blocks .gjs-block').filter({hasText:'Heading'});
+ const block=page.getByRole('button',{name:'Insert heading block'});
+ const target=page.getByRole('region',{name:'Drop new content into page'});
+ await expect(block).toBeEnabled();
+ await expect(target).toBeVisible();
+ await block.dragTo(target);
  const frame=page.frameLocator('.gjs-cv-canvas iframe');
- const dropTarget=frame.locator('body');
- await expect(block).toBeVisible();
- await expect(dropTarget).toBeVisible();
- // GrapesJS accepts a drop inside its canvas iframe, not on the outer canvas wrapper.
- await block.dragTo(dropTarget,{targetPosition:{x:80,y:80}});
  await expect(frame.locator('h2')).toContainText('New heading',{timeout:10000});
+ await expect(page.getByRole('textbox',{name:'HTML body'})).toContainText('New heading');
 });
