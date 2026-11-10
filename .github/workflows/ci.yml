@@ -69,6 +69,34 @@ jobs:
           echo "Elapsed job time: $(( $(date +%s) - VERIFY_STARTED )) seconds" >> "$GITHUB_STEP_SUMMARY"
           echo 'Production compilation does not establish that live AI inference is available.' >> "$GITHUB_STEP_SUMMARY"
 
+  cloudflare_package:
+    name: Cloudflare Worker packaging
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - uses: actions/cache@v4
+        with:
+          path: ~/.npm
+          key: npm-${{ runner.os }}-node22-${{ hashFiles('package-lock.json') }}
+          restore-keys: |
+            npm-${{ runner.os }}-node22-
+      - run: npm ci --prefer-offline --no-audit --no-fund
+      - name: Package application for Cloudflare Workers without deploying
+        run: npm run build:cloudflare
+      - name: Verify generated Worker and assets
+        run: |
+          test -s .open-next/worker.js
+          test -d .open-next/assets
+      - name: Publish diagnostic summary
+        if: always()
+        run: |
+          echo 'Cloudflare OpenNext packaging was tested without publishing.' >> "$GITHUB_STEP_SUMMARY"
+          echo 'Cloudflare dashboard build settings and credentials are verified separately.' >> "$GITHUB_STEP_SUMMARY"
+
   browser:
     name: Browser checks (${{ matrix.shard }}/2)
     strategy:
