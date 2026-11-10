@@ -43,3 +43,21 @@ test('active markup and CSS cannot be previewed or returned to generator',async(
  await page.getByRole('button',{name:'Validate and download edited page'}).click();
  await expect(page.getByRole('status')).toContainText('Export blocked');
 });
+
+test('no-code headline and paragraph controls update the preview safely',async({page})=>{
+ const initial={slug:'index',title:'Home',html:'<!doctype html><html><head><style>body{color:black}</style></head><body><main><h1>Original heading</h1><p>Original paragraph</p></main></body></html>'};
+ await page.goto('/visual-editor');
+ await page.evaluate(initial=>sessionStorage.setItem('forge:visual-editor:handoff',JSON.stringify(initial)),initial);
+ await page.reload();
+ await expect(page.getByRole('status')).toContainText('Generated page loaded');
+ await expect(page.getByRole('textbox',{name:'Visual main headline'})).toHaveValue('Original heading');
+ await expect(page.getByRole('textbox',{name:'Visual first paragraph'})).toHaveValue('Original paragraph');
+ await page.getByRole('textbox',{name:'Visual main headline'}).fill('New & better <bakery>');
+ await page.getByRole('textbox',{name:'Visual first paragraph'}).fill('Fresh pastries daily');
+ await page.getByRole('button',{name:'Apply visual text changes'}).click();
+ const preview=page.frameLocator('iframe[title="Edited website preview"]');
+ await expect(preview.locator('h1')).toHaveText('New & better <bakery>');
+ await expect(preview.locator('p')).toHaveText('Fresh pastries daily');
+ await expect(preview.locator('bakery')).toHaveCount(0);
+ await expect(page.getByRole('textbox',{name:'HTML body'})).toContainText('New &amp; better &lt;bakery&gt;');
+});
