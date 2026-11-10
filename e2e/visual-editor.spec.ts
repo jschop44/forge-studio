@@ -190,8 +190,8 @@ test('business setup and selected design survive an actual generator-editor roun
  await page.goto('/business');
  await page.getByRole('textbox',{name:'Business name',exact:true}).fill('Harbor Roastery');
  await page.getByPlaceholder(/Describe what you offer/).fill(brief);
- await page.getByLabel('Design selection',{exact:true}).selectOption('library');
- await page.getByLabel('Design pattern',{exact:true}).selectOption('hospitality-story');
+ await page.getByRole('combobox',{name:/^Design selection/}).selectOption('library');
+ await page.getByRole('combobox',{name:/^Design pattern/}).selectOption('hospitality-story');
  await page.getByRole('button',{name:/generate my website/i}).click();
  await expect(page.frameLocator('iframe[title="Website preview: Home"]').locator('main h1')).toHaveText('Harbor Roastery');
  await page.getByRole('checkbox',{name:/I reviewed every generated page/}).check();
@@ -204,8 +204,8 @@ test('business setup and selected design survive an actual generator-editor roun
  await expect(page).toHaveURL(/\/business$/);
  await expect(page.getByRole('textbox',{name:'Business name',exact:true})).toHaveValue('Harbor Roastery');
  await expect(page.getByPlaceholder(/Describe what you offer/)).toHaveValue(brief);
- await expect(page.getByLabel('Design selection',{exact:true})).toHaveValue('library');
- await expect(page.getByLabel('Design pattern',{exact:true})).toHaveValue('hospitality-story');
+ await expect(page.getByRole('combobox',{name:/^Design selection/})).toHaveValue('library');
+ await expect(page.getByRole('combobox',{name:/^Design pattern/})).toHaveValue('hospitality-story');
  await expect(page.getByRole('checkbox',{name:/I reviewed every generated page/})).not.toBeChecked();
  await expect(page.frameLocator('iframe[title="Website preview: Home"]').locator('main h1')).toHaveText('Roasted by the harbor');
  await page.getByRole('navigation',{name:'Website pages'}).getByRole('button',{name:'Contact',exact:true}).click();
