@@ -67,7 +67,7 @@ export default function BusinessGenerator(){
  const [experienceStyle,setExperienceStyle]=useState<WebsiteExperience>('standard');
  const [visualDesignMode,setVisualDesignMode]=useState<'auto'|'library'>('auto');
  const [visualPatternId,setVisualPatternId]=useState('adaptive-general');
- const [autoImmersive,setAutoImmersive]=useState(true);
+ const [autoImmersive,setAutoImmersive]=useState(false);
  const [workerEvidenceText,setWorkerEvidenceText]=useState(''),[workerEvidence,setWorkerEvidence]=useState<BrowserEvidence|null>(null),[workerEvidenceError,setWorkerEvidenceError]=useState(''),[capturePreview,setCapturePreview]=useState<GeneratedPage[]>([]),[capturePreviewIndex,setCapturePreviewIndex]=useState(0);
  const [revisionVersion,setRevisionVersion]=useState(''),[revisionId,setRevisionId]=useState(''),[publishApproved,setPublishApproved]=useState(false),[publishBusy,setPublishBusy]=useState(false),[publishedUrls,setPublishedUrls]=useState<string[]>([]);
  const [reviewIndustry,setReviewIndustry]=useState(''),[reviewServices,setReviewServices]=useState(''),[reviewApproved,setReviewApproved]=useState(false);
@@ -270,7 +270,7 @@ export default function BusinessGenerator(){
    const intelligence=evidence&&designMode!=='new'?analyzeSiteEvidence(evidence):null;
    const appearance={...referenceStyle,...evidence?.styleReference,...parseStyleReference(referenceMarkup)};
    const designDecision=planAdaptiveDesign({businessName:inferred.businessName,industry:inferred.industry,mode:visualDesignMode,patternId:visualDesignMode==='library'?visualPatternId:undefined,immersive3d:autoImmersive});
-   const selectedExperience:WebsiteExperience=designDecision.immersive3d?'immersive':designDecision.motion==='cinematic'?'cinematic':experienceStyle;
+   const selectedExperience:WebsiteExperience=autoImmersive&&designDecision.immersive3d?'immersive':experienceStyle;
    const input={...inferred,experienceStyle:selectedExperience,visualAssets:[] as VisualAsset[],...(intelligence&&intelligence.confidence!=='low'?{...(!explicitIndustry&&!recognizedActivity?{industry:intelligence.industry}:{}),...(!explicitOfferings&&!recognizedActivity?{services:intelligence.services}:{})}:{}),designMode,...(designMode!=='new'&&evidence?.visualSignals?{visualSignals:evidence.visualSignals}:{}),...(contactEmail.trim()?{contactEmail:contactEmail.trim()}:{}),...(designMode==='inspired'?{styleReference:appearance}:{})};
    let visualNotice='';
    if(!industryPhotos(input.industry).length){
@@ -279,7 +279,7 @@ export default function BusinessGenerator(){
     if(!input.visualAssets.length)visualNotice=' No relevant stock images could be verified for this niche; add business imagery rather than an unrelated substitute.';
    }
    if(generationEpoch!==inspectionEpoch.current){setStatus('Website address changed during generation. Generate again using the current website.');return}
-   const generationPayload={...businessGenerationPayload(input),designMode:visualDesignMode,designPatternId:visualDesignMode==='library'?visualPatternId:undefined,immersive3d:autoImmersive};
+   const generationPayload={...businessGenerationPayload(input),visualDesignMode,designPatternId:visualDesignMode==='library'?visualPatternId:undefined,immersive3d:autoImmersive};
    if(input.description.length>1800)visualNotice+=' The first 1,800 characters of your description were used for generation.';
    const response=await fetch('/api/ai/business',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(generationPayload),signal:AbortSignal.timeout(75000)});
    if(response.status===429){const retrySeconds=Math.min(30,Math.max(1,Number(response.headers.get('retry-after'))||5));setStatus('AI is processing other websites. Please retry in about '+retrySeconds+' seconds.');return}
