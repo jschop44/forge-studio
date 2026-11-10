@@ -7,6 +7,10 @@ GitHub's failing Cloudflare check is titled **Workers Builds: forge-studio** and
 
 Cloudflare's Workers Builds documentation requires the connected Worker name to equal the `name` in the Wrangler configuration. The failure also occurs on the existing `main` commit, whereas the GitHub Actions OpenNext build succeeds. These observations identify a definite name mismatch; the precise Cloudflare log has not been retrieved, so other build-settings problems may also exist.
 
+## Read-only account diagnosis
+
+The `Inspect Cloudflare dashboard build configuration` GitHub workflow ran on 2026-11-10 using the existing repository secrets. Cloudflare's Workers Scripts API confirmed **both** `forge-studio` and `forge-studio-preview` exist in the account. The Workers Builds configuration and build-logs API returned **HTTP 401** for both targets. The existing token is therefore sufficient to list Workers but cannot inspect or change Git-associated builds; a separate user-scoped Builds API token would be required for remote API repair. No Cloudflare resources were modified.
+
 ## Preferred zero-cost repair: use the existing verified GitHub Actions deploy
 
 The repository already has `.github/workflows/verified-preview.yml`. It deploys the correctly named `forge-studio-preview` Worker **only for a successful push to `main`**, and then checks health and AI functionality.
