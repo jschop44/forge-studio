@@ -61,3 +61,16 @@ test('no-code headline and paragraph controls update the preview safely',async({
  await expect(preview.locator('bakery')).toHaveCount(0);
  await expect(page.getByRole('textbox',{name:'HTML body'})).toContainText('New &amp; better &lt;bakery&gt;');
 });
+
+test('GrapesJS designer opens with editable canvas and block palette',async({page})=>{
+ const initial={slug:'index',title:'Home',html:'<!doctype html><html><head><style>body{color:black}</style></head><body><main><h1>Canvas bakery</h1><p>Fresh bread</p></main></body></html>'};
+ await page.goto('/visual-editor');
+ await page.evaluate(initial=>sessionStorage.setItem('forge:visual-editor:handoff',JSON.stringify(initial)),initial);
+ await page.reload();
+ await page.getByRole('button',{name:'Open drag-and-drop designer'}).click();
+ await expect(page.getByRole('region',{name:'Drag and drop page designer'})).toBeVisible();
+ await expect(page.locator('#forge-grapes-blocks .gjs-block')).toHaveCount(5,{timeout:20000});
+ await expect(page.locator('.gjs-cv-canvas iframe')).toBeVisible();
+ await page.getByRole('button',{name:'Close drag-and-drop designer'}).click();
+ await expect(page.getByRole('region',{name:'Drag and drop page designer'})).toHaveCount(0);
+});
