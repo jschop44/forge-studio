@@ -12,21 +12,21 @@ export default function VisualEditor(){
  const [message,setMessage]=useState('');
  const [visualHeadline,setVisualHeadline]=useState('');
  const [visualParagraph,setVisualParagraph]=useState('');
- useEffect(()=>{try{const raw=sessionStorage.getItem('forge:visual-editor:handoff');if(!raw)return;sessionStorage.removeItem('forge:visual-editor:handoff');if(raw.length>2_000_000){setMessage('Transferred page exceeds the editor size limit.');return}const candidate=JSON.parse(raw) as GeneratedPage;if(!candidate||typeof candidate.html!=='string'||typeof candidate.slug!=='string'||typeof candidate.title!=='string'){setMessage('Invalid transferred website page.');return}const doc=prepareVisualEditorDocument(candidate);if(!doc.bodyHtml){setMessage(doc.warnings.join(' ')||'Unable to open this page safely.');return}setPage(candidate);setBody(doc.bodyHtml);setCss(doc.css);setVisualHeadline(doc.bodyHtml.match(/<h1\\b[^>]*>([^<]*)<\\/h1>/i)?.[1]||'');setVisualParagraph(doc.bodyHtml.match(/<p\\b[^>]*>([^<]*)<\\/p>/i)?.[1]||'');setMessage('Generated page loaded. Edits are local until you export them.')}catch{setMessage('Unable to load transferred page.')}},[]);
+ useEffect(()=>{try{const raw=sessionStorage.getItem('forge:visual-editor:handoff');if(!raw)return;sessionStorage.removeItem('forge:visual-editor:handoff');if(raw.length>2_000_000){setMessage('Transferred page exceeds the editor size limit.');return}const candidate=JSON.parse(raw) as GeneratedPage;if(!candidate||typeof candidate.html!=='string'||typeof candidate.slug!=='string'||typeof candidate.title!=='string'){setMessage('Invalid transferred website page.');return}const doc=prepareVisualEditorDocument(candidate);if(!doc.bodyHtml){setMessage(doc.warnings.join(' ')||'Unable to open this page safely.');return}setPage(candidate);setBody(doc.bodyHtml);setCss(doc.css);setVisualHeadline(doc.bodyHtml.match(/<h1\b[^>]*>([^<]*)<\/h1>/i)?.[1]||'');setVisualParagraph(doc.bodyHtml.match(/<p\b[^>]*>([^<]*)<\/p>/i)?.[1]||'');setMessage('Generated page loaded. Edits are local until you export them.')}catch{setMessage('Unable to load transferred page.')}},[]);
  async function load(file:File){
   if(file.size>2_000_000){setMessage('HTML file exceeds 2 MB limit.');return}
   const html=await file.text();
   const candidate:GeneratedPage={slug:'index',title:file.name.replace(/\.html?$/i,''),html};
   const document=prepareVisualEditorDocument(candidate);
   if(!document.bodyHtml){setPage(null);setMessage(document.warnings.join(' ')||'Unable to import page safely.');return}
-  setPage(candidate);setBody(document.bodyHtml);setCss(document.css);setVisualHeadline(document.bodyHtml.match(/<h1\\b[^>]*>([^<]*)<\\/h1>/i)?.[1]||'');setVisualParagraph(document.bodyHtml.match(/<p\\b[^>]*>([^<]*)<\\/p>/i)?.[1]||'');
+  setPage(candidate);setBody(document.bodyHtml);setCss(document.css);setVisualHeadline(document.bodyHtml.match(/<h1\b[^>]*>([^<]*)<\/h1>/i)?.[1]||'');setVisualParagraph(document.bodyHtml.match(/<p\b[^>]*>([^<]*)<\/p>/i)?.[1]||'');
   setMessage('Imported into the isolated editing preview. Original file remains unchanged.');
  }
  function applyVisualText(){
   const escape=(value:string)=>value.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/\"/g,'&quot;');
   let updated=body;
-  if(/<h1\\b[^>]*>[^<]*<\\/h1>/i.test(updated))updated=updated.replace(/(<h1\\b[^>]*>)[^<]*(<\\/h1>)/i,(_,open:string,close:string)=>open+escape(visualHeadline)+close);
-  if(/<p\\b[^>]*>[^<]*<\\/p>/i.test(updated))updated=updated.replace(/(<p\\b[^>]*>)[^<]*(<\\/p>)/i,(_,open:string,close:string)=>open+escape(visualParagraph)+close);
+  if(/<h1\b[^>]*>[^<]*<\/h1>/i.test(updated))updated=updated.replace(/(<h1\b[^>]*>)[^<]*(<\/h1>)/i,(_,open:string,close:string)=>open+escape(visualHeadline)+close);
+  if(/<p\b[^>]*>[^<]*<\/p>/i.test(updated))updated=updated.replace(/(<p\b[^>]*>)[^<]*(<\/p>)/i,(_,open:string,close:string)=>open+escape(visualParagraph)+close);
   setBody(updated);setMessage('Visual text changes applied. Review the preview before exporting.');
  }
  function returnToGenerator(){
