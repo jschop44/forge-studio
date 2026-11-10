@@ -269,7 +269,9 @@ export default function BusinessGenerator(){
    const explicitOfferings=/(?:^|\n)\s*(?:services|products|offerings|menu)\s*:/i.test(effectiveBrief);
    const intelligence=evidence&&designMode!=='new'?analyzeSiteEvidence(evidence):null;
    const appearance={...referenceStyle,...evidence?.styleReference,...parseStyleReference(referenceMarkup)};
-   const input={...inferred,experienceStyle,visualAssets:[] as VisualAsset[],...(intelligence&&intelligence.confidence!=='low'?{...(!explicitIndustry&&!recognizedActivity?{industry:intelligence.industry}:{}),...(!explicitOfferings&&!recognizedActivity?{services:intelligence.services}:{})}:{}),designMode,...(designMode!=='new'&&evidence?.visualSignals?{visualSignals:evidence.visualSignals}:{}),...(contactEmail.trim()?{contactEmail:contactEmail.trim()}:{}),...(designMode==='inspired'?{styleReference:appearance}:{})};
+   const designDecision=planAdaptiveDesign({businessName:inferred.businessName,industry:inferred.industry,mode:visualDesignMode,patternId:visualDesignMode==='library'?visualPatternId:undefined,immersive3d:autoImmersive});
+   const selectedExperience:WebsiteExperience=designDecision.immersive3d?'immersive':designDecision.motion==='cinematic'?'cinematic':experienceStyle;
+   const input={...inferred,experienceStyle:selectedExperience,visualAssets:[] as VisualAsset[],...(intelligence&&intelligence.confidence!=='low'?{...(!explicitIndustry&&!recognizedActivity?{industry:intelligence.industry}:{}),...(!explicitOfferings&&!recognizedActivity?{services:intelligence.services}:{})}:{}),designMode,...(designMode!=='new'&&evidence?.visualSignals?{visualSignals:evidence.visualSignals}:{}),...(contactEmail.trim()?{contactEmail:contactEmail.trim()}:{}),...(designMode==='inspired'?{styleReference:appearance}:{})};
    let visualNotice='';
    if(!industryPhotos(input.industry).length){
     setStatus('Finding images that match '+input.industry+'…');
@@ -277,7 +279,7 @@ export default function BusinessGenerator(){
     if(!input.visualAssets.length)visualNotice=' No relevant stock images could be verified for this niche; add business imagery rather than an unrelated substitute.';
    }
    if(generationEpoch!==inspectionEpoch.current){setStatus('Website address changed during generation. Generate again using the current website.');return}
-   const generationPayload=businessGenerationPayload(input);
+   const generationPayload={...businessGenerationPayload(input),designMode:visualDesignMode,designPatternId:visualDesignMode==='library'?visualPatternId:undefined,immersive3d:autoImmersive};
    if(input.description.length>1800)visualNotice+=' The first 1,800 characters of your description were used for generation.';
    const response=await fetch('/api/ai/business',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(generationPayload),signal:AbortSignal.timeout(75000)});
    if(response.status===429){const retrySeconds=Math.min(30,Math.max(1,Number(response.headers.get('retry-after'))||5));setStatus('AI is processing other websites. Please retry in about '+retrySeconds+' seconds.');return}
