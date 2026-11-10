@@ -22,7 +22,8 @@ jobs:
       - name: Install editor dependency and update lockfile
         run: |
           npm ci
-          npm install --save-exact grapesjs@0.22.14
+          npm install --save-exact grapesjs@0.22.16
+          npm audit --omit=dev --audit-level=moderate
           npm run typecheck
       - name: Commit verified dependency manifest and lockfile
         run: |
