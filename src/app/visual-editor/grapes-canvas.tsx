@@ -14,6 +14,7 @@ export default function GrapesVisualCanvas({html,css,onChange}:Props){
  };
  const [loadError,setLoadError]=useState('');
  const [ready,setReady]=useState(false);
+ const [dragging,setDragging]=useState(false);
  const latest=useRef(onChange);
  latest.current=onChange;
  useEffect(()=>{
@@ -57,8 +58,8 @@ export default function GrapesVisualCanvas({html,css,onChange}:Props){
   {loadError&&<p role="alert">The visual designer could not load: {loadError}. Your HTML and CSS remain available below.</p>}
   <p>Select text or images on the canvas to edit them. Drag content blocks into the page; changes synchronize to the HTML and CSS fields below.</p>
   <div style={{display:'grid',gridTemplateColumns:'minmax(150px,1fr) minmax(0,4fr) minmax(170px,1fr)',gap:12}}>
-   <aside><h3>Blocks</h3><div id="forge-grapes-blocks"/><p>Tap to add on touch devices:</p><div style={{display:'grid',gap:6}}>{(['heading','paragraph','button','section','image'] as const).map(id=><button type="button" key={id} onClick={()=>insertBlock(id)} disabled={!ready} aria-label={'Insert '+id+' block'}>Add {id}</button>)}</div><h3>Layers</h3><div id="forge-grapes-layers"/></aside>
-   <div ref={mount} style={{minWidth:0,border:'1px solid #aaa'}}/>
+   <aside><h3>Blocks</h3><div id="forge-grapes-blocks"/><p>Tap to add on touch devices:</p><div style={{display:'grid',gap:6}}>{(['heading','paragraph','button','section','image'] as const).map(id=><button type="button" key={id} onClick={()=>insertBlock(id)} draggable={ready} onDragStart={event=>{event.dataTransfer.setData('application/x-forge-block',id);event.dataTransfer.effectAllowed='copy';setDragging(true)}} onDragEnd={()=>setDragging(false)} disabled={!ready} aria-label={'Insert '+id+' block'}>Add {id}</button>)}</div><h3>Layers</h3><div id="forge-grapes-layers"/></aside>
+   <div style={{minWidth:0}}><div role="region" aria-label="Drop new content into page" onDragOver={event=>{if(event.dataTransfer.types.includes('application/x-forge-block')){event.preventDefault();event.dataTransfer.dropEffect='copy'}}} onDrop={event=>{event.preventDefault();const id=event.dataTransfer.getData('application/x-forge-block');if(['heading','paragraph','button','section','image'].includes(id))insertBlock(id);setDragging(false)}} style={{padding:12,marginBottom:8,border:'2px dashed #8b9abb',borderRadius:8,background:dragging?'#d9eafe':'transparent'}}>Drag a block here to add it to the page, or tap an Add button</div><div ref={mount} style={{minWidth:0,border:'1px solid #aaa'}}/></div>
    <aside><h3>Styles</h3><div id="forge-grapes-styles"/></aside>
   </div>
  </section>;
