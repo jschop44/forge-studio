@@ -74,3 +74,18 @@ test('GrapesJS designer opens with editable canvas and block palette',async({pag
  await page.getByRole('button',{name:'Close drag-and-drop designer'}).click();
  await expect(page.getByRole('region',{name:'Drag and drop page designer'})).toHaveCount(0);
 });
+
+test('GrapesJS can drag a heading block onto the website canvas',async({page})=>{
+ const initial={slug:'index',title:'Home',html:'<!doctype html><html><head><style>body{color:black}</style></head><body><main><h1>Canvas bakery</h1></main></body></html>'};
+ await page.goto('/visual-editor');
+ await page.evaluate(initial=>sessionStorage.setItem('forge:visual-editor:handoff',JSON.stringify(initial)),initial);
+ await page.reload();
+ await page.getByRole('button',{name:'Open drag-and-drop designer'}).click();
+ const block=page.locator('#forge-grapes-blocks .gjs-block').filter({hasText:'Heading'});
+ const canvas=page.locator('.gjs-cv-canvas');
+ await expect(block).toBeVisible();
+ await expect(canvas).toBeVisible();
+ await block.dragTo(canvas,{targetPosition:{x:Math.max(40,await canvas.evaluate(el=>el.clientWidth/2)),y:140}});
+ const frame=page.frameLocator('.gjs-cv-canvas iframe');
+ await expect(frame.locator('h2')).toContainText('New heading',{timeout:10000});
+});
