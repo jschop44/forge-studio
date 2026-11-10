@@ -1,7 +1,7 @@
 import {NextRequest,NextResponse} from 'next/server';
 import {z} from 'zod';
-import {sameOrigin} from '../../../../lib/server/request-security';
-import {DESIGN_PATTERNS,planAdaptiveDesign} from '../../../../lib/design-engine';
+import {sameOrigin} from '../../../lib/server/request-security';
+import {DESIGN_PATTERNS,planAdaptiveDesign} from '../../../lib/design-engine';
 export const runtime='nodejs';
 const Input=z.object({businessName:z.string().trim().min(2).max(100),industry:z.string().trim().min(2).max(80),mode:z.enum(['auto','library']).default('auto'),patternId:z.string().max(80).optional(),immersive3d:z.boolean().default(true)});
 export async function GET(){
