@@ -1,6 +1,14 @@
 name: Free local AI end-to-end integration
 on:
   workflow_dispatch:
+  pull_request:
+    branches: [main]
+    paths:
+      - '.github/workflows/local-ai-integration.yml'
+      - 'src/lib/design-engine/**'
+      - 'src/lib/business-site.ts'
+      - 'src/lib/immersive-showcase.ts'
+      - 'src/lib/ai-composition.ts'
   push:
     branches: [main]
     paths:
@@ -14,6 +22,7 @@ concurrency:
   cancel-in-progress: true
 jobs:
   ollama-integration:
+    if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
     runs-on: ubuntu-latest
     timeout-minutes: 20
     permissions:
