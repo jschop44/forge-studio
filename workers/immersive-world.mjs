@@ -1,3 +1,4 @@
+import {contentWorldMarkup} from './content-world.mjs';
 /** Texture-projected environments, with page and offering hotspots. No primitive dioramas. */
 function environmentRuntime(config){
  const root=document.getElementById(config.photo?'forge-business-photo':'forge-immersive-world'),canvas=root.querySelector('canvas'),status=root.querySelector('[role=status]'),scene=config.environment;
@@ -50,6 +51,7 @@ export function immersiveWorldMarkup(config){
  const scene=config?.environment;
  if(!config||typeof config.businessName!=='string'||config.businessName.length>100||typeof config.pageTitle!=='string'||config.pageTitle.length>160||!scene||!['panorama','spatial-gallery'].includes(scene.kind)||typeof scene.url!=='string'||scene.url&&!/^https:\/\/(?:dl\.polyhaven\.org|upload\.wikimedia\.org|images\.unsplash\.com)\//.test(scene.url)||!Number.isFinite(scene.cropTop)||!Number.isFinite(scene.cropHeight)||scene.cropTop<0||scene.cropHeight<=0||scene.cropTop+scene.cropHeight>1||!Array.isArray(config.targets)||config.targets.length<1||config.targets.length>12||config.targets.some(t=>!t||!/^([a-z0-9-]{1,48})$/.test(t.slug)||typeof t.title!=='string'||t.title.length>160)||new Set(config.targets.map(t=>t.slug)).size!==config.targets.length)throw Error('Invalid immersive world');
  const escape=value=>String(value||'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+ if(scene.kind==='spatial-gallery'&&!scene.url)return contentWorldMarkup(config);
  const serialize=value=>JSON.stringify(value).replace(/</g,'\\u003c');
  const palette=config.palette||{night:'#101c24',paper:'#f6f0e5',accent:'#d9b97a'};
  const safeColor=(color,fallback)=>/^#[a-f0-9]{6}$/i.test(color)?color:fallback;

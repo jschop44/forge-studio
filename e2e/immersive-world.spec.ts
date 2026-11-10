@@ -1,6 +1,24 @@
 import {test,expect,type Page} from '@playwright/test';
 import {generateBusinessWebsite} from '../src/lib/business-site';
 const brief={businessName:'Harbor Coffee',industry:'Coffee shop',description:'An independent cafe offering coffee beans and ceramic mugs.',services:['Coffee beans','Ceramic mugs','Community events'],experienceStyle:'immersive'};
+for(const width of [390,1440])test('uncommon niche keeps an interactive content exhibition and correct pages at '+width+'px',async({page})=>{
+ await page.setViewportSize({width,height:900});
+ const site=generateBusinessWebsite({businessName:'Meridian Horology',industry:'Clock restoration',description:'Restoration of antique clocks and mechanical timepieces.',services:['Clock restoration','Mechanical servicing'],experienceStyle:'immersive'});
+ await page.route('https://content.test/**',route=>{const slug=new URL(route.request().url()).pathname.split('/').pop()?.replace('.html','')||'index';return route.fulfill({status:200,contentType:'text/html',body:site.pages.find(p=>p.slug===slug)?.html||''});});
+ await page.goto('https://content.test/index.html');
+ const world=page.locator('#forge-immersive-world'),stage=page.locator('[data-content-stage]');
+ await expect(world).toHaveAttribute('data-loaded','true');await expect(world).toHaveAttribute('data-environment','content-exhibition');
+ await stage.focus();await page.keyboard.press('ArrowRight');
+ await expect(page.locator('[data-content-card]:not([inert]) h2')).toContainText('Services');
+ await page.getByRole('link',{name:'Open Services',exact:false}).click();await expect(page).toHaveURL(/services\.html$/);
+ await expect(page.locator('[data-content-card]:not([inert]) h2')).toContainText('Services');
+ await page.getByRole('button',{name:'Read this page',exact:true}).click();await expect(page.locator('main h1')).toContainText('Services');
+ await page.getByRole('button',{name:'Return to 3D exhibition',exact:true}).click();await expect(stage).toBeFocused();
+ await expect(page.locator('body')).toHaveJSProperty('scrollWidth',width);
+ await test.info().attach('Meridian-content-exhibition-'+width,{body:await page.screenshot(),contentType:'image/png'});
+ await page.emulateMedia({reducedMotion:'reduce'});await expect(page.locator('[data-content-card]').first()).toHaveCSS('transition-duration','0s');
+ await page.emulateMedia({media:'print'});await expect(world).toBeHidden();await expect(page.locator('main h1')).toBeVisible();
+});
 async function fixture(page:Page,active=true){
  const pages=generateBusinessWebsite(brief).pages;
  // Interaction tests use a deterministic texture; real imagery is captured separately.

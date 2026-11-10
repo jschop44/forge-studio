@@ -16,8 +16,8 @@ export function worldTheme(industry:string):'coffee'|'dining'|'baseball'|'proper
  return 'gallery';
 }
 /** One consistent scene and camera identity across every core and extracted page. */
-export function enhanceImmersiveWorld<T extends GeneratedPage>(pages:T[],business:{businessName:string;industry:string;description?:string;visualAssets?:VisualAsset[]}):T[]{
- const targets=pages.map(page=>({slug:page.slug,title:page.title}));
+export function enhanceImmersiveWorld<T extends GeneratedPage>(pages:T[],business:{businessName:string;industry:string;description?:string;services?:string[];visualAssets?:VisualAsset[]}):T[]{
+ const targets=pages.map(page=>({slug:page.slug,title:page.title,description:page.slug==='services'&&business.services?.length?business.services.join(' · ').slice(0,220):page.html.match(/<main[^>]*>[\s\S]*?<p>([\s\S]*?)<\/p>/i)?.[1]?.replace(/<[^>]*>/g,' ').replace(/\s+/g,' ').trim().slice(0,220)}));
  const direction=businessArtDirection(business.industry,business.businessName);const environment=businessEnvironment(business.industry,business.visualAssets);
  return pages.map(page=>{
   const html=page.html.replace(/<!--forge-world-start-->[\s\S]*?<!--forge-world-end-->/g,'');

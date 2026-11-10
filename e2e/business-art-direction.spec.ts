@@ -20,7 +20,7 @@ for(const business of businesses){
       const resolution=await page.locator('#forge-immersive-world').evaluate(root=>({source:Number((root as HTMLElement).dataset.sourceWidth),texture:Number((root as HTMLElement).dataset.textureWidth)}));
       expect(resolution.source).toBeGreaterThanOrEqual(7680);expect(resolution.texture).toBeGreaterThanOrEqual(7680);
      }
-    }else{await expect(page.locator('#forge-immersive-world')).toBeHidden();await expect(page.locator('main h1')).toContainText(business.businessName)}
+    }else{await expect(page.locator('#forge-immersive-world')).toHaveAttribute('data-environment','content-exhibition');await expect(page.locator('[data-content-card]:not([inert]) h2')).toContainText('Home')}
    }else{
     await expect(page.locator('main h1')).toContainText(business.businessName);
     if(await page.locator('#forge-business-photo').count()){
