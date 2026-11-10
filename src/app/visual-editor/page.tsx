@@ -3,7 +3,7 @@ import {useEffect,useState} from 'react';
 import Link from 'next/link';
 import dynamic from 'next/dynamic';
 const GrapesVisualCanvas=dynamic(()=>import('./grapes-canvas'),{ssr:false});
-import {prepareVisualEditorDocument} from '../../lib/visual-editor-adapter';
+import {prepareVisualEditorDocument,serializeVisualEditorDocument} from '../../lib/visual-editor-adapter';
 import {downloadText} from '../../lib/export';
 import type {GeneratedPage} from '../../lib/business-site';
 import './visual-editor.css';
@@ -37,21 +37,21 @@ export default function VisualEditor(){
  function returnToGenerator(){
   if(!page)return;
   const html='<!doctype html><html><head><meta charset="utf-8"><title>'+page.title.replace(/[&<>"]/g,'')+'</title><style>'+css+'</style></head><body>'+body+'</body></html>';
-  const check=prepareVisualEditorDocument({...page,html});
-  if(!check.bodyHtml){setMessage('Return blocked: '+check.warnings.join(' '));return}
-  try{sessionStorage.setItem('forge:visual-editor:return',JSON.stringify({...page,html}));window.location.assign('/business')}catch{setMessage('Unable to return edited page. Download it instead.')}
+  const check=serializeVisualEditorDocument({...page,html});
+  if(!check.html){setMessage('Return blocked: '+check.warnings.join(' '));return}
+  try{sessionStorage.setItem('forge:visual-editor:return',JSON.stringify({...page,html:check.html}));window.location.assign('/business')}catch{setMessage('Unable to return edited page. Download it instead.')}
  }
  function save(){
   if(!page)return;
   const html='<!doctype html><html><head><meta charset="utf-8"><title>'+page.title.replace(/[&<>"]/g,'')+'</title><style>'+css+'</style></head><body>'+body+'</body></html>';
-  const check=prepareVisualEditorDocument({...page,html});
-  if(!check.bodyHtml){setMessage('Export blocked: '+check.warnings.join(' '));return}
-  downloadText(page.slug+'.edited.html',html,'text/html');
+  const check=serializeVisualEditorDocument({...page,html});
+  if(!check.html){setMessage('Export blocked: '+check.warnings.join(' '));return}
+  downloadText(page.slug+'.edited.html',check.html,'text/html');
   setMessage('Edited HTML downloaded. Publishing requires separate review and approval.');
  }
  const candidatePreview=page?'<!doctype html><html><head><style>'+css+'</style></head><body>'+body+'</body></html>':'';
  const previewCheck=page?prepareVisualEditorDocument({...page,html:candidatePreview}):null;
- const preview=previewCheck?.bodyHtml?candidatePreview:'';
+ const preview=previewCheck?.bodyHtml&&page?serializeVisualEditorDocument({...page,html:candidatePreview}).html:'';
  return <main className="forge-visual-editor" style={{maxWidth:1200,margin:'auto',fontFamily:'system-ui'}}>
   <Link href="/business">← Website generator</Link>
   <h1>Website HTML editor</h1>

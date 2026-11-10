@@ -139,3 +139,21 @@ test('visual editor has polished scoped styling and no mobile horizontal overflo
  const iframeBackground=await iframe.locator('body').evaluate(element=>getComputedStyle(element).backgroundImage);
  expect(iframeBackground).toBe('none');
 });
+
+test('download removes executable edits and includes responsive document metadata',async({page})=>{
+ await page.goto('/visual-editor');
+ await page.evaluate(home=>sessionStorage.setItem('forge:visual-editor:handoff',JSON.stringify(home)),home);
+ await page.reload();
+ await expect(page.getByRole('status')).toContainText('Generated page loaded');
+ await page.getByRole('textbox',{name:'HTML body'}).fill('<main><h1 onclick="alert(1)">Safe bakery</h1><script>alert(2)</script></main>');
+ await expect(page.frameLocator('iframe[title="Edited website preview"]').locator('h1')).toHaveText('Safe bakery');
+ const downloadPromise=page.waitForEvent('download');
+ await page.getByRole('button',{name:'Validate and download edited page'}).click();
+ const download=await downloadPromise;
+ const stream=await download.createReadStream();
+ if(!stream)throw Error('Missing exported document');
+ let html='';for await(const chunk of stream)html+=chunk.toString();
+ expect(html).toContain('<h1>Safe bakery</h1>');
+ expect(html).not.toMatch(/<script|onclick/i);
+ expect(html).toContain('name="viewport"');
+});
