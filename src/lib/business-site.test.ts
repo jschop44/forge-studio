@@ -82,3 +82,14 @@ test('generated pages keep text upright without forced 3D perspective or photo t
   assert.match(page.html,/main\{perspective:none\}/);
  }
 });
+
+test('image-led design uses a distinct responsive hero while editorial remains selectable',()=>{
+ const imageLed=generateBusinessWebsite({...brief('Sporting goods retail'),layout:'image-led'}).pages[0].html;
+ const editorial=generateBusinessWebsite({...brief('Sporting goods retail'),layout:'editorial'}).pages[0].html;
+ assert.match(imageLed,/data-forge-layout="image-led"/);
+ assert.match(imageLed,/site-hero image-led/);
+ assert.match(imageLed,/body\[data-forge-layout="image-led"\] \.site-hero\{grid-template-columns:minmax/);
+ assert.match(imageLed,/@media\(max-width:700px\)\{body\[data-forge-layout="image-led"\] \.site-hero\{grid-template-columns:1fr\}/);
+ assert.match(editorial,/data-forge-layout="editorial"/);
+ assert.match(editorial,/site-hero editorial/);
+});
