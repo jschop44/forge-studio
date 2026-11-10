@@ -1,0 +1,37 @@
+name: Bootstrap GrapesJS editor dependency
+on:
+  push:
+    branches: [feature/adaptive-design-engine]
+    paths:
+      - '.github/workflows/bootstrap-grapesjs.yml'
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  install:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: true
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - name: Install editor dependency and update lockfile
+        run: |
+          npm ci
+          npm install --save-exact grapesjs@0.22.14
+          npm run typecheck
+      - name: Commit verified dependency manifest and lockfile
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add package.json package-lock.json
+          if git diff --cached --quiet; then
+            echo "Dependency already installed"
+          else
+            git commit -m "build: install GrapesJS editor dependency"
+            git push origin HEAD:feature/adaptive-design-engine
+          fi
