@@ -85,6 +85,8 @@ jobs:
           restore-keys: |
             npm-${{ runner.os }}-node22-
       - run: npm ci --prefer-offline --no-audit --no-fund
+      - name: Guard canonical Cloudflare Worker target
+        run: node scripts/check-cloudflare-worker-target.mjs
       - name: Package application for Cloudflare Workers without deploying
         run: npm run build:cloudflare
       - name: Verify generated Worker and assets
