@@ -95,6 +95,7 @@ test("revision version lookup requires a publication ID", async ({ page }) => {
   await page.getByPlaceholder("e.g. Northstar Coffee").fill("Northstar Coffee");
   await page.getByRole("button", { name: /generate my website/i }).click();
   await expect(page.getByRole("navigation", { name: "Website pages" })).toBeVisible({timeout:30000});
+  await page.getByText("Update an existing published website",{exact:true}).click();
   const load=page.getByRole("button",{name:"Load current publication version"});
   await expect(load).toBeDisabled();
   await page.getByPlaceholder("Publication UUID, leave blank for a new website").fill("00000000-0000-4000-8000-000000000001");
