@@ -74,3 +74,11 @@ test('untrusted business content is escaped before appearing in generated HTML',
   assert.doesNotMatch(page.html,/<script>alert\(1\)<\/script>|<svg onload=|<img src=x onerror=/i);
  }
 });
+
+test('generated pages keep text upright without forced 3D perspective or photo tilt',()=>{
+ const site=generateBusinessWebsite(brief('Restaurant and hospitality'));
+ for(const page of site.pages){
+  assert.doesNotMatch(page.html,/main\{perspective:1400px\}|\.cards\{perspective:900px\}|rotateY\(-3deg\)/);
+  assert.match(page.html,/main\{perspective:none\}/);
+ }
+});
