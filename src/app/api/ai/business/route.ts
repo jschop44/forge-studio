@@ -33,7 +33,7 @@ export async function POST(req:NextRequest){
  }catch(error){
   if(error instanceof RequestBodyTooLarge)return NextResponse.json({error:'Website brief exceeds the 64 KB limit. Shorten the description or remove extra image references.'},{status:413});
   const detail=error instanceof Error?error.message:'';
-  if(detail==='Unknown design pattern')return NextResponse.json({error:'Unknown design pattern'},{status:422});
+  if(detail.startsWith('Unknown design pattern'))return NextResponse.json({error:'Unknown design pattern'},{status:422});
   if(detail==='Local AI capacity exceeded')return NextResponse.json({error:'AI is busy. Please retry shortly.'},{status:429,headers:{'Cache-Control':'no-store','Retry-After':'5'}});
   const category=/HTTP 429/.test(detail)?'provider_rate_limited':/HTTP 40[13]/.test(detail)?'provider_auth':/HTTP 5\d\d/.test(detail)?'provider_server_error':/invalid draft|JSON/.test(detail)?'invalid_model_response':/abort|timeout/i.test(detail)?'provider_timeout':'provider_unavailable';
   console.error('Forge AI generation failure category:',category);
