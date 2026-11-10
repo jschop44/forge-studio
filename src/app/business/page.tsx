@@ -2,6 +2,7 @@
 import {extractWebsiteDesignDna,type WebsiteDesignDna,type SourceImage} from '../../lib/website-design-dna';
 import {applySourceDesign} from '../../lib/apply-source-design';
 import {businessGenerationPayload} from '../../lib/business-generation-payload';
+import {DESIGN_PATTERNS,planAdaptiveDesign} from '../../lib/design-engine';
 import {BusinessRecognitionSchema,literalBusinessActivity} from '../../lib/business-recognition';
 import {businessPreviewHtml} from '../../lib/business-preview';
 import {industryPhotos} from '../../lib/industry-photos';
@@ -64,6 +65,9 @@ export default function BusinessGenerator(){
  function extractedName(evidence:Inspection){return evidence.designDna?.businessName||evidence.title.split(/[|—–]/)[0].trim().slice(0,100)||new URL(evidence.url).hostname}
  const [previewAnchor,setPreviewAnchor]=useState('');
  const [experienceStyle,setExperienceStyle]=useState<WebsiteExperience>('standard');
+ const [visualDesignMode,setVisualDesignMode]=useState<'auto'|'library'>('auto');
+ const [visualPatternId,setVisualPatternId]=useState('adaptive-general');
+ const [autoImmersive,setAutoImmersive]=useState(true);
  const [workerEvidenceText,setWorkerEvidenceText]=useState(''),[workerEvidence,setWorkerEvidence]=useState<BrowserEvidence|null>(null),[workerEvidenceError,setWorkerEvidenceError]=useState(''),[capturePreview,setCapturePreview]=useState<GeneratedPage[]>([]),[capturePreviewIndex,setCapturePreviewIndex]=useState(0);
  const [revisionVersion,setRevisionVersion]=useState(''),[revisionId,setRevisionId]=useState(''),[publishApproved,setPublishApproved]=useState(false),[publishBusy,setPublishBusy]=useState(false),[publishedUrls,setPublishedUrls]=useState<string[]>([]);
  const [reviewIndustry,setReviewIndustry]=useState(''),[reviewServices,setReviewServices]=useState(''),[reviewApproved,setReviewApproved]=useState(false);
@@ -278,7 +282,7 @@ export default function BusinessGenerator(){
    const response=await fetch('/api/ai/business',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(generationPayload),signal:AbortSignal.timeout(75000)});
    if(response.status===429){const retrySeconds=Math.min(30,Math.max(1,Number(response.headers.get('retry-after'))||5));setStatus('AI is processing other websites. Please retry in about '+retrySeconds+' seconds.');return}
    if(!response.ok){const failure=await response.json();throw Error(response.status===503?'Website generation is temporarily unavailable. Please try again.':failure.error||'AI generation unavailable')}
-   const result=await response.json();if(generationEpoch!==inspectionEpoch.current){setStatus('Website address changed during generation. Generate again using the current website.');return}const extractedPages=additionalPages(evidence);const extras=applyExtractedExperience(extractedPages,experienceStyle,input);const combined=[...result.pages,...extras];const generated=experienceStyle==='immersive'?enhanceImmersiveWorld(combined,input):combined;
+   const result=await response.json();if(generationEpoch!==inspectionEpoch.current){setStatus('Website address changed during generation. Generate again using the current website.');return}const extractedPages=additionalPages(evidence);const extras=applyExtractedExperience(extractedPages,selectedExperience,input);const combined=[...result.pages,...extras];const generated=selectedExperience==='immersive'?enhanceImmersiveWorld(combined,input):combined;
    const themed=automaticallyApplyBrand(generated,appearance);
    const sourceApplied=sourceDna?applySourceDesign(themed,sourceDna,designMode):{pages:themed,warnings:[]};
    const finalPages=automaticallyOptimizeMetadata(sourceApplied.pages);
