@@ -52,3 +52,22 @@ it('ambiguous offering words cannot switch the business niche',()=>{
  assert.equal(servicePhoto('Home visits','Healthcare'),null);
  assert.equal(servicePhoto('Roast chicken','Restaurant'),null);
 });
+
+import {offeringPhotoCandidates} from '../src/lib/industry-photos';
+import {generateBusinessWebsite} from '../src/lib/business-site';
+it('never rotates a salad into a pizza restaurant page or unrelated stock into wings',()=>{
+ const result=generateBusinessWebsite({experienceStyle:'standard',businessName:'Pizza and Wings',industry:'Restaurant and hospitality',description:'Pizza, chicken wings and pasta prepared for carryout.',services:['Pizza','Chicken wings','Pasta']});
+ for(const page of result.pages)assert.equal(page.html.includes('photo-1512621776951-a57141f2eefd'),false);
+ const menu=result.pages.find(page=>page.slug==='services')!.html;
+ for(const index of [1,2]){
+  const card=menu.match(new RegExp('<article id="offering-'+index+'"[\\s\\S]*?</article>'))![0];
+  assert.equal(card.includes('service-photo'),false);
+ }
+ assert.deepEqual(offeringPhotoCandidates('Chicken wings','Restaurant'),[]);
+ assert.ok(offeringPhotoCandidates('Pizza','Restaurant')[0].includes('photo-1513104890138'));
+});
+it('offering images cannot fall back to another product after exact imagery is exhausted',()=>{
+ const used=new Set<string>();const candidates=offeringPhotoCandidates('Pizza','Restaurant');
+ assert.ok(selectDiversePhoto(candidates,used));
+ assert.equal(selectDiversePhoto(candidates,used),undefined);
+});

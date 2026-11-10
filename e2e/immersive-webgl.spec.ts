@@ -19,9 +19,14 @@ test('generated secondary page renders immersive WebGL without breaking page con
   await page.mouse.move(200,180);
   await page.mouse.down();
   await page.mouse.up();
-  await page.evaluate(()=>window.scrollTo(0,window.innerHeight));
-  await expect.poll(()=>page.evaluate(()=>getComputedStyle(document.querySelector('main section')!).getPropertyValue('--forge-section-depth'))).not.toBe('');
  }
+ // Environment depth must work independently of GPU support, while text stays flat.
+ const environmentBefore=await page.locator('main section').first().evaluate(el=>getComputedStyle(el,'::after').transform);
+ await page.evaluate(()=>window.scrollTo(0,window.innerHeight));
+ await expect.poll(()=>page.evaluate(()=>getComputedStyle(document.querySelector('main section')!,'::after').transform)).not.toBe('none');
+ await expect.poll(()=>page.locator('main section').first().evaluate(el=>getComputedStyle(el,'::after').transform)).not.toBe(environmentBefore);
+ await expect.poll(()=>page.locator('main section').first().evaluate(el=>getComputedStyle(el).transform)).toBe('none');
+ await expect(page.locator('main')).toHaveCSS('perspective','none');
  expect(errors).toEqual([]);
 });
 

@@ -5,6 +5,7 @@ import {NextRequest,NextResponse} from 'next/server';
 import {z} from 'zod';
 import {sameOrigin} from '../../../../lib/server/request-security';
 import {generateWithLocalAi} from '../../../../lib/server/local-ai';
+import {businessGenerationResponse} from '../../../../lib/server/business-generation-response';
 import {objectNavigationPlan} from '../../../../lib/website-experience';
 import {isExcludedBusiness} from '../../../../lib/business-site';
 export const runtime='nodejs';
@@ -16,7 +17,7 @@ export async function POST(req:NextRequest){
  const input=Input.safeParse(parsed);if(!input.success)return NextResponse.json({error:'Invalid business brief'},{status:400});
  if(input.data.experienceStyle==='object-navigation'&&!objectNavigationPlan(input.data))return NextResponse.json({error:'Add at least one business offering for interactive navigation.'},{status:422});
  if(isExcludedBusiness(input.data))return NextResponse.json({error:'This business category is not supported'},{status:422});
- const result=await generateWithLocalAi(input.data);return NextResponse.json(result,{headers:{'Cache-Control':'no-store'}});
+ const result=await generateWithLocalAi(input.data);return businessGenerationResponse(result);
  }catch(error){
   if(error instanceof RequestBodyTooLarge)return NextResponse.json({error:'Website brief exceeds the 64 KB limit. Shorten the description or remove extra image references.'},{status:413});
   const detail=error instanceof Error?error.message:'';

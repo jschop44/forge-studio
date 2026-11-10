@@ -42,3 +42,25 @@ test('a redirect authorization failure stops before fetching its destination',as
  await assert.rejects(fetchPublicText(new URL('https://first.example'),{...options,beforeRequest:async url=>{checked.push(url.href);if(url.hostname==='second.example')throw Error('Destination policy disallows research')}},{worker:true,resolveHost:publicHost,fetcher:async()=>{fetched++;return new Response(null,{status:302,headers:{location:'https://second.example/private'}})}}),/policy disallows/);
  assert.equal(fetched,1);assert.deepEqual(checked,['https://first.example/','https://second.example/private']);
 });
+
+test('selective HTML retains content after megabytes of scripts and chunk-split delimiters',async()=>{
+ const pieces=['<html><head><title>Pizza & wings</title><style>body{color:red}</style></head><body><scr','ipt type="application/json">',...Array(32).fill('x'.repeat(32768)),'</scr','ipt><!--','noise'.repeat(1000),'--','><h1>Pizza</h1><img src="/pizza.jpg"><a href="/menu">Menu</a></body></html>'];
+ const stream=new ReadableStream({start(controller){for(const part of pieces)controller.enqueue(new TextEncoder().encode(part));controller.close()}});
+ const result=await fetchPublicText(new URL('https://example.com'),{...options,maxBytes:400,selectiveHtml:true,maxDownloadBytes:2000000},{worker:true,resolveHost:publicHost,fetcher:async()=>new Response(stream,{headers:{'content-type':'text/html'}})});
+ assert.match(result.body,/<title>Pizza & wings<\/title>/);assert.match(result.body,/<style>body\{color:red\}<\/style>/);assert.match(result.body,/<img src="\/pizza.jpg">/);assert.match(result.body,/href="\/menu"/);assert.doesNotMatch(result.body,/script|noise|xxx/);assert.equal(result.extraction.truncated,false);assert.equal(result.extraction.scriptsOmitted,1);assert.ok(result.extraction.downloadedBytes>1000000);
+});
+
+test('selective HTML cancels at the retained content limit and reports partial extraction',async()=>{
+ let cancelled=false;
+ const stream=new ReadableStream({start(controller){controller.enqueue(new TextEncoder().encode('<h1>Business</h1>'+ 'content '.repeat(1000)))},cancel(){cancelled=true}});
+ const result=await fetchPublicText(new URL('https://example.com'),{...options,maxBytes:100,selectiveHtml:true},{worker:true,resolveHost:publicHost,fetcher:async()=>new Response(stream,{headers:{'content-type':'text/html'}})});
+ assert.equal(result.extraction.truncated,true);assert.ok(Buffer.byteLength(result.body)<=100);assert.match(result.body,/<h1>Business<\/h1>/);assert.equal(cancelled,true);
+});
+
+test('selective HTML bounds discarded script downloads and preserves UTF-8 between chunks',async()=>{
+ const {PublicTextCollector}=await import('../src/lib/server/public-site-fetch.ts');
+ const collector=new PublicTextCollector({maxBytes:100,selectiveHtml:true,maxDownloadBytes:1000});
+ const encoded=new TextEncoder().encode('<h1>Café ☕</h1><script>'+ 'x'.repeat(2000));
+ for(let i=0;i<encoded.length;i++)collector.push(encoded.subarray(i,i+1));
+ const result=collector.finish();assert.equal(result.truncated,true);assert.equal(result.downloadedBytes,1000);assert.equal(result.body,'<h1>Café ☕</h1>');assert.equal(result.scriptsOmitted,1);
+});

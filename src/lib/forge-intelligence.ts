@@ -1,4 +1,5 @@
-export type SiteEvidence={url:string;title:string;description:string;headings:string[];navigation?:{label:string;path:string}[];pageSummaries?:{path:string;label:string;title:string;description:string;headings:string[]}[]};
+import type {SourceImage} from './website-design-dna';
+export type SiteEvidence={url:string;title:string;description:string;headings:string[];navigation?:{label:string;path:string}[];pageSummaries?:{path:string;label:string;title:string;description:string;headings:string[];paragraphs?:string[];images?:SourceImage[]}[]};
 export type InspectionCoverage={metadata:boolean;navigation:boolean;internalPages:number;visualCapture:boolean;limitations:string[]};
 export function inspectionCoverage(input:SiteEvidence):InspectionCoverage{
  const limitations:string[]=[];

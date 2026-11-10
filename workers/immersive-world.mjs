@@ -1,7 +1,19 @@
 import {contentWorldMarkup} from './content-world.mjs';
+/** Bound decoded RGB/GPU texture allocations while retaining the source aspect ratio.
+ * Higher-memory devices can use 8K panorama widths; mobile defaults to a 4K width.
+ */
+export function panoramaTextureSize(width,height,maxTextureSize,deviceMemory){
+ if(![width,height,maxTextureSize].every(value=>Number.isFinite(value)&&value>0))throw Error('Invalid panorama dimensions');
+ const memory=Number.isFinite(deviceMemory)&&deviceMemory>0?deviceMemory:4;
+ const maxDimension=Math.min(maxTextureSize,memory<=2?4096:8192);
+ const maxPixels=memory<=2?4194304:memory<=4?8388608:33554432;
+ const ratio=Math.min(1,maxDimension/width,maxDimension/height,Math.sqrt(maxPixels/(width*height)));
+ return {width:Math.max(1,Math.floor(width*ratio)),height:Math.max(1,Math.floor(height*ratio))};
+}
 /** Texture-projected environments, with page and offering hotspots. No primitive dioramas. */
 // Keep standalone browser code out of the server bundler transform.
 const environmentRuntimeSource=String.raw`function environmentRuntime(config){
+ const textureSize=(TEXTURE_SIZE_HELPER);
  const root=document.getElementById(config.photo?'forge-business-photo':'forge-immersive-world'),canvas=root.querySelector('canvas'),status=root.querySelector('[role=status]'),scene=config.environment;
  let gl,program,buffer,texture,frame=0,live=true,reading=false,loaded=false,imageAspect=2,yaw=scene.initialYaw||0,pitch=0,fov=scene.cropHeight<1?50:55,drag=null;
  const reduced=matchMedia('(prefers-reduced-motion: reduce)');
@@ -28,9 +40,10 @@ const environmentRuntimeSource=String.raw`function environmentRuntime(config){
  }
  const schedule=()=>{if(!frame&&live&&!reading&&!document.hidden)frame=requestAnimationFrame(draw)};
  let loadEpoch=0;
- function load(url){const epoch=++loadEpoch;const image=new Image();image.crossOrigin='anonymous';image.onload=()=>{if(!live||epoch!==loadEpoch)return;try{const max=Math.min(8192,gl.getParameter(gl.MAX_TEXTURE_SIZE));const ratio=Math.min(1,max/image.width,max/image.height);let source=image;
- if(ratio<1){source=document.createElement('canvas');source.width=Math.round(image.width*ratio);source.height=Math.round(image.height*ratio);source.getContext('2d').drawImage(image,0,0,source.width,source.height)}
+ function load(url){const epoch=++loadEpoch;const image=new Image();image.crossOrigin='anonymous';image.onload=()=>{if(!live||epoch!==loadEpoch)return;try{const size=textureSize(image.width,image.height,gl.getParameter(gl.MAX_TEXTURE_SIZE),navigator.deviceMemory);let source=image;
+ if(size.width!==image.width||size.height!==image.height){source=document.createElement('canvas');source.width=size.width;source.height=size.height;const context=source.getContext('2d');if(!context)throw Error('No resampling context');context.imageSmoothingEnabled=true;context.imageSmoothingQuality='high';context.drawImage(image,0,0,source.width,source.height)}
  gl.bindTexture(gl.TEXTURE_2D,texture);gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL,false);gl.texImage2D(gl.TEXTURE_2D,0,gl.RGB,gl.RGB,gl.UNSIGNED_BYTE,source);
+ const powerOfTwo=value=>(value&(value-1))===0;if(powerOfTwo(source.width)&&powerOfTwo(source.height)){gl.generateMipmap(gl.TEXTURE_2D);gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MIN_FILTER,gl.LINEAR_MIPMAP_LINEAR)}else{gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MIN_FILTER,gl.LINEAR)}
  root.dataset.sourceWidth=String(image.width);root.dataset.textureWidth=String(source.width);root.dataset.textureHeight=String(source.height);if(scene.autoOrient){
   const sample=document.createElement('canvas');sample.width=256;sample.height=128;const ctx=sample.getContext('2d',{willReadFrequently:true});ctx.drawImage(image,0,0,256,128);const pixels=ctx.getImageData(0,0,256,128).data;const luminance=(x,y)=>{const i=(y*256+(x+256)%256)*4;return pixels[i]*.21+pixels[i+1]*.72+pixels[i+2]*.07};
   let best=0,bestScore=-1;for(let x=0;x<256;x+=4){let score=0;for(let y=55;y<86;y+=2)for(let dx=-16;dx<=16;dx+=2){const value=luminance(x+dx,y);if(value>20&&value<235)score+=Math.abs(value-luminance(x+dx+1,y))+Math.abs(value-luminance(x+dx,y+1))}if(score>bestScore){bestScore=score;best=x}}
@@ -47,7 +60,7 @@ const environmentRuntimeSource=String.raw`function environmentRuntime(config){
  let galleryIndex=0;const next=root.querySelector('[data-world-next]');if(next)next.addEventListener('click',()=>{galleryIndex=(galleryIndex+1)%scene.gallery.length;load(scene.gallery[galleryIndex]);status.textContent='Loading view '+(galleryIndex+1)});
  const resize=new ResizeObserver(schedule);resize.observe(canvas);document.addEventListener('visibilitychange',schedule);canvas.addEventListener('webglcontextlost',e=>{e.preventDefault();live=false;resize.disconnect();cancelAnimationFrame(frame);fallback()});addEventListener('pagehide',()=>{save();cancelAnimationFrame(frame);frame=0});addEventListener('pageshow',schedule);
  root.hidden=false;document.body.classList.add('forge-world-exploring');load(scene.url);schedule();
-}`;
+}`.replace('TEXTURE_SIZE_HELPER',panoramaTextureSize.toString());
 export function immersiveWorldMarkup(config){
  const scene=config?.environment;
  if(!config||typeof config.businessName!=='string'||config.businessName.length>100||typeof config.pageTitle!=='string'||config.pageTitle.length>160||!scene||!['panorama','spatial-gallery'].includes(scene.kind)||typeof scene.url!=='string'||scene.url&&!/^https:\/\/(?:dl\.polyhaven\.org|upload\.wikimedia\.org|images\.unsplash\.com)\//.test(scene.url)||!Number.isFinite(scene.cropTop)||!Number.isFinite(scene.cropHeight)||scene.cropTop<0||scene.cropHeight<=0||scene.cropTop+scene.cropHeight>1||!Array.isArray(config.targets)||config.targets.length<1||config.targets.length>12||config.targets.some(t=>!t||!/^([a-z0-9-]{1,48})$/.test(t.slug)||typeof t.title!=='string'||t.title.length>160)||new Set(config.targets.map(t=>t.slug)).size!==config.targets.length)throw Error('Invalid immersive world');

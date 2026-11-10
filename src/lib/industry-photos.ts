@@ -12,7 +12,7 @@ export const photoLibrary={
  automotive:['photo-1503376780353-7e6692767b70','photo-1492144534655-ae79c964c9d7','photo-1507136566006-cfc505b114fc','photo-1549317661-bd32c8ce0db2'],
  hospitality:['photo-1566073771259-6a8506099945','photo-1542314831-068cd1dbfeeb','photo-1571896349842-33c89424de2d','photo-1582719508461-905c673771fd'],
  fashion:['photo-1483985988355-763728e1935b','photo-1539109136881-3be0616acf4b','photo-1441986300917-64674bd600d8','photo-1487222477894-8943e31ef7b2'],
- food:['photo-1517248135467-4c7edcad34c4','photo-1414235077428-338989a2e8c0','photo-1513104890138-7c749659a591','photo-1512621776951-a57141f2eefd'],
+ food:['photo-1517248135467-4c7edcad34c4','photo-1414235077428-338989a2e8c0','photo-1513104890138-7c749659a591','photo-1555396273-367ea4eb4db5'],
  realestate:['photo-1600596542815-ffad4c1539a9','photo-1600607687939-ce8a6c25118c','photo-1600566753190-17f0baa2a6c3','photo-1600607687920-4e2a09cf159d'],
  technology:['photo-1518770660439-4636190af475','photo-1485827404703-89b55fcc595e','photo-1519389950473-47ba0277781c','photo-1550751827-4bd374c3f58b'],
  wellness:['photo-1544367567-0f2fcb009e0b','photo-1506126613408-eca07ce68773','photo-1518611012118-696072aa579a','photo-1571019613454-1cb2f99b2d8b'],
@@ -72,4 +72,12 @@ export function selectDiversePhoto(candidates:(string|null|undefined)[],used:Set
  const selected=available.find(url=>!reserved.has(photoIdentity(url)))||available[0];
  if(selected)used.add(photoIdentity(selected));
  return selected;
+}
+
+/** A category match does not establish that an image depicts a specific offering.
+ * Keep unsupported offerings text-led instead of mislabelling a dining room as wings.
+ */
+export function offeringPhotoCandidates(service:string,industry:string):string[]{
+ const matched=servicePhoto(service,industry);
+ return matched?[matched]:[];
 }
