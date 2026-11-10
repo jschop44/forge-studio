@@ -1,4 +1,5 @@
 import {test,expect} from '@playwright/test';
+import {generateBusinessWebsite} from '../src/lib/business-site';
 
 const home={slug:'index',title:'Home',html:'<!doctype html><html><head><style>body{color:rgb(20,30,40)}</style></head><body><main><h1>Original bakery</h1></main></body></html>'};
 const contact={slug:'contact',title:'Contact',html:'<!doctype html><html><head><style>body{color:blue}</style></head><body><main><h1>Contact bakery</h1></main></body></html>'};
@@ -156,4 +157,58 @@ test('download removes executable edits and includes responsive document metadat
  expect(html).toContain('<h1>Safe bakery</h1>');
  expect(html).not.toMatch(/<script|onclick/i);
  expect(html).toContain('name="viewport"');
+});
+
+test('device previews use real responsive viewports without changing page content',async({page})=>{
+ const initial={slug:'index',title:'Home',html:'<!doctype html><html><head><style>.responsive-proof{color:rgb(255,0,0)}@media(max-width:800px){.responsive-proof{color:rgb(0,128,0)}}@media(max-width:400px){.responsive-proof{color:rgb(0,0,255)}}</style></head><body><h1 class="responsive-proof">Responsive bakery</h1></body></html>'};
+ await page.goto('/visual-editor');
+ await page.evaluate(initial=>sessionStorage.setItem('forge:visual-editor:handoff',JSON.stringify(initial)),initial);
+ await page.reload();
+ await page.getByRole('button',{name:'Open drag-and-drop designer',exact:true}).click();
+ const frame=page.frameLocator('.gjs-cv-canvas iframe');
+ const mobile=page.getByRole('button',{name:'Mobile canvas preview',exact:true});
+ await expect(mobile).toBeEnabled();
+ await expect(frame.locator('h1')).toHaveText('Responsive bakery');
+ await mobile.click();
+ await expect(mobile).toHaveAttribute('aria-pressed','true');
+ await expect.poll(()=>frame.locator('html').evaluate(()=>window.innerWidth)).toBe(390);
+ await expect(frame.locator('h1')).toHaveCSS('color','rgb(0, 0, 255)');
+ await page.getByRole('button',{name:'Tablet canvas preview',exact:true}).click();
+ await expect.poll(()=>frame.locator('html').evaluate(()=>window.innerWidth)).toBe(768);
+ await expect(frame.locator('h1')).toHaveCSS('color','rgb(0, 128, 0)');
+ await page.getByRole('button',{name:'Desktop canvas preview',exact:true}).click();
+ await expect(page.getByRole('button',{name:'Desktop canvas preview',exact:true})).toHaveAttribute('aria-pressed','true');
+ await expect.poll(()=>frame.locator('html').evaluate(()=>window.innerWidth)).toBe(1280);
+ await expect(frame.locator('h1')).toHaveCSS('color','rgb(255, 0, 0)');
+ await expect(frame.locator('h1')).toHaveText('Responsive bakery');
+});
+
+
+test('business setup and selected design survive an actual generator-editor round trip',async({page})=>{
+ const brief='Industry: Coffee roastery\nProducts: Coffee beans, Ceramic mugs\nWe roast fresh coffee and sell handcrafted ceramic mugs.';
+ await page.route('**/api/ai/business',route=>{const input=route.request().postDataJSON();return route.fulfill({status:200,json:{provider:'fixture',pages:generateBusinessWebsite(input).pages}})});
+ await page.goto('/business');
+ await page.getByRole('textbox',{name:'Business name',exact:true}).fill('Harbor Roastery');
+ await page.getByPlaceholder(/Describe what you offer/).fill(brief);
+ await page.getByRole('combobox',{name:/^Design selection/}).selectOption('library');
+ await page.getByRole('combobox',{name:/^Design pattern/}).selectOption('hospitality-story');
+ await page.getByRole('button',{name:/generate my website/i}).click();
+ await expect(page.frameLocator('iframe[title="Website preview: Home"]').locator('main h1')).toHaveText('Harbor Roastery');
+ await page.getByRole('checkbox',{name:/I reviewed every generated page/}).check();
+ await page.locator('summary').filter({hasText:'Advanced editing and intelligence tools'}).click();
+ await page.getByRole('button',{name:'Edit current generated page',exact:true}).click();
+ await expect(page).toHaveURL(/\/visual-editor$/);
+ await page.getByRole('textbox',{name:'Visual main headline',exact:true}).fill('Roasted by the harbor');
+ await page.getByRole('button',{name:'Apply visual text changes',exact:true}).click();
+ await page.getByRole('button',{name:'Return edited page to generator',exact:true}).click();
+ await expect(page).toHaveURL(/\/business$/);
+ await expect(page.getByRole('textbox',{name:'Business name',exact:true})).toHaveValue('Harbor Roastery');
+ await expect(page.getByPlaceholder(/Describe what you offer/)).toHaveValue(brief);
+ await expect(page.getByRole('combobox',{name:/^Design selection/})).toHaveValue('library');
+ await expect(page.getByRole('combobox',{name:/^Design pattern/})).toHaveValue('hospitality-story');
+ await expect(page.getByRole('checkbox',{name:/I reviewed every generated page/})).not.toBeChecked();
+ await expect(page.frameLocator('iframe[title="Website preview: Home"]').locator('main h1')).toHaveText('Roasted by the harbor');
+ await page.getByRole('navigation',{name:'Website pages'}).getByRole('button',{name:'Contact',exact:true}).click();
+ await expect(page.frameLocator('iframe[title="Website preview: Contact"]').locator('main h1')).toHaveText('Contact us');
+ expect(await page.evaluate(()=>sessionStorage.getItem('forge:visual-editor:context'))).toBeNull();
 });

@@ -31,3 +31,7 @@
     min-width: 0;
   }
 }
+
+.forge-device-toolbar {display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:12px}
+.forge-device-toolbar span {font-size:13px;color:#45617c}
+.forge-visual-editor .forge-device-toolbar button[aria-pressed="true"] {background:#174dc0;color:white;border-color:#174dc0}
