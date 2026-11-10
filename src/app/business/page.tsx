@@ -1,4 +1,5 @@
 'use client';
+import {businessGenerationPayload} from '../../lib/business-generation-payload';
 import {BusinessRecognitionSchema,literalBusinessActivity} from '../../lib/business-recognition';
 import {businessPreviewHtml} from '../../lib/business-preview';
 import {industryPhotos} from '../../lib/industry-photos';
@@ -249,7 +250,7 @@ export default function BusinessGenerator(){
     setStatus('Understanding your business and its specific niche…');
     let identified=false,recognitionAnswered=false;
     try{
-     const response=await fetch('/api/business/recognize',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({businessName:generationName,brief:effectiveBrief}),signal:AbortSignal.timeout(35000)});
+     const response=await fetch('/api/business/recognize',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({businessName:generationName,brief:effectiveBrief.slice(0,1800)}),signal:AbortSignal.timeout(35000)});
      if(response.ok){recognitionAnswered=true;const recognized=BusinessRecognitionSchema.parse(await response.json().then(({provider,...identity})=>identity));if(recognized.status==='identified'){identified=true;recognizedActivity=true;inferred.industry=recognized.industry;if(recognized.services.length&&!/(?:^|\n)\s*(?:services|products|offerings|menu)\s*:/i.test(effectiveBrief))inferred.services=recognized.services}else{inferred.industry='Professional services'}}
     }catch{}
     if(!identified&&!recognitionAnswered&&inferBusinessIndustry(generationName,'')==='Professional services'){const activity=literalBusinessActivity(effectiveBrief);if(activity){inferred.industry=activity;if(!/(?:^|\n)\s*(?:services|products|offerings|menu)\s*:/i.test(effectiveBrief))inferred.services=['Explore '+activity.slice(0,60).toLowerCase(),'About our business','Contact the team']}}
@@ -269,8 +270,9 @@ export default function BusinessGenerator(){
     if(!input.visualAssets.length)visualNotice=' No relevant stock images could be verified for this niche; add business imagery rather than an unrelated substitute.';
    }
    if(generationEpoch!==inspectionEpoch.current){setStatus('Website address changed during generation. Generate again using the current website.');return}
-   while(JSON.stringify(input).length>7500&&input.visualAssets.length)input.visualAssets.pop();
-   const response=await fetch('/api/ai/business',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(input),signal:AbortSignal.timeout(75000)});
+   const generationPayload=businessGenerationPayload(input);
+   if(input.description.length>1800)visualNotice+=' The first 1,800 characters of your description were used for generation.';
+   const response=await fetch('/api/ai/business',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(generationPayload),signal:AbortSignal.timeout(75000)});
    if(response.status===429){const retrySeconds=Math.min(30,Math.max(1,Number(response.headers.get('retry-after'))||5));setStatus('AI is processing other websites. Please retry in about '+retrySeconds+' seconds.');return}
    if(!response.ok){const failure=await response.json();throw Error(response.status===503?'Website generation is temporarily unavailable. Please try again.':failure.error||'AI generation unavailable')}
    const result=await response.json();if(generationEpoch!==inspectionEpoch.current){setStatus('Website address changed during generation. Generate again using the current website.');return}const extractedPages=additionalPages(evidence);const extras=applyExtractedExperience(extractedPages,experienceStyle,input);const combined=[...result.pages,...extras];const generated=experienceStyle==='immersive'?enhanceImmersiveWorld(combined,input):combined;
