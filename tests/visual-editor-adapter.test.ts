@@ -21,3 +21,12 @@ test('editor preview fails closed for embedded active content and dangerous URL 
   assert.ok(doc.warnings.some(w=>w.includes('Preview blocked')));
  }
 });
+
+test('editor preview blocks active CSS and inline styles until a sanitizer is integrated',()=>{
+ for(const html of ['<html><head><style>@import url(https://example.com/a.css)</style></head><body><p>Test</p></body></html>','<html><head></head><body><p style="background:url(https://example.com)">Test</p></body></html>','<html><head></head><body><img srcset="https://example.com/image.jpg 1x"></body></html>']){
+  const doc=prepareVisualEditorDocument({slug:'index',title:'Home',html});
+  assert.equal(doc.bodyHtml,'');
+  assert.equal(doc.css,'');
+  assert.ok(doc.warnings.some(w=>w.includes('Preview blocked')));
+ }
+});
