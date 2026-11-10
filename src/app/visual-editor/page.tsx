@@ -20,6 +20,13 @@ export default function VisualEditor(){
   setPage(candidate);setBody(document.bodyHtml);setCss(document.css);
   setMessage('Imported into the isolated editing preview. Original file remains unchanged.');
  }
+ function returnToGenerator(){
+  if(!page)return;
+  const html='<!doctype html><html><head><meta charset="utf-8"><title>'+page.title.replace(/[&<>"]/g,'')+'</title><style>'+css+'</style></head><body>'+body+'</body></html>';
+  const check=prepareVisualEditorDocument({...page,html});
+  if(!check.bodyHtml){setMessage('Return blocked: '+check.warnings.join(' '));return}
+  try{sessionStorage.setItem('forge:visual-editor:return',JSON.stringify({...page,html}));window.location.assign('/business')}catch{setMessage('Unable to return edited page. Download it instead.')}
+ }
  function save(){
   if(!page)return;
   const html='<!doctype html><html><head><meta charset="utf-8"><title>'+page.title.replace(/[&<>"]/g,'')+'</title><style>'+css+'</style></head><body>'+body+'</body></html>';
@@ -38,7 +45,7 @@ export default function VisualEditor(){
   {page&&<><div style={{display:'grid',gridTemplateColumns:'repeat(auto-fit,minmax(280px,1fr))',gap:16,marginTop:24}}>
    <label>HTML body<textarea aria-label="HTML body" value={body} onChange={event=>setBody(event.target.value)} rows={18} style={{display:'block',width:'100%',fontFamily:'monospace'}}/></label>
    <label>CSS<textarea aria-label="CSS" value={css} onChange={event=>setCss(event.target.value)} rows={18} style={{display:'block',width:'100%',fontFamily:'monospace'}}/></label>
-  </div><button type="button" onClick={save}>Validate and download edited page</button>
+  </div><button type="button" onClick={save}>Validate and download edited page</button> <button type="button" onClick={returnToGenerator}>Return edited page to generator</button>
   <h2>Isolated preview</h2><iframe title="Edited website preview" sandbox="" referrerPolicy="no-referrer" srcDoc={preview} style={{width:'100%',height:540,border:'1px solid #999'}}/></>}
  </main>;
 }
