@@ -64,7 +64,7 @@ export async function checkLocalAiReadiness():Promise<{ready:boolean;reason:'rea
 const MAX_ACTIVE_GENERATIONS=2;
 let activeGenerations=0;
 export function localAiCapacity(){return {active:activeGenerations,capacity:MAX_ACTIVE_GENERATIONS}}
-export async function generateWithLocalAi(input:{businessName:string;industry:string;description:string;services:string[];contactEmail?:string;visualAssets?:VisualAsset[];experienceStyle?:WebsiteExperience}):Promise<AiGenerationResult>{
+export async function generateWithLocalAi(input:{businessName:string;industry:string;description:string;services:string[];contactEmail?:string;visualAssets?:VisualAsset[];experienceStyle?:WebsiteExperience;designLayout?:'editorial'|'image-led'}):Promise<AiGenerationResult>{
  if(activeGenerations>=MAX_ACTIVE_GENERATIONS)throw Error('Local AI capacity exceeded');
  activeGenerations++;
  try {
@@ -101,7 +101,7 @@ export async function generateWithLocalAi(input:{businessName:string;industry:st
   services:input.services.map(service=>service.trim())
  };
  const validated=DraftSchema.parse(verifiedDraft);
- return {draft:validated,provider,pages:generateBusinessWebsite({...validated,...compositionAppearance(design),visualAssets:input.visualAssets,contactEmail:input.contactEmail,experienceStyle:input.experienceStyle||'standard'}).pages};
+ return {draft:validated,provider,pages:generateBusinessWebsite({...validated,...compositionAppearance(design),...(input.designLayout?{layout:input.designLayout}:{}),visualAssets:input.visualAssets,contactEmail:input.contactEmail,experienceStyle:input.experienceStyle||'standard'}).pages};
  } finally {activeGenerations--}
 }
 

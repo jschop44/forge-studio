@@ -18,3 +18,54 @@ test('unsafe serialized evidence cannot inject executable styles, markup or priv
 test('summary pages receive source identity without a generated brand marker or footer',()=>{
  const pages=[{slug:'find-a-store',title:'Find a Store',html:'<html><head></head><body><nav><a href="index.html">Business</a></nav><main><h1>Find a Store</h1></main></body></html>'}];const once=applySourceDesign(pages,dna,'redesign'),twice=applySourceDesign(once.pages,dna,'redesign');assert.ok(once.pages[0].html.includes('source-brand-logo'));assert.ok(once.pages[0].html.includes('mailto:info@example.com'));assert.equal((twice.pages[0].html.match(/class="source-brand-logo"/g)||[]).length,1);assert.equal((twice.pages[0].html.match(/data-forge-source-contact/g)||[]).length,1);
 });
+
+test('unrelated source photographs never replace a hero or get inserted as a fallback',()=>{
+ const source=extractWebsiteDesignDna('<img src="/fruit.jpg" alt="Fresh fruit bowl"><img src="/wings.jpg" alt="Chicken wings">','https://example.com/');
+ const page={slug:'index',title:'Home',html:wrap('<h1>Chicken wings</h1><figure class="editorial-photo"><img src="https://stock.example/wings.jpg" alt="Food photograph"></figure>')};
+ const result=applySourceDesign([page],source,'redesign');
+ assert.ok(result.pages[0].html.includes('src="https://example.com/wings.jpg"'));
+ assert.ok(!result.pages[0].html.includes('src="https://example.com/fruit.jpg"'));
+ const unrelated={slug:'index',title:'Home',html:wrap('<h1>Auto repair</h1><figure class="editorial-photo"><img src="https://stock.example/car.jpg" alt="Car service"></figure>')};
+ const noMatch=applySourceDesign([unrelated],source,'redesign');
+ assert.ok(!noMatch.pages[0].html.includes('src="https://example.com/fruit.jpg"'));
+ assert.ok(!noMatch.pages[0].html.includes('src="https://example.com/wings.jpg"'));
+});
+
+test('preserve mode carries observed centered hero composition without applying it to redesign',()=>{
+ const source=extractWebsiteDesignDna('<section class="hero text-center"><h1>Bakery</h1></section>','https://example.com/');
+ assert.equal(source.layout.heroAlignment,'center');
+ const pages=[{slug:'index',title:'Home',html:wrap('<section class="site-hero"><div><h1>Bakery</h1></div></section>')}];
+ const preserved=applySourceDesign(pages,source,'inspired').pages[0].html;
+ const redesigned=applySourceDesign(pages,source,'redesign').pages[0].html;
+ assert.ok(preserved.includes('.site-hero{grid-template-columns:1fr;text-align:center;justify-items:center}'));
+ assert.ok(!redesigned.includes('.site-hero{grid-template-columns:1fr;text-align:center;justify-items:center}'));
+});
+
+test('a source content photograph is not repeated across distinct website pages',()=>{
+ const source=extractWebsiteDesignDna(
+  '<img src="/brand.png" class="company-logo" alt="Chicken wings logo"><img src="/wings-a.jpg" alt="Chicken wings with spicy sauce"><img src="/wings-b.jpg" alt="Chicken wings with hot sauce">',
+  'https://restaurant.example/');
+ const pages=[
+  {slug:'index',title:'Chicken wings',html:wrap('<h1>Chicken wings</h1><figure class="editorial-photo"><img src="https://stock.example/a.jpg" alt="Chicken wings photograph"></figure>')},
+  {slug:'services',title:'Menu',html:wrap('<article><h2>Chicken wings</h2><img src="https://stock.example/b.jpg" alt="Chicken wings photograph"></article>')},
+  {slug:'about',title:'About',html:wrap('<h1>Chicken wings</h1><figure class="editorial-photo"><img src="https://stock.example/c.jpg" alt="Chicken wings photograph"></figure>')}
+ ];
+ const result=applySourceDesign(pages,source,'redesign');
+ const allContentUrls=[...result.pages.flatMap(page=>[...page.html.matchAll(/<img class="(?:source-photo|service-photo)" data-forge-source-image src="([^"]+)"/g)].map(match=>match[1]))];
+ assert.equal(allContentUrls.length,2,'only two source content photographs are available');
+ assert.equal(new Set(allContentUrls).size,allContentUrls.length,'source content photographs must be unique across pages');
+ for(const page of result.pages)assert.match(page.html,/src="https:\/\/restaurant\.example\/brand\.png"/,'business logo is intentionally reused');
+ assert.match(result.pages[2].html,/src="https:\/\/stock\.example\/c\.jpg"/,'an unmatched page keeps its original image rather than repeating a source photograph');
+});
+
+test('service photos are not replaced by unrelated source assets when a matching photo was used earlier',()=>{
+ const source=extractWebsiteDesignDna('<img src="/wings.jpg" alt="Chicken wings"><img src="/fruit.jpg" alt="Fruit bowl">','https://restaurant.example/');
+ const pages=[
+  {slug:'index',title:'Chicken wings',html:wrap('<h1>Chicken wings</h1><figure class="editorial-photo"><img src="https://stock.example/wings.jpg" alt="Chicken wings"></figure>')},
+  {slug:'services',title:'Menu',html:wrap('<article><h2>Chicken wings</h2><img src="https://stock.example/menu.jpg" alt="Menu photograph"></article>')}
+ ];
+ const result=applySourceDesign(pages,source,'redesign');
+ assert.match(result.pages[0].html,/src="https:\/\/restaurant\.example\/wings\.jpg"/);
+ assert.match(result.pages[1].html,/src="https:\/\/stock\.example\/menu\.jpg"/);
+ assert.doesNotMatch(result.pages[1].html,/src="https:\/\/restaurant\.example\/fruit\.jpg"/);
+});

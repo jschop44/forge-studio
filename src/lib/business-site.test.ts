@@ -74,3 +74,22 @@ test('untrusted business content is escaped before appearing in generated HTML',
   assert.doesNotMatch(page.html,/<script>alert\(1\)<\/script>|<svg onload=|<img src=x onerror=/i);
  }
 });
+
+test('generated pages keep text upright without forced 3D perspective or photo tilt',()=>{
+ const site=generateBusinessWebsite(brief('Restaurant and hospitality'));
+ for(const page of site.pages){
+  assert.doesNotMatch(page.html,/main\{perspective:1400px\}|\.cards\{perspective:900px\}|rotateY\(-3deg\)/);
+  assert.match(page.html,/main\{perspective:none\}/);
+ }
+});
+
+test('image-led design uses a distinct responsive hero while editorial remains selectable',()=>{
+ const imageLed=generateBusinessWebsite({...brief('Sporting goods retail'),layout:'image-led'}).pages[0].html;
+ const editorial=generateBusinessWebsite({...brief('Sporting goods retail'),layout:'editorial'}).pages[0].html;
+ assert.match(imageLed,/data-forge-layout="image-led"/);
+ assert.match(imageLed,/site-hero image-led/);
+ assert.match(imageLed,/body\[data-forge-layout="image-led"\] \.site-hero\{grid-template-columns:minmax/);
+ assert.match(imageLed,/@media\(max-width:700px\)\{body\[data-forge-layout="image-led"\] \.site-hero\{grid-template-columns:1fr\}/);
+ assert.match(editorial,/data-forge-layout="editorial"/);
+ assert.match(editorial,/site-hero editorial/);
+});

@@ -1,6 +1,6 @@
 /** Observed design evidence only. Asset discovery is not a license or availability check. */
 export type SourceImage={url:string;alt:string;role:'logo'|'content'|'background';sourcePage:string;width?:number;height?:number};
-export type WebsiteDesignDna={version:1;sourceUrl:string;businessName?:string;images:SourceImage[];logo?:SourceImage;contact:{emails:string[];phones:string[]};typography:{families:string[]};palette:string[];layout:{header:boolean;hero:boolean;sectionCount:number;breakpoints:number[]};warnings:string[]};
+export type WebsiteDesignDna={version:1;sourceUrl:string;businessName?:string;images:SourceImage[];logo?:SourceImage;contact:{emails:string[];phones:string[]};typography:{families:string[]};palette:string[];layout:{header:boolean;hero:boolean;sectionCount:number;breakpoints:number[];heroAlignment?:'center'|'left'|'right'};warnings:string[]};
 function decode(value:string){return value.replace(/&amp;/gi,'&').replace(/&quot;/gi,'"').replace(/&#39;|&apos;/gi,"'").replace(/&#(\d+);/g,(_,number)=>String.fromCharCode(Number(number))).replace(/&#x([a-f\d]+);/gi,(_,number)=>String.fromCharCode(parseInt(number,16)))}
 function text(value:string){return decode(value.replace(/<[^>]*>/g,' ')).replace(/\s+/g,' ').trim().slice(0,350)}
 function attribute(tag:string,name:string){return decode(tag.match(new RegExp('(?:^|\\s)'+name+'\\s*=\\s*(?:"([^"]*)"|\'([^\']*)\'|([^\\s>]+))','i'))?.slice(1).find(value=>value!==undefined)||'')}
@@ -31,7 +31,10 @@ export function extractWebsiteDesignDna(input:string,sourceUrl:string,stylesheet
  const emails=[...new Set(links.filter(link=>/^mailto:/i.test(link)).map(link=>link.slice(7).split('?')[0]).filter(value=>/^[\w.!#$%&'*+/=?^`{|}~-]+@[\w.-]+\.[a-z]{2,}$/i.test(value)))].slice(0,8);
  const phones=[...new Set(links.filter(link=>/^tel:/i.test(link)).map(link=>link.slice(4)).filter(value=>/^\+?[\d(). -]{7,30}$/.test(value)))].slice(0,8);
  const breakpoints=[...new Set([...css.matchAll(/(?:min|max)-width\s*:\s*(\d{2,4})px/gi)].map(match=>Number(match[1])))].sort((a,b)=>a-b).slice(0,12);
+ const heroTag=html.match(/<(?:section|div|header)\b[^>]*(?:class|id)\s*=\s*["'][^"']*(?:hero|banner|masthead)[^"']*["'][^>]*>/i)?.[0]||'';
+ const heroClasses=[attribute(heroTag,'class'),attribute(heroTag,'id')].join(' ');
+ const heroAlignment=/\b(?:text-center|align-center|centered|hero-center)\b/i.test(heroClasses)?'center':/\b(?:text-right|align-right|hero-right)\b/i.test(heroClasses)?'right':/\b(?:text-left|align-left|hero-left)\b/i.test(heroClasses)?'left':undefined;
  const warnings=['Discovered source assets require authorization and availability verification before publication.','Observed HTML and CSS do not establish computed layout, browser interactions, or visual fidelity.'];
  if(!images.length)warnings.push('No reusable public HTTPS images were discovered; supply authorized business assets.');
- return {version:1,sourceUrl,...(businessName?{businessName}:{}),images,logo:images.find(image=>image.role==='logo'),contact:{emails,phones},typography:{families:[...new Set(families)].slice(0,8)},palette,layout:{header:/<header\b/i.test(html),hero:/(?:class|id)\s*=\s*["'][^"']*(?:hero|banner|masthead)/i.test(html),sectionCount:(html.match(/<section\b/gi)||[]).length,breakpoints},warnings};
+ return {version:1,sourceUrl,...(businessName?{businessName}:{}),images,logo:images.find(image=>image.role==='logo'),contact:{emails,phones},typography:{families:[...new Set(families)].slice(0,8)},palette,layout:{header:/<header\b/i.test(html),hero:/(?:class|id)\s*=\s*["'][^"']*(?:hero|banner|masthead)/i.test(html),sectionCount:(html.match(/<section\b/gi)||[]).length,breakpoints,...(heroAlignment?{heroAlignment}:{})},warnings};
 }
