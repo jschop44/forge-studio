@@ -1,0 +1,33 @@
+/* Keep the GrapesJS canvas usable on phones without horizontal page overflow. */
+.forge-grapes-layout {
+  display: grid;
+  grid-template-columns: minmax(160px, 1fr) minmax(0, 4fr) minmax(170px, 1fr);
+  gap: 12px;
+  align-items: start;
+}
+.forge-grapes-layout > *,
+.forge-grapes-center {
+  min-width: 0;
+}
+.forge-grapes-center {
+  overflow: hidden;
+}
+.forge-grapes-layout aside {
+  overflow-wrap: anywhere;
+}
+.forge-grapes-layout .gjs-editor,
+.forge-grapes-layout .gjs-cv-canvas,
+.forge-grapes-layout .gjs-cv-canvas__frames {
+  max-width: 100%;
+}
+@media (max-width: 900px) {
+  .forge-grapes-layout {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .forge-grapes-center {
+    overflow-x: auto;
+  }
+  .forge-grapes-layout aside {
+    min-width: 0;
+  }
+}
