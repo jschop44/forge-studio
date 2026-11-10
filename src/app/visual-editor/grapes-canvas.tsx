@@ -33,7 +33,7 @@ export default function GrapesVisualCanvas({html,css,onChange}:Props){
     selectorManager:{appendTo:'#forge-grapes-styles'}
    });
    editor=instance;
-   instance.on('update',()=>latest.current(instance.getHtml(),instance.getCss()));
+   instance.on('update',()=>latest.current(instance.getHtml(),instance.getCss()||''));
   }).catch(()=>{});
   return ()=>{active=false;editor?.destroy()};
  // The editor owns the initial snapshot. Parent updates come from its change callback.
