@@ -17,7 +17,7 @@ test('generated page edits return to the generator without losing sibling pages'
  await expect(page.frameLocator('iframe[title="Edited website preview"]').locator('h1')).toHaveText('Updated bakery');
  await page.getByRole('button',{name:'Return edited page to generator'}).click();
  await expect(page).toHaveURL(/\/business$/);
- await expect(page.getByRole('status')).toContainText('Edited page restored');
+ await expect(page.locator('p.forge-auto-status')).toContainText('Edited page restored');
  await expect(page.frameLocator('iframe[title="Website preview: Home"]').locator('h1')).toHaveText('Updated bakery');
  await page.evaluate(()=>{
   if(sessionStorage.getItem('forge:visual-editor:return')!==null)throw Error('Return handoff not cleared');
@@ -33,13 +33,13 @@ test('active markup and CSS cannot be previewed or returned to generator',async(
  await page.reload();
  await expect(page.getByRole('status')).toContainText('Generated page loaded');
  await page.getByRole('textbox',{name:'HTML body'}).fill('<main><iframe src="https://example.com"></iframe></main>');
- await expect(page.getByRole('alert')).toContainText('Preview blocked');
+ await expect(page.locator('p[role="alert"]')).toContainText('Preview blocked');
  await page.getByRole('button',{name:'Return edited page to generator'}).click();
  await expect(page).toHaveURL(/\/visual-editor$/);
  await expect(page.getByRole('status')).toContainText('Return blocked');
  await page.getByRole('textbox',{name:'HTML body'}).fill('<main><h1>Safe again</h1></main>');
  await page.getByRole('textbox',{name:'CSS',exact:true}).fill('@import url(https://example.com/x.css)');
- await expect(page.getByRole('alert')).toContainText('Preview blocked');
+ await expect(page.locator('p[role="alert"]')).toContainText('Preview blocked');
  await page.getByRole('button',{name:'Validate and download edited page'}).click();
  await expect(page.getByRole('status')).toContainText('Export blocked');
 });
