@@ -30,3 +30,13 @@ test('unrelated source photographs never replace a hero or get inserted as a fal
  assert.ok(!noMatch.pages[0].html.includes('src="https://example.com/fruit.jpg"'));
  assert.ok(!noMatch.pages[0].html.includes('src="https://example.com/wings.jpg"'));
 });
+
+test('preserve mode carries observed centered hero composition without applying it to redesign',()=>{
+ const source=extractWebsiteDesignDna('<section class="hero text-center"><h1>Bakery</h1></section>','https://example.com/');
+ assert.equal(source.layout.heroAlignment,'center');
+ const pages=[{slug:'index',title:'Home',html:wrap('<section class="site-hero"><div><h1>Bakery</h1></div></section>')}];
+ const preserved=applySourceDesign(pages,source,'inspired').pages[0].html;
+ const redesigned=applySourceDesign(pages,source,'redesign').pages[0].html;
+ assert.ok(preserved.includes('.site-hero{grid-template-columns:1fr;text-align:center;justify-items:center}'));
+ assert.ok(!redesigned.includes('.site-hero{grid-template-columns:1fr;text-align:center;justify-items:center}'));
+});
