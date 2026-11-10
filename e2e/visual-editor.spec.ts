@@ -90,3 +90,36 @@ test('Forge designer drag-and-drop reliably inserts a heading into the website',
  await expect(frame.locator('h2')).toContainText('New heading',{timeout:10000});
  await expect(page.getByRole('textbox',{name:'HTML body'})).toContainText('New heading');
 });
+
+test('canvas Add button supports undo and redo while synchronizing the HTML editor',async({page})=>{
+ const initial={slug:'index',title:'Home',html:'<!doctype html><html><body><main><h1>Bakery</h1></main></body></html>'};
+ await page.goto('/visual-editor');
+ await page.evaluate(initial=>sessionStorage.setItem('forge:visual-editor:handoff',JSON.stringify(initial)),initial);
+ await page.reload();
+ await page.getByRole('button',{name:'Open drag-and-drop designer'}).click();
+ const insert=page.getByRole('button',{name:'Insert paragraph block'});
+ await expect(insert).toBeEnabled();
+ await insert.click();
+ const frame=page.frameLocator('.gjs-cv-canvas iframe');
+ await expect(frame.locator('p')).toHaveText('New paragraph');
+ await expect(page.getByRole('textbox',{name:'HTML body'})).toContainText('New paragraph');
+ await page.getByRole('button',{name:'Undo canvas edit'}).click();
+ await expect(frame.locator('p')).toHaveCount(0);
+ await expect(page.getByRole('textbox',{name:'HTML body'})).not.toContainText('New paragraph');
+ await page.getByRole('button',{name:'Redo canvas edit'}).click();
+ await expect(frame.locator('p')).toHaveText('New paragraph');
+ await expect(page.getByRole('textbox',{name:'HTML body'})).toContainText('New paragraph');
+});
+
+test('visual designer uses a single-column layout on narrow mobile screens',async({page})=>{
+ await page.setViewportSize({width:390,height:844});
+ const initial={slug:'index',title:'Home',html:'<!doctype html><html><body><h1>Mobile bakery</h1></body></html>'};
+ await page.goto('/visual-editor');
+ await page.evaluate(initial=>sessionStorage.setItem('forge:visual-editor:handoff',JSON.stringify(initial)),initial);
+ await page.reload();
+ await page.getByRole('button',{name:'Open drag-and-drop designer'}).click();
+ const grid=page.locator('.forge-grapes-layout');
+ await expect(grid).toBeVisible();
+ await expect.poll(()=>grid.evaluate(element=>getComputedStyle(element).gridTemplateColumns.split(' ').length)).toBe(1);
+ await expect(page.getByRole('button',{name:'Insert heading block'})).toBeEnabled();
+});
