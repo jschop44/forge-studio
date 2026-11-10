@@ -20,3 +20,11 @@ export function prepareVisualEditorDocument(page:GeneratedPage):VisualEditorDocu
  if(unsafeMarkup||unsafeCss){warnings.push('Potentially active markup or CSS requires a full HTML sanitizer before visual editing. Preview blocked.');return {version:1,slug:page.slug,title:page.title,bodyHtml:'',css:'',warnings};}
  return {version:1,slug:page.slug,title:page.title,bodyHtml,css,warnings};
 }
+
+/** Serialize only the validated, script-free document used by the editor preview. */
+export function serializeVisualEditorDocument(page:GeneratedPage):{html:string;warnings:string[]}{
+ const document=prepareVisualEditorDocument(page);
+ if(!document.bodyHtml)return {html:'',warnings:document.warnings};
+ const title=page.title.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+ return {html:'<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>'+title+'</title><style>'+document.css+'</style></head><body>'+document.bodyHtml+'</body></html>',warnings:document.warnings};
+}

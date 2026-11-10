@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {prepareVisualEditorDocument} from '../src/lib/visual-editor-adapter';
+import {prepareVisualEditorDocument,serializeVisualEditorDocument} from '../src/lib/visual-editor-adapter';
 
 test('editor adapter extracts generated HTML and styles without executing scripts',()=>{
  const doc=prepareVisualEditorDocument({slug:'index',title:'Home',html:'<!doctype html><html><head><style>body{color:red}</style></head><body><main><h1>Bakery</h1><button onclick="alert(1)">Explore</button></main><script>alert(2)</script></body></html>'});
@@ -30,3 +30,15 @@ test('editor preview blocks active CSS and inline styles until a sanitizer is in
   assert.ok(doc.warnings.some(w=>w.includes('Preview blocked')));
  }
 });
+
+ test('export serializes the sanitized preview instead of returning original active markup',()=>{
+ const result=serializeVisualEditorDocument({slug:'index',title:'Bakery & <Cafe>',html:'<html><head><style>body{color:red}</style></head><body><h1 onclick="alert(1)">Bakery</h1><script>alert(2)</script></body></html>'});
+ assert.match(result.html,/<h1>Bakery<\/h1>/);
+ assert.doesNotMatch(result.html,/<script|onclick/i);
+ assert.match(result.html,/<title>Bakery &amp; &lt;Cafe&gt;<\/title>/);
+ assert.match(result.html,/name="viewport"/);
+ assert.match(result.html,/body\{color:red\}/);
+ });
+ test('export refuses blocked documents',()=>{
+ assert.equal(serializeVisualEditorDocument({slug:'index',title:'Home',html:'<html><body><iframe src="https://example.com"></iframe></body></html>'}).html,'');
+ });
