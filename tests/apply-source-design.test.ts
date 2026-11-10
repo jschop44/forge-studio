@@ -51,7 +51,7 @@ test('a source content photograph is not repeated across distinct website pages'
   {slug:'about',title:'About',html:wrap('<h1>Chicken wings</h1><figure class="editorial-photo"><img src="https://stock.example/c.jpg" alt="Chicken wings photograph"></figure>')}
  ];
  const result=applySourceDesign(pages,source,'redesign');
- const allContentUrls=[...result.pages.flatMap(page=>[...page.html.matchAll(/data-forge-source-image src="([^"]+)"/g)].map(match=>match[1]))];
+ const allContentUrls=[...result.pages.flatMap(page=>[...page.html.matchAll(/<img class="(?:source-photo|service-photo)" data-forge-source-image src="([^"]+)"/g)].map(match=>match[1]))];
  assert.equal(allContentUrls.length,2,'only two source content photographs are available');
  assert.equal(new Set(allContentUrls).size,allContentUrls.length,'source content photographs must be unique across pages');
  for(const page of result.pages)assert.match(page.html,/src="https:\/\/restaurant\.example\/brand\.png"/,'business logo is intentionally reused');
