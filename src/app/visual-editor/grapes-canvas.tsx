@@ -1,9 +1,17 @@
 'use client';
 import {useEffect,useRef,useState} from 'react';
 import 'grapesjs/dist/css/grapes.min.css';
+import type {Editor} from 'grapesjs';
 type Props={html:string;css:string;onChange:(html:string,css:string)=>void};
 export default function GrapesVisualCanvas({html,css,onChange}:Props){
  const mount=useRef<HTMLDivElement>(null);
+ const editorRef=useRef<Editor|null>(null);
+ const insertBlock=(id:string)=>{
+  const current=editorRef.current;
+  const content=current?.BlockManager.get(id)?.get('content');
+  if(!content||!current)return;
+  current.addComponents(content);
+ };
  const [loadError,setLoadError]=useState('');
  const [ready,setReady]=useState(false);
  const latest=useRef(onChange);
@@ -35,10 +43,11 @@ export default function GrapesVisualCanvas({html,css,onChange}:Props){
     selectorManager:{appendTo:'#forge-grapes-styles'}
    });
    editor=instance;
+   editorRef.current=instance;
    setReady(true);
    instance.on('update',()=>latest.current(instance.getHtml(),instance.getCss()||''));
   }).catch((error:unknown)=>{if(active)setLoadError(error instanceof Error?error.message:'Unknown editor loading error')});
-  return ()=>{active=false;editor?.destroy()};
+  return ()=>{active=false;editorRef.current=null;editor?.destroy()};
  // The editor owns the initial snapshot. Parent updates come from its change callback.
  // eslint-disable-next-line react-hooks/exhaustive-deps
  },[]);
@@ -48,7 +57,7 @@ export default function GrapesVisualCanvas({html,css,onChange}:Props){
   {loadError&&<p role="alert">The visual designer could not load: {loadError}. Your HTML and CSS remain available below.</p>}
   <p>Select text or images on the canvas to edit them. Drag content blocks into the page; changes synchronize to the HTML and CSS fields below.</p>
   <div style={{display:'grid',gridTemplateColumns:'minmax(150px,1fr) minmax(0,4fr) minmax(170px,1fr)',gap:12}}>
-   <aside><h3>Blocks</h3><div id="forge-grapes-blocks"/><h3>Layers</h3><div id="forge-grapes-layers"/></aside>
+   <aside><h3>Blocks</h3><div id="forge-grapes-blocks"/><p>Tap to add on touch devices:</p><div style={{display:'grid',gap:6}}>{(['heading','paragraph','button','section','image'] as const).map(id=><button type="button" key={id} onClick={()=>insertBlock(id)} disabled={!ready} aria-label={'Insert '+id+' block'}>Add {id}</button>)}</div><h3>Layers</h3><div id="forge-grapes-layers"/></aside>
    <div ref={mount} style={{minWidth:0,border:'1px solid #aaa'}}/>
    <aside><h3>Styles</h3><div id="forge-grapes-styles"/></aside>
   </div>
