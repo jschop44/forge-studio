@@ -42,3 +42,11 @@ test('editor preview blocks active CSS and inline styles until a sanitizer is in
  test('export refuses blocked documents',()=>{
  assert.equal(serializeVisualEditorDocument({slug:'index',title:'Home',html:'<html><body><iframe src="https://example.com"></iframe></body></html>'}).html,'');
  });
+
+test('editor and export block residual scripts without complete closing tags',()=>{
+ for(const markup of ['<script src="https://example.com/code.js">','<script>alert(1)','<script src="https://example.com/code.js"/>']){
+ const page={slug:'index',title:'Home',html:'<html><body><h1>Bakery</h1>'+markup+'</body></html>'};
+ assert.equal(prepareVisualEditorDocument(page).bodyHtml,'');
+ assert.equal(serializeVisualEditorDocument(page).html,'');
+ }
+});

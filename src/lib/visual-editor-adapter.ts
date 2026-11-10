@@ -15,7 +15,7 @@ export function prepareVisualEditorDocument(page:GeneratedPage):VisualEditorDocu
  if(!body)warnings.push('Generated page has no complete body; editor preview is unavailable.');
  if(/<script\b/i.test(html))warnings.push('Executable scripts are excluded from visual editor previews.');
  const bodyHtml=body.replace(/<script\b[^>]*>[\s\S]*?<\/script\s*>/gi,'').replace(/\son\w+\s*=\s*(?:"[^"]*"|'[^']*'|[^\s>]+)/gi,'').replace(/\s(?:srcdoc)\s*=\s*(?:"[^"]*"|'[^']*'|[^\s>]+)/gi,'');
- const unsafeMarkup=/<(?:iframe|object|embed|form|base|meta|link|svg|math|template|video|audio|source)\b/i.test(bodyHtml)||/\b(?:javascript|vbscript|data):/i.test(bodyHtml)||/<style\b/i.test(bodyHtml)||/\b(?:srcset|formaction|xlink:href|ping)\s*=/i.test(bodyHtml)||/\bstyle\s*=/i.test(bodyHtml)||/<!--|<!\[CDATA\[/i.test(bodyHtml);
+ const unsafeMarkup=/<(?:script|iframe|object|embed|form|base|meta|link|svg|math|template|video|audio|source)\b/i.test(bodyHtml)||/\b(?:javascript|vbscript|data):/i.test(bodyHtml)||/<style\b/i.test(bodyHtml)||/\b(?:srcset|formaction|xlink:href|ping)\s*=/i.test(bodyHtml)||/\bstyle\s*=/i.test(bodyHtml)||/<!--|<!\[CDATA\[/i.test(bodyHtml);
  const unsafeCss=/(?:@import|expression\s*\(|url\s*\(|behavior\s*:|@font-face)/i.test(css);
  if(unsafeMarkup||unsafeCss){warnings.push('Potentially active markup or CSS requires a full HTML sanitizer before visual editing. Preview blocked.');return {version:1,slug:page.slug,title:page.title,bodyHtml:'',css:'',warnings};}
  return {version:1,slug:page.slug,title:page.title,bodyHtml,css,warnings};
