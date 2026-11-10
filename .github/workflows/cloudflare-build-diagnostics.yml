@@ -1,0 +1,64 @@
+name: Inspect Cloudflare dashboard build configuration
+on:
+  workflow_dispatch:
+  pull_request:
+    branches: [main]
+    paths:
+      - '.github/workflows/cloudflare-build-diagnostics.yml'
+      - 'scripts/check-cloudflare-worker-target.mjs'
+      - 'docs/CLOUDFLARE_BUILD_RECOVERY.md'
+permissions:
+  contents: read
+jobs:
+  diagnose:
+    # Never expose credentials to fork pull requests.
+    if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    env:
+      CF_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+      CF_ACCOUNT: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+    steps:
+      - name: Read Cloudflare build configuration and failure category (no mutations)
+        run: |
+          node --input-type=module <<'JS'
+          import {appendFileSync} from 'node:fs';
+          const report=(s)=>{console.log(s);appendFileSync(process.env.GITHUB_STEP_SUMMARY,s+'\n')};
+          const token=process.env.CF_TOKEN,account=process.env.CF_ACCOUNT;
+          if(!token||!account){report('Cloudflare diagnostics unavailable: repository Cloudflare credentials are absent. No resources were modified.');process.exit(0)}
+          const base='https://api.cloudflare.com/client/v4/accounts/'+encodeURIComponent(account);
+          async function read(path){
+            try{
+              const res=await fetch(base+path,{headers:{Authorization:'Bearer '+token},signal:AbortSignal.timeout(15000)});
+              const data=await res.json().catch(()=>null);
+              return {status:res.status,data};
+            }catch(e){return {status:'network-error',data:null}}
+          }
+          const scriptList=await read('/workers/scripts');
+          if(scriptList.status===200&&Array.isArray(scriptList.data?.result)){
+            const workers=scriptList.data.result.filter(x=>['forge-studio','forge-studio-preview'].includes(x.id));
+            report('Visible Forge Worker names: '+(workers.map(w=>w.id).join(', ')||'none'));
+            for(const worker of workers){
+              if(!worker.tag)continue;
+              const config=await read('/builds/workers/'+encodeURIComponent(worker.tag));
+              if(config.status!==200){report('Build config for '+worker.id+': API HTTP '+config.status+' (additional Workers Builds Configuration token permission may be required)');continue}
+              const value=config.data?.result||{};
+              const production=value.production_settings||{};
+              report('Build config for '+worker.id+': repo='+(value.git_repository?.repo_name||'not configured')+', branch='+(value.git_repository?.branch||'unknown')+', build command='+(production.build_command||'(unset)')+', deploy command='+(production.deploy_command||'(unset)'));
+              // Never print build-time environment variables, API tokens or secret values.
+            }
+          }else report('Worker inventory API status: '+scriptList.status+' (the existing deployment token may lack Workers Scripts Read)');
+          const failedBuildId='55c0c4d6-be53-4aa6-a040-f16c74766dd5';
+          const logs=await read('/builds/builds/'+failedBuildId+'/logs');
+          if(logs.status!==200){report('Failed Cloudflare build logs API status: '+logs.status+'; the Builds API requires a user-scoped token with Workers Builds Configuration permission.');process.exit(0)}
+          const raw=JSON.stringify(logs.data||{});
+          const categories=[
+            ['Worker name does not match Wrangler configuration',/worker name.{0,150}(match|mismatch|different)|name.{0,100}does not match|configured worker/i],
+            ['OpenNext Worker output missing',/\.open-next\/worker\.js|worker\.js.{0,100}(not found|missing|does not exist)/i],
+            ['Wrong build or deploy command',/wrangler deploy|wrangler preview|unknown script|build command/i],
+            ['Node runtime or dependency issue',/unsupported node|node version|npm error|ERR_MODULE_NOT_FOUND/i],
+            ['Authorization or account issue',/not authorized|authentication|insufficient permissions|forbidden/i]
+          ];
+          const matches=categories.filter(([name,regex])=>regex.test(raw)).map(([name])=>name);
+          report('Cloudflare build log inspected (content suppressed to protect secrets); matching diagnostic categories: '+(matches.join('; ')||'none — inspect Cloudflare dashboard log for precise error'));
+          JS
