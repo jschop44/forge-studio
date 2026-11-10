@@ -56,6 +56,7 @@ test("fixture-backed generation displays preview pages and navigates tabs", asyn
   await page.getByPlaceholder("e.g. Northstar Coffee").fill("Northstar Roasters");
   await expect(approvePublish).not.toBeChecked();
   await expect(page.getByRole("button", { name: /publish approved draft/i })).toBeDisabled();
+  await page.getByText("Update an existing published website",{exact:true}).click();
   await page.getByPlaceholder("Publication UUID, leave blank for a new website").fill("00000000-0000-4000-8000-000000000001");
   await expect(approvePublish).not.toBeChecked();
   await expect(page.getByRole("button", { name: /publish approved draft/i })).toBeDisabled();
