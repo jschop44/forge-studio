@@ -15,5 +15,7 @@ export function prepareVisualEditorDocument(page:GeneratedPage):VisualEditorDocu
  if(!body)warnings.push('Generated page has no complete body; editor preview is unavailable.');
  if(/<script\b/i.test(html))warnings.push('Executable scripts are excluded from visual editor previews.');
  const bodyHtml=body.replace(/<script\b[^>]*>[\s\S]*?<\/script\s*>/gi,'').replace(/\son\w+\s*=\s*(?:"[^"]*"|'[^']*'|[^\s>]+)/gi,'').replace(/\s(?:srcdoc)\s*=\s*(?:"[^"]*"|'[^']*'|[^\s>]+)/gi,'');
+ const unsafeMarkup=/<(?:iframe|object|embed|form|base|meta|link|svg|math|template)\b/i.test(bodyHtml)||/\b(?:javascript|vbscript|data):/i.test(bodyHtml)||/<style\b/i.test(bodyHtml);
+ if(unsafeMarkup){warnings.push('Potentially active markup requires a full HTML sanitizer before visual editing. Preview blocked.');return {version:1,slug:page.slug,title:page.title,bodyHtml:'',css:'',warnings};}
  return {version:1,slug:page.slug,title:page.title,bodyHtml,css,warnings};
 }
