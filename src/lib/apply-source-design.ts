@@ -41,7 +41,7 @@ export function applySourceDesign(pages:GeneratedPage[],dna:WebsiteDesignDna|und
   if(!heroAssigned&&!/data-forge-source-figure/.test(html)){
    const heading=html.match(/<h1\b[^>]*>([\s\S]*?)<\/h1>/i)?.[1]||'';
    const image=matchingImage(page.title+' '+heading,images,used);
-   if(image&&!/data-forge-source-page-visual/.test(html)){assigned++;html=html.replace(/(<main\b[^>]*>)/i,tag=>tag+'<figure class="source-page-visual" data-forge-source-page-visual>'+sourceImage(image)+'</figure>')}
+   if(image&&!/data-forge-source-page-visual/.test(html)){used.add(image.url);assigned++;html=html.replace(/(<main\b[^>]*>)/i,tag=>tag+'<figure class="source-page-visual" data-forge-source-page-visual>'+sourceImage(image)+'</figure>')}
   }
   if(contact&&!/data-forge-source-contact/.test(html)){
    if(page.slug==='contact'&&/<p>Contact details are being updated\.<\/p>/i.test(html))html=html.replace(/<p>Contact details are being updated\.<\/p>/i,()=>'<p class="source-contact" data-forge-source-contact>'+contact+'</p>');

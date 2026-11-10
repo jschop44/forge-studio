@@ -69,3 +69,13 @@ test('service photos are not replaced by unrelated source assets when a matching
  assert.match(result.pages[1].html,/src="https:\/\/stock\.example\/menu\.jpg"/);
  assert.doesNotMatch(result.pages[1].html,/src="https:\/\/restaurant\.example\/fruit\.jpg"/);
 });
+
+ test('fallback source figures reserve content photographs across pages',()=>{
+ const source=extractWebsiteDesignDna('<img src="/wings-a.jpg" alt="Chicken wings"><img src="/wings-b.jpg" alt="Chicken wings">','https://restaurant.example/');
+ const pages=['index','services','about'].map(slug=>({slug,title:'Chicken wings',html:wrap('<h1>Chicken wings</h1>')}));
+ const result=applySourceDesign(pages,source,'redesign');
+ const urls=result.pages.flatMap(page=>[...page.html.matchAll(/data-forge-source-image src="([^"]+)"/g)].map(match=>match[1]));
+ assert.equal(urls.length,2,'only two matching source photographs are available');
+ assert.equal(new Set(urls).size,2,'fallback figures must not repeat a photograph');
+ assert.doesNotMatch(result.pages[2].html,/data-forge-source-page-visual/);
+ });
