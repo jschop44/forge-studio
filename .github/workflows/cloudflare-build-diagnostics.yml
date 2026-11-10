@@ -25,6 +25,13 @@ jobs:
           import {appendFileSync} from 'node:fs';
           const report=(s)=>{console.log(s);appendFileSync(process.env.GITHUB_STEP_SUMMARY,s+'\n')};
           const token=process.env.CF_TOKEN,account=process.env.CF_ACCOUNT;
+          // Public read-only probe: distinguish deletion of the old forge-studio Worker
+          // from accidental removal of the live forge-studio-preview deployment.
+          try{
+            const probe=await fetch('https://forge-studio-preview.stands-old-3h.workers.dev/api/health',{signal:AbortSignal.timeout(18000),cache:'no-store'});
+            const health=await probe.json().catch(()=>null);
+            report('Live forge-studio-preview health: HTTP '+probe.status+', service='+(health?.service||'unknown')+', healthy='+(probe.ok&&health?.ok===true&&health?.service==='forge-studio'));
+          }catch(e){report('Live forge-studio-preview health: unreachable ('+(e instanceof Error?e.name:'network error')+').')}
           if(!token||!account){report('Cloudflare diagnostics unavailable: repository Cloudflare credentials are absent. No resources were modified.');process.exit(0)}
           const base='https://api.cloudflare.com/client/v4/accounts/'+encodeURIComponent(account);
           async function read(path){
