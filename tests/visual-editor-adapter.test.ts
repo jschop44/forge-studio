@@ -12,3 +12,12 @@ test('editor adapter extracts generated HTML and styles without executing script
  assert.ok(!doc.bodyHtml.includes('<script'));
  assert.ok(doc.warnings.some(warning=>warning.includes('scripts')));
 });
+
+test('editor preview fails closed for embedded active content and dangerous URL schemes',()=>{
+ for(const payload of ['<iframe src="https://example.com"></iframe>','<a href="javascript:alert(1)">click</a>','<svg onload="alert(1)"></svg>','<form action="https://example.com"></form>']){
+  const doc=prepareVisualEditorDocument({slug:'index',title:'Home',html:'<html><head></head><body><main>'+payload+'</main></body></html>'});
+  assert.equal(doc.bodyHtml,'');
+  assert.equal(doc.css,'');
+  assert.ok(doc.warnings.some(w=>w.includes('Preview blocked')));
+ }
+});
