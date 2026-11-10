@@ -35,7 +35,9 @@ export default function VisualEditor(){
   downloadText(page.slug+'.edited.html',html,'text/html');
   setMessage('Edited HTML downloaded. Publishing requires separate review and approval.');
  }
- const preview=page?'<!doctype html><html><head><style>'+css+'</style></head><body>'+body+'</body></html>':'';
+ const candidatePreview=page?'<!doctype html><html><head><style>'+css+'</style></head><body>'+body+'</body></html>':'';
+ const previewCheck=page?prepareVisualEditorDocument({...page,html:candidatePreview}):null;
+ const preview=previewCheck?.bodyHtml?candidatePreview:'';
  return <main style={{maxWidth:1200,margin:'auto',padding:24,fontFamily:'system-ui'}}>
   <Link href="/business">← Website generator</Link>
   <h1>Website HTML editor</h1>
@@ -46,6 +48,6 @@ export default function VisualEditor(){
    <label>HTML body<textarea aria-label="HTML body" value={body} onChange={event=>setBody(event.target.value)} rows={18} style={{display:'block',width:'100%',fontFamily:'monospace'}}/></label>
    <label>CSS<textarea aria-label="CSS" value={css} onChange={event=>setCss(event.target.value)} rows={18} style={{display:'block',width:'100%',fontFamily:'monospace'}}/></label>
   </div><button type="button" onClick={save}>Validate and download edited page</button> <button type="button" onClick={returnToGenerator}>Return edited page to generator</button>
-  <h2>Isolated preview</h2><iframe title="Edited website preview" sandbox="" referrerPolicy="no-referrer" srcDoc={preview} style={{width:'100%',height:540,border:'1px solid #999'}}/></>}
+  <h2>Isolated preview</h2>{page&&!preview&&<p role="alert">Preview blocked: potentially unsafe HTML or CSS. Remove active content before exporting.</p>}<iframe title="Edited website preview" sandbox="" referrerPolicy="no-referrer" srcDoc={preview} style={{width:'100%',height:540,border:'1px solid #999'}}/></>}
  </main>;
 }
