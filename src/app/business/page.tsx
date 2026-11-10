@@ -61,7 +61,7 @@ export default function BusinessGenerator(){
   }
   siteAddressRef.current=value;setSiteUrl(value);
  }
- function extractedName(evidence:Inspection){return evidence.title.split(/[|—–]/)[0].trim().slice(0,100)||new URL(evidence.url).hostname}
+ function extractedName(evidence:Inspection){return evidence.designDna?.businessName||evidence.title.split(/[|—–]/)[0].trim().slice(0,100)||new URL(evidence.url).hostname}
  const [previewAnchor,setPreviewAnchor]=useState('');
  const [experienceStyle,setExperienceStyle]=useState<WebsiteExperience>('standard');
  const [workerEvidenceText,setWorkerEvidenceText]=useState(''),[workerEvidence,setWorkerEvidence]=useState<BrowserEvidence|null>(null),[workerEvidenceError,setWorkerEvidenceError]=useState(''),[capturePreview,setCapturePreview]=useState<GeneratedPage[]>([]),[capturePreviewIndex,setCapturePreviewIndex]=useState(0);
@@ -265,7 +265,7 @@ export default function BusinessGenerator(){
    const explicitOfferings=/(?:^|\n)\s*(?:services|products|offerings|menu)\s*:/i.test(effectiveBrief);
    const intelligence=evidence&&designMode!=='new'?analyzeSiteEvidence(evidence):null;
    const appearance={...referenceStyle,...evidence?.styleReference,...parseStyleReference(referenceMarkup)};
-   const input={...inferred,experienceStyle,visualAssets:[] as VisualAsset[],...(intelligence&&intelligence.confidence!=='low'?{...(!explicitIndustry&&!recognizedActivity?{industry:intelligence.industry}:{}),...(!explicitOfferings?{services:intelligence.services}:{})}:{}),designMode,...(designMode!=='new'&&evidence?.visualSignals?{visualSignals:evidence.visualSignals}:{}),...(contactEmail.trim()?{contactEmail:contactEmail.trim()}:{}),...(designMode==='inspired'?{styleReference:appearance}:{})};
+   const input={...inferred,experienceStyle,visualAssets:[] as VisualAsset[],...(intelligence&&intelligence.confidence!=='low'?{...(!explicitIndustry&&!recognizedActivity?{industry:intelligence.industry}:{}),...(!explicitOfferings&&!recognizedActivity?{services:intelligence.services}:{})}:{}),designMode,...(designMode!=='new'&&evidence?.visualSignals?{visualSignals:evidence.visualSignals}:{}),...(contactEmail.trim()?{contactEmail:contactEmail.trim()}:{}),...(designMode==='inspired'?{styleReference:appearance}:{})};
    let visualNotice='';
    if(!industryPhotos(input.industry).length){
     setStatus('Finding images that match '+input.industry+'…');

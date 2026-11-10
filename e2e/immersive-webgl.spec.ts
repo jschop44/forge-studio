@@ -25,7 +25,11 @@ test('generated secondary page renders immersive WebGL without breaking page con
  await page.evaluate(()=>window.scrollTo(0,window.innerHeight));
  await expect.poll(()=>page.evaluate(()=>getComputedStyle(document.querySelector('main section')!,'::after').transform)).not.toBe('none');
  await expect.poll(()=>page.locator('main section').first().evaluate(el=>getComputedStyle(el,'::after').transform)).not.toBe(environmentBefore);
- await expect.poll(()=>page.locator('main section').first().evaluate(el=>getComputedStyle(el).transform)).toBe('none');
+ await expect.poll(()=>page.locator('main section').first().evaluate(el=>{
+  const transform=getComputedStyle(el).transform;
+  const matrix=transform==='none'?new DOMMatrixReadOnly():new DOMMatrixReadOnly(transform);
+  return {is2D:matrix.is2D,scaleX:matrix.m11,scaleY:matrix.m22,skewX:matrix.m21,skewY:matrix.m12};
+ })).toEqual({is2D:true,scaleX:1,scaleY:1,skewX:0,skewY:0});
  await expect(page.locator('main')).toHaveCSS('perspective','none');
  expect(errors).toEqual([]);
 });

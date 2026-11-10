@@ -16,3 +16,9 @@ test('missing assets are reported and untrusted CSS remains bounded evidence',()
 test('an observed body background takes precedence over incidental stylesheet colors',()=>{
  const dna=extractWebsiteDesignDna('<style>.icon{color:#ff0000}body{color:#111;background:#ffffff}</style>','https://example.com/');assert.equal(dna.palette[0],'#ffffff');
 });
+test('explicit site identity metadata takes precedence over marketing page titles without guessing names',()=>{
+ const pizza=extractWebsiteDesignDna('<title>Pizza Delivery & Carryout, Pasta, Wings & More</title><meta property="og:site_name" content="Domino&#39;s">','https://example.com/');assert.equal(pizza.businessName,"Domino's");
+ const decor=extractWebsiteDesignDna('<meta content="HomeGoods" name="application-name"><title>Home Decor Store and More</title>','https://example.com/');assert.equal(decor.businessName,'HomeGoods');
+ const absent=extractWebsiteDesignDna('<title>Pizza Delivery & Carryout</title><img src="/logo.jpg" alt="Pizza logo">','https://example.com/');assert.equal(absent.businessName,undefined);assert.ok(!('businessName' in absent));
+ const oversized=extractWebsiteDesignDna('<meta property="og:site_name" content="'+('x'.repeat(101))+'">','https://example.com/');assert.equal(oversized.businessName,undefined);
+});

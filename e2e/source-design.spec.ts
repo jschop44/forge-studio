@@ -2,10 +2,11 @@ import {test,expect,type Page} from '@playwright/test';
 import {generateBusinessWebsite} from '../src/lib/business-site';
 import {extractWebsiteDesignDna} from '../src/lib/website-design-dna';
 const source='https://reference.example/';
-const designDna=extractWebsiteDesignDna('<header><img src="/logo.png" alt="Harbor Coffee logo"></header><section class="hero"><img src="/beans.png" alt="Roasted coffee beans" width="800" height="600"></section><a href="mailto:hello@reference.example">Email</a><a href="tel:+15551234567">Call</a><style>body{background:#112233;color:#fff;font-family:Georgia,serif}</style>',source);
-const extracted={url:source,title:'Harbor Coffee',description:'A neighborhood coffee shop offering roasted coffee beans and ceramic mugs.',headings:['Coffee beans','Ceramic mugs'],navigation:[],pageSummaries:[],stylesheetsRead:1,styleFound:true,styleReference:{background:'#112233',accent:'#ffffff',fontFamily:'Georgia'},designDna};
+const designDna=extractWebsiteDesignDna('<meta property="og:site_name" content="Harbor Coffee"><header><img src="/logo.png" alt="Harbor Coffee logo"></header><section class="hero"><img src="/beans.png" alt="Roasted coffee beans" width="800" height="600"></section><a href="mailto:hello@reference.example">Email</a><a href="tel:+15551234567">Call</a><style>body{background:#112233;color:#fff;font-family:Georgia,serif}</style>',source);
+const extracted={url:source,title:'Roasted beans, ceramic mugs & more',description:'A neighborhood coffee shop offering roasted coffee beans and ceramic mugs.',headings:['Coffee beans','Ceramic mugs'],navigation:[],pageSummaries:[],stylesheetsRead:1,styleFound:true,styleReference:{background:'#112233',accent:'#ffffff',fontFamily:'Georgia'},designDna};
 // Keep asset availability deterministic; the builder still receives actual HTTPS source URLs.
-const png=Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+jRZkAAAAASUVORK5CYII=','base64');
+// Pillow-generated PNG with verified IHDR/IDAT/IEND CRCs; strict browser decoders reject bad CRCs.
+const png=Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR4nGP4////fwAJ+wP9KobjigAAAABJRU5ErkJggg==','base64');
 async function mockGeneration(page:Page,onInput?:(input:Record<string,unknown>)=>void){
  await page.route('https://reference.example/**',route=>route.fulfill({status:200,contentType:'image/png',body:png}));
  await page.route('**/api/business/recognize',route=>route.fulfill({status:200,json:{status:'identified',industry:'Coffee shop',services:['Coffee beans','Ceramic mugs'],evidence:['coffee shop'],provider:'fixture'}}));
@@ -15,7 +16,7 @@ async function mockGeneration(page:Page,onInput?:(input:Record<string,unknown>)=
 for(const mode of ['inspired','redesign'] as const)test(mode+': Extract then Generate reuses source assets and verified contact without a second extraction',async({page})=>{
  let extractions=0,generations=0;
  await page.route('**/api/site-reference',route=>{extractions++;return route.fulfill({status:200,json:extracted})});
- await mockGeneration(page,input=>{generations++;expect(input.designMode).toBe(mode);expect(input.businessName).toBe('Harbor Coffee')});
+ await mockGeneration(page,input=>{generations++;expect(input.designMode).toBe(mode);expect(input.businessName).toBe('Harbor Coffee');expect(input.services).toEqual(['Coffee beans','Ceramic mugs'])});
  await page.goto('/business');await page.getByRole('button',{name:/^Standard website/}).click();
  await page.getByRole('combobox',{name:/^Design approach/}).selectOption(mode);await page.getByPlaceholder('e.g. disney.com').fill('reference.example');
  await page.getByRole('button',{name:mode==='inspired'?'Extract website appearance':'Extract website details for redesign',exact:true}).click();
@@ -23,7 +24,8 @@ for(const mode of ['inspired','redesign'] as const)test(mode+': Extract then Gen
  await page.getByRole('button',{name:/generate my website/i}).click();
  const home=page.frameLocator('iframe[title="Website preview: Home"]');await expect(home.locator('main h1')).toHaveText('Harbor Coffee');
  await expect(home.locator('.source-brand-logo')).toHaveAttribute('src',source+'logo.png');await expect(home.locator('main img[data-forge-source-image]').first()).toHaveAttribute('src',source+'beans.png');
- await expect(home.locator('main img[data-forge-source-image]').first()).toHaveJSProperty('naturalWidth',1);
+ const sourcePhoto=home.locator('main img[data-forge-source-image]').first();await sourcePhoto.scrollIntoViewIfNeeded();
+ await expect(sourcePhoto).toHaveJSProperty('naturalWidth',1);
  if(mode==='inspired'){
   await expect(home.locator('body')).toHaveCSS('background-color','rgb(17, 34, 51)');await expect(home.locator('body')).toHaveCSS('font-family',/Georgia/);
   await expect(home.locator('body>nav a').first()).toHaveCSS('color','rgb(248, 248, 248)');

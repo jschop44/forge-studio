@@ -15,9 +15,15 @@ This checkpoint repairs foundational generation defects. It does not establish c
 
 ## Verification
 
-Local checks: TypeScript suite 421/421 at the first integrated checkpoint; worker suite 109/109; production build passed. Subsequent focused checks covering source assets, route quality and extracted pages passed, with TypeScript validation. Browser regressions cover 375/390/768/1440 widths, flat text and document-flow controls, Extract→Generate evidence reuse, source logo/contact/image rendering, mode distinction and professional-services generation. CI execution and new-release live checks are required before release claims.
+Local checks: TypeScript suite 424/424 at the integrated checkpoint; worker suite 109/109; production build passed. Subsequent focused checks covering source assets, route quality and extracted pages passed, with TypeScript validation. Browser regressions cover 375/390/768/1440 widths, flat text and document-flow controls, Extract→Generate evidence reuse, source logo/contact/image rendering, mode distinction and professional-services generation. CI execution and new-release live checks are required before release claims.
 
 Baseline live app: real Coffee shop generation produced four pages; Menu navigation and the 390px preview worked. This baseline observation is separate from verification of the repaired release.
+
+## Follow-up corrections
+
+- Source business names now prefer explicit site-name metadata over marketing titles. Recognized offerings are not overwritten by unrelated extracted headings.
+- Light builder status, notes and editing controls have scoped contrast repairs, with mobile/desktop rendered-contrast regressions.
+- Initial browser CI found an identity-matrix representation mismatch and lazy image assertions before scrolling. Tests retain geometric and image-decode verification while correcting those preconditions. Deployment remained blocked on the failed browser job.
 
 ## Unfinished acceptance criteria
 

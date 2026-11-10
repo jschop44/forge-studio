@@ -32,7 +32,7 @@
 .forge-auto-cta:hover:not(:disabled){transform:translateY(-2px);box-shadow:0 14px 40px #cda4f333}
 .forge-auto-cta:disabled{opacity:.55;cursor:wait}
 .forge-auto-panel .forge-auto-note{font-size:12px;color:#8f8b98}
-.forge-auto-status{padding:12px 14px;background:#ffffff0b;border-radius:10px;color:#f2d9c7!important;font-size:13px}
+.forge-auto-status{padding:12px 14px;background:#ffffff0b;border-radius:10px;color:#f2d9c7;font-size:13px}
 .forge-auto-export{display:flex;gap:14px;align-items:center;flex-wrap:wrap;margin:22px 0}
 .forge-auto-export button,.forge-auto-export a{border:1px solid #f0d2b277;border-radius:10px;padding:12px 16px;color:#f6d5bb;text-decoration:none;background:transparent;font-size:13px}
 .forge-auto-advanced{margin-top:35px;border-top:1px solid #ffffff20;padding-top:20px;color:#b6b0bb;font-size:13px}
@@ -79,3 +79,16 @@
 .forge-auto-panel{border-color:#e0e4ef}.forge-auto-panel .eyebrow{color:#6743b7}.forge-auto-panel h1 em{background:none;color:#6846cc}.forge-auto-panel>p,.forge-auto-note{color:#5d687e}.forge-auto-panel label{color:#34425c}.forge-auto-panel input,.forge-auto-panel textarea,.forge-auto-panel select{background:#ffffff;color:#25314a;border-color:#c9d0df;border-radius:13px}.forge-auto-panel input::placeholder,.forge-auto-panel textarea::placeholder{color:#6a758c}.forge-auto-panel button:not(.forge-auto-cta){color:#433c64;border-color:#c8c9dd;background:#ffffffa8}.forge-auto-panel button[aria-pressed=true]{background:#eee8ff!important;border-color:#8a6acb!important}.forge-auto-cta{background:linear-gradient(110deg,#6846cc,#465cbe);color:#fff;border:0;box-shadow:0 8px 22px #6846cc26}.forge-auto-preview{background:#eef1f8}.forge-auto-toolbar,.forge-auto-status,.forge-auto-quality{color:#46536d}.forge-auto-toolbar button,.forge-auto-tabs button{background:#fff;color:#39435e;border-color:#cdd4e2}.forge-auto-tabs button.active{background:#6846cc;color:#fff}.forge-auto-placeholder{color:#52617c}.forge-auto-placeholder h2{color:#29334f}.forge-auto-demo{color:#6846cc;border-color:#bdaee0}.forge-auto a{color:#6041b3}.forge-auto :is(button,input,select,textarea,a,summary):focus-visible{outline:3px solid #1677d2;outline-offset:3px}
 @media(max-width:700px){.forge-auto>header{padding:16px;min-height:112px;align-items:flex-start}.forge-auto>header strong{display:none}.forge-auto>header .forge-brand{font-size:22px}.forge-auto-panel{padding:30px 20px}.forge-auto-preview{padding:18px 12px}}
 .forge-auto-placeholder{background:radial-gradient(ellipse at 50% 30%,#e0d4ff,transparent 60%),linear-gradient(145deg,#fff,#eaf1ff);border-color:#d7ddec;box-shadow:0 16px 48px #47446b0c}.forge-auto-placeholder p{color:#5e6780}.forge-auto-placeholder span{color:#7755ab}.forge-auto-tabs button[aria-current=page]{background:#6846cc;color:#fff;border-color:#6846cc}.forge-auto-status{background:#f0ecfa;border-color:#d8cceb}
+
+/* Readable light builder chrome, scoped outside generated iframe documents. */
+.forge-auto .forge-auto-status{color:#43355f;background:#f0ecfa;border:1px solid #d8cceb}
+.forge-auto .forge-auto-note,.forge-auto .forge-auto-panel .optional{color:#56627a}
+.forge-auto .forge-auto-advanced{color:#46536d;border-color:#cbd2e1}
+.forge-auto .forge-auto-advanced summary{color:#46536d;line-height:1.6}
+.forge-auto .forge-auto-advanced a{color:#6041b3}
+.forge-auto .forge-auto-quick-edit label{color:#34425c;font-weight:600}
+.forge-auto .forge-auto-quick-edit input,.forge-auto .forge-auto-quick-edit textarea,.forge-auto .forge-auto-quick-edit select{color:#25314a;background:#fff;border-color:#b8c2d6;color-scheme:light}
+.forge-auto .forge-auto-quick-edit input::placeholder,.forge-auto .forge-auto-quick-edit textarea::placeholder{color:#65718a;opacity:1}
+.forge-auto .forge-auto-panel input::placeholder,.forge-auto .forge-auto-panel textarea::placeholder{color:#65718a;opacity:1}
+.forge-auto .forge-auto-quick-edit button,.forge-auto .forge-auto-export button{color:#433c64;background:#fff;border-color:#bcc5d8}
+.forge-auto .forge-auto-export a{color:#6041b3;border-color:#bcc5d8}
