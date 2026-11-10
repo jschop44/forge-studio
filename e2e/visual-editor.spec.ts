@@ -178,7 +178,8 @@ test('device previews use real responsive viewports without changing page conten
  await expect(frame.locator('h1')).toHaveCSS('color','rgb(0, 128, 0)');
  await page.getByRole('button',{name:'Desktop canvas preview',exact:true}).click();
  await expect(page.getByRole('button',{name:'Desktop canvas preview',exact:true})).toHaveAttribute('aria-pressed','true');
- await expect(page.locator('.gjs-frame-wrapper')).toHaveCSS('width',/px/);
+ await expect.poll(()=>frame.locator('html').evaluate(()=>window.innerWidth)).toBe(1280);
+ await expect(frame.locator('h1')).toHaveCSS('color','rgb(255, 0, 0)');
  await expect(frame.locator('h1')).toHaveText('Responsive bakery');
 });
 
