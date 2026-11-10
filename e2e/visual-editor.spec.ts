@@ -82,10 +82,11 @@ test('GrapesJS can drag a heading block onto the website canvas',async({page})=>
  await page.reload();
  await page.getByRole('button',{name:'Open drag-and-drop designer'}).click();
  const block=page.locator('#forge-grapes-blocks .gjs-block').filter({hasText:'Heading'});
- const canvas=page.locator('.gjs-cv-canvas');
- await expect(block).toBeVisible();
- await expect(canvas).toBeVisible();
- await block.dragTo(canvas,{targetPosition:{x:Math.max(40,await canvas.evaluate(el=>el.clientWidth/2)),y:140}});
  const frame=page.frameLocator('.gjs-cv-canvas iframe');
+ const dropTarget=frame.locator('body');
+ await expect(block).toBeVisible();
+ await expect(dropTarget).toBeVisible();
+ // GrapesJS accepts a drop inside its canvas iframe, not on the outer canvas wrapper.
+ await block.dragTo(dropTarget,{targetPosition:{x:80,y:80}});
  await expect(frame.locator('h2')).toContainText('New heading',{timeout:10000});
 });
