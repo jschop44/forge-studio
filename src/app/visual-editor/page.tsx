@@ -6,6 +6,7 @@ const GrapesVisualCanvas=dynamic(()=>import('./grapes-canvas'),{ssr:false});
 import {prepareVisualEditorDocument} from '../../lib/visual-editor-adapter';
 import {downloadText} from '../../lib/export';
 import type {GeneratedPage} from '../../lib/business-site';
+import './visual-editor.css';
 
 export default function VisualEditor(){
  const [page,setPage]=useState<GeneratedPage|null>(null);
@@ -51,7 +52,7 @@ export default function VisualEditor(){
  const candidatePreview=page?'<!doctype html><html><head><style>'+css+'</style></head><body>'+body+'</body></html>':'';
  const previewCheck=page?prepareVisualEditorDocument({...page,html:candidatePreview}):null;
  const preview=previewCheck?.bodyHtml?candidatePreview:'';
- return <main style={{maxWidth:1200,margin:'auto',padding:24,fontFamily:'system-ui'}}>
+ return <main className="forge-visual-editor" style={{maxWidth:1200,margin:'auto',fontFamily:'system-ui'}}>
   <Link href="/business">← Website generator</Link>
   <h1>Website HTML editor</h1>
   <p>Import a generated HTML page, edit its markup and CSS, preview it in a script-disabled sandbox, and download the result. The drag-and-drop designer is optional; the isolated HTML/CSS preview remains available below.</p>
