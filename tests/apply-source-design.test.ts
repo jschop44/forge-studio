@@ -18,3 +18,15 @@ test('unsafe serialized evidence cannot inject executable styles, markup or priv
 test('summary pages receive source identity without a generated brand marker or footer',()=>{
  const pages=[{slug:'find-a-store',title:'Find a Store',html:'<html><head></head><body><nav><a href="index.html">Business</a></nav><main><h1>Find a Store</h1></main></body></html>'}];const once=applySourceDesign(pages,dna,'redesign'),twice=applySourceDesign(once.pages,dna,'redesign');assert.ok(once.pages[0].html.includes('source-brand-logo'));assert.ok(once.pages[0].html.includes('mailto:info@example.com'));assert.equal((twice.pages[0].html.match(/class="source-brand-logo"/g)||[]).length,1);assert.equal((twice.pages[0].html.match(/data-forge-source-contact/g)||[]).length,1);
 });
+
+test('unrelated source photographs never replace a hero or get inserted as a fallback',()=>{
+ const source=extractWebsiteDesignDna('<img src="/fruit.jpg" alt="Fresh fruit bowl"><img src="/wings.jpg" alt="Chicken wings">','https://example.com/');
+ const page={slug:'index',title:'Home',html:wrap('<h1>Chicken wings</h1><figure class="editorial-photo"><img src="https://stock.example/wings.jpg" alt="Food photograph"></figure>')};
+ const result=applySourceDesign([page],source,'redesign');
+ assert.ok(result.pages[0].html.includes('src="https://example.com/wings.jpg"'));
+ assert.ok(!result.pages[0].html.includes('src="https://example.com/fruit.jpg"'));
+ const unrelated={slug:'index',title:'Home',html:wrap('<h1>Auto repair</h1><figure class="editorial-photo"><img src="https://stock.example/car.jpg" alt="Car service"></figure>')};
+ const noMatch=applySourceDesign([unrelated],source,'redesign');
+ assert.ok(!noMatch.pages[0].html.includes('src="https://example.com/fruit.jpg"'));
+ assert.ok(!noMatch.pages[0].html.includes('src="https://example.com/wings.jpg"'));
+});
