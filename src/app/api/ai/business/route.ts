@@ -10,7 +10,7 @@ import {objectNavigationPlan} from '../../../../lib/website-experience';
 import {isExcludedBusiness} from '../../../../lib/business-site';
 import {planAdaptiveDesign} from '../../../../lib/design-engine';
 export const runtime='nodejs';
-const Input=z.object({designMode:z.enum(['auto','library']).optional(),designPatternId:z.string().trim().max(80).optional(),immersive3d:z.boolean().optional(),experienceStyle:z.enum(['standard','cinematic','object-navigation','immersive']).optional(),businessName:z.string().trim().min(2).max(100),industry:z.string().trim().min(2).max(80),description:z.string().trim().min(15).max(1800),services:z.array(z.string().trim().min(2).max(100)).min(1).max(12),visualAssets:z.array(VisualAssetSchema).max(12).optional(),contactEmail:z.string().email().max(254).optional()});
+const Input=z.object({designMode:z.enum(['new','inspired','redesign']).optional(),visualDesignMode:z.enum(['auto','library']).optional(),designPatternId:z.string().trim().max(80).optional(),immersive3d:z.boolean().optional(),experienceStyle:z.enum(['standard','cinematic','object-navigation','immersive']).optional(),businessName:z.string().trim().min(2).max(100),industry:z.string().trim().min(2).max(80),description:z.string().trim().min(15).max(1800),services:z.array(z.string().trim().min(2).max(100)).min(1).max(12),visualAssets:z.array(VisualAssetSchema).max(12).optional(),contactEmail:z.string().email().max(254).optional()});
 export async function POST(req:NextRequest){
  if(!sameOrigin(req))return NextResponse.json({error:'Origin rejected'},{status:403});
  try{const raw=await limitedRequestBody(req,BUSINESS_GENERATION_MAX_BYTES);
@@ -18,11 +18,11 @@ export async function POST(req:NextRequest){
  const input=Input.safeParse(parsed);if(!input.success)return NextResponse.json({error:'Invalid business brief'},{status:400});
  if(input.data.experienceStyle==='object-navigation'&&!objectNavigationPlan(input.data))return NextResponse.json({error:'Add at least one business offering for interactive navigation.'},{status:422});
  if(isExcludedBusiness(input.data))return NextResponse.json({error:'This business category is not supported'},{status:422});
- const {designMode,designPatternId,immersive3d,...generationInput}=input.data;
- const design=planAdaptiveDesign({businessName:input.data.businessName,industry:input.data.industry,mode:designMode||'auto',patternId:designPatternId,immersive3d:immersive3d??false});
+ const {designMode:_sourceMode,visualDesignMode,designPatternId,immersive3d,...generationInput}=input.data;
+ const design=planAdaptiveDesign({businessName:input.data.businessName,industry:input.data.industry,mode:visualDesignMode||'auto',patternId:designPatternId,immersive3d:immersive3d??false});
  // Existing callers retain their explicit experience style. The new design
  // options opt into immersive or cinematic generation when supported.
- const experienceStyle=generationInput.experienceStyle||(immersive3d===true&&design.immersive3d?'immersive':design.motion==='cinematic'&&designMode?'cinematic':'standard');
+ const experienceStyle=generationInput.experienceStyle||(immersive3d===true&&design.immersive3d?'immersive':design.motion==='cinematic'&&visualDesignMode?'cinematic':'standard');
  const result=await generateWithLocalAi({...generationInput,experienceStyle});
  const response=businessGenerationResponse(result);
  if(!response.ok)return response;
