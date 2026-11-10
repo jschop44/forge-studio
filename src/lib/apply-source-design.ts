@@ -30,12 +30,13 @@ export function applySourceDesign(pages:GeneratedPage[],dna:WebsiteDesignDna|und
   html=html.replace(/<article\b[^>]*>[\s\S]*?<\/article>/gi,article=>{const heading=article.match(/<h[23]\b[^>]*>([\s\S]*?)<\/h[23]>/i)?.[1]||'';const image=matchingImage(heading,images,used);if(!image)return article;used.add(image.url);assigned++;return /<img\b/i.test(article)?article.replace(/<img\b[^>]*>/i,()=>sourceImage(image,'service-photo')):article.replace(/(<article\b[^>]*>)/i,tag=>tag+sourceImage(image,'service-photo'))});
   let heroAssigned=false;
   html=html.replace(/<figure\b[^>]*class=["'][^"']*\beditorial-photo\b[^"']*["'][^>]*>[\s\S]*?<\/figure>/gi,figure=>{
-   const subject=page.title+' '+(figure.match(/alt=["']([^"']*)["']/i)?.[1]||'');let image=matchingImage(subject,images,used);
-   if(!image&&page.slug==='index'&&!heroAssigned)image=images.find(asset=>asset.role==='content'&&!used.has(asset.url));
+   const heading=html.match(/<h1\b[^>]*>([\s\S]*?)<\/h1>/i)?.[1]||'';
+   const subject=page.title+' '+heading+' '+(figure.match(/alt=["']([^"']*)["']/i)?.[1]||'');const image=matchingImage(subject,images,used);
    if(!image)return figure;used.add(image.url);heroAssigned=true;assigned++;return '<figure class="editorial-photo" data-forge-source-figure>'+sourceImage(image)+'</figure>';
   });
   if(!heroAssigned&&!/data-forge-source-figure/.test(html)){
-   const image=matchingImage(page.title,images,used)||(page.slug==='index'?images.find(asset=>asset.role==='content'&&!used.has(asset.url)):undefined);
+   const heading=html.match(/<h1\b[^>]*>([\s\S]*?)<\/h1>/i)?.[1]||'';
+   const image=matchingImage(page.title+' '+heading,images,used);
    if(image&&!/data-forge-source-page-visual/.test(html)){assigned++;html=html.replace(/(<main\b[^>]*>)/i,tag=>tag+'<figure class="source-page-visual" data-forge-source-page-visual>'+sourceImage(image)+'</figure>')}
   }
   if(contact&&!/data-forge-source-contact/.test(html)){
