@@ -1,0 +1,96 @@
+/* Scoped UI styling: never alters the generated website inside sandboxed iframes. */
+.forge-visual-editor {
+  box-sizing: border-box;
+  padding: clamp(16px, 3.2vw, 38px);
+  color: #14263e;
+  background: linear-gradient(140deg, #f3f8ff 0%, #f7fcff 50%, #fff8f1 100%);
+  border: 1px solid #dce8f4;
+  border-radius: 24px;
+  box-shadow: 0 14px 42px rgba(27, 63, 104, .09);
+  overflow-wrap: anywhere;
+}
+.forge-visual-editor > a {
+  display: inline-flex;
+  color: #174dc0;
+  font-weight: 650;
+  text-decoration: none;
+  margin-bottom: 12px;
+}
+.forge-visual-editor > a:hover { text-decoration: underline; }
+.forge-visual-editor h1 {
+  font-size: clamp(1.9rem, 4vw, 2.8rem);
+  line-height: 1.12;
+  letter-spacing: -.045em;
+  color: #162f55;
+  margin: 10px 0 18px;
+}
+.forge-visual-editor h2 { font-size: clamp(1.35rem, 2.5vw, 1.65rem); color: #193d66; }
+.forge-visual-editor p { line-height: 1.65; }
+.forge-visual-editor button {
+  appearance: none;
+  border: 1px solid #c2d6fa;
+  background: linear-gradient(180deg, #fff, #eaf2ff);
+  color: #1747a1;
+  border-radius: 11px;
+  padding: 10px 14px;
+  font: inherit;
+  font-weight: 670;
+  line-height: 1.35;
+  cursor: pointer;
+  margin: 4px 4px 4px 0;
+  box-shadow: 0 2px 7px rgba(32, 74, 149, .07);
+  transition: background-color .15s ease, box-shadow .15s ease, transform .15s ease;
+}
+.forge-visual-editor button:hover:not(:disabled) {
+  background: #dcecff;
+  box-shadow: 0 5px 15px rgba(32, 74, 149, .12);
+}
+.forge-visual-editor button:active:not(:disabled) { transform: translateY(1px); }
+.forge-visual-editor button:disabled { cursor: not-allowed; opacity: .55; }
+.forge-visual-editor :is(button, a, input, textarea):focus-visible {
+  outline: 3px solid #2665e8;
+  outline-offset: 3px;
+}
+.forge-visual-editor :is(input:not([type=file]),textarea) {
+  box-sizing: border-box;
+  min-width: 0;
+  max-width: 100%;
+  padding: 11px 12px;
+  border-radius: 11px;
+  border: 1px solid #b5cbe3;
+  background: rgba(255,255,255,.96);
+  color: #112944;
+  font-size: 1rem;
+  line-height: 1.4;
+  box-shadow: inset 0 1px 2px rgba(25, 61, 102, .05);
+}
+.forge-visual-editor textarea { resize: vertical; }
+.forge-visual-editor label { display: block; font-weight: 620; color: #29476b; }
+.forge-visual-editor section { border-radius: 17px; }
+.forge-visual-editor iframe[title="Edited website preview"] {
+  box-sizing: border-box;
+  background: white;
+  border-radius: 16px;
+  box-shadow: 0 6px 24px rgba(20, 50, 86, .08);
+}
+.forge-visual-editor .forge-grapes-layout > aside {
+  padding: 13px;
+  border-radius: 14px;
+  background: rgba(255,255,255,.88);
+  border: 1px solid #d4e2f3;
+}
+.forge-visual-editor .forge-grapes-layout > aside h3 { margin: 6px 0 12px; color: #24456f; }
+.forge-visual-editor .forge-grapes-layout .gjs-block {
+  background: #f5f9ff;
+  border: 1px solid #c9dafa;
+  border-radius: 9px;
+  color: #24456f;
+}
+@media (prefers-reduced-motion: reduce) {
+ .forge-visual-editor button { transition: none; }
+}
+@media (max-width: 560px) {
+ .forge-visual-editor { border-radius: 14px; }
+ .forge-visual-editor button { max-width: 100%; }
+ .forge-visual-editor .forge-grapes-layout { gap: 12px; }
+}
