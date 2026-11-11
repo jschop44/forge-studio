@@ -1,5 +1,42 @@
 # Production acceptance ledger
 
+## Final verified release — November 10, 2026 (America/New_York)
+
+Application source and live revision: `9bd3171d2c72e804753357b3a331b51f48611228`.
+[Verified deployment](https://github.com/jschop44/forge-studio/actions/runs/42961381430).
+[Main verification](https://github.com/jschop44/forge-studio/actions/runs/42960911377).
+[Final parser regression and release](https://github.com/jschop44/forge-studio/pull/45).
+
+This report branch records acceptance evidence without changing the deployed application source. Main remains the verified revision above.
+
+### Completed release checks
+
+- 7/7 applicable code/application/Builder UI/browser/build/packaging checks passed (100% of this release-check inventory, not 100% product acceptance).
+- 545/545 local TypeScript tests and 117/117 worker/script tests passed. Main browser logs show 132 + 132 = 264/264 passed.
+- Actual Worker upload, exact live commit attestation, health and database/auth readiness checks passed.
+- Four of four live business-recognition cases passed. Real Cloudflare inference passed the isolated six-stage diagnostic with four generated pages and quality review; publication stopped for approval. This diagnostic did not persist jobs or publish a site.
+- Authenticated deployed worker executed successfully, processing zero jobs and stopping idle/gated.
+- Independent live UI verification after deployment accepted the inline industry/offerings format, displayed Coffee shop and the two supplied offerings Coffee beans / Ceramic mugs, generated four pages, and created a complete website ZIP download.
+- PRs #39–#45 were merged only after their applicable required suites passed. PR #38 was already merged on takeover.
+- Original rollback branch is preserved. Additional rollback branch `backup/forge-preview-pre-inline-brief-20261110` retains the prior verified release `5867804`.
+
+### Production acceptance still open
+
+Overall product completion and per-feature production percentages remain unassigned because the full applicable acceptance inventory has not been executed. Do not infer these from test pass rates.
+
+1. Cross-app signing: live diagnostics show `signingConfigured:false`. The established deployment workflow needs access to the existing shared `FORGE_INTEGRATION_SECRET`, matching the authorized source apps; then verify real consented tenant-scoped, signed, idempotent deliveries. Do not put secret values in source or reports.
+2. Isolated publishing acceptance: test-owner session access and an isolated, recoverable test environment are needed for live publication, revisions, stale/concurrent writes, snapshots, authorization, deletion and rollback. Customer publishing remains disabled.
+3. Full durable six-stage real-model acceptance: the historical database chain covers planning through approval-gated publication review, but its generation result lacks provider provenance. Durable enrichment/audit, genuine model provenance, retry/recovery and concurrent-tenant acceptance remain open.
+4. Extraction fidelity: computed styles, custom fonts, responsive breakpoint fidelity, permitted source completeness and screenshot comparisons remain incomplete.
+5. Editor production acceptance: complex imported sites, reviewed live publishing and rollback still require acceptance.
+6. Immersive acceptance: arbitrary models, hotspot authoring, complete cross-page continuity and measured real-device mobile GPU/performance require further work.
+7. Full auth/assets/contact-form/lead round trips, tenant boundaries, restore drills and independent security/performance acceptance remain unverified.
+
+No new paid infrastructure, provider accounts or Workers were created. Database inspection was read-only; no destructive database operations were performed. The sections below preserve the engineering evidence and earlier checkpoints.
+
+---
+
+
 Updated November 10, 2026 (America/New_York). Source baseline: `7dbf0e83911aa1de3f5fed78ed090a7d4a471d39`.
 
 ## Verified evidence
