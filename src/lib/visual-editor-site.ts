@@ -1,4 +1,16 @@
 import type {GeneratedPage} from './business-site';
+import {escapeHtml} from './export';
+/** Normalize inert document metadata without rewriting an untouched sibling's runtime. */
+export function normalizeEditorDocument(page:GeneratedPage):GeneratedPage{
+ let html=page.html;
+ if(!/<html\b/i.test(html)||!/<body\b/i.test(html))throw Error(page.title+': incomplete HTML document.');
+ if(!/<!doctype html>/i.test(html))html='<!doctype html>'+html;
+ if(!/<head\b/i.test(html))html=html.replace(/(<html\b[^>]*>)/i,'$1<head></head>');
+ const title='<title>'+escapeHtml(page.title)+'</title>';
+ if(/<title\b[^>]*>\s*<\/title>/i.test(html))html=html.replace(/<title\b[^>]*>\s*<\/title>/i,title);
+ else if(!/<title\b/i.test(html))html=html.replace(/(<head\b[^>]*>)/i,'$1'+title);
+ return {...page,html};
+}
 export function parseEditorSite(raw:string|null):GeneratedPage[]{
  if(!raw||raw.length>8_000_000)return [];
  try{

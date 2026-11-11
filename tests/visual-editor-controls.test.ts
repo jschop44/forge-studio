@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {editorDestination,editorImage,editorStylePatch} from '../src/lib/visual-editor-controls';
-import {parseEditorSite,replaceEditorPage} from '../src/lib/visual-editor-site';
+import {normalizeEditorDocument,parseEditorSite,replaceEditorPage} from '../src/lib/visual-editor-site';
 test('visual controls accept page, anchor, contact and public image destinations',()=>{
  for(const url of ['contact.html','#products','https://example.com/store','mailto:hello@example.com','tel:+15551234567'])assert.equal(editorDestination(url),url);
  assert.equal(editorImage('https://images.example.com/mug.jpg'),'https://images.example.com/mug.jpg');
@@ -17,4 +17,9 @@ test('multi-page drafts replace only the selected page and reject ambiguous or o
  const pages=replaceEditorPage([home,contact],{...contact,html:'<html><body><h1>Updated contact</h1></body></html>'});
  assert.equal(pages[0],home);assert.match(pages[1].html,/Updated contact/);assert.equal(contact.html.includes('Updated'),false);
  for(const raw of ['{',JSON.stringify([home,home]),JSON.stringify([{...home,slug:'../bad'}]),JSON.stringify([{...home,html:'x'.repeat(2000001)}])])assert.deepEqual(parseEditorSite(raw),[]);
+});
+
+test('legacy sibling metadata is normalized without dropping existing runtime or content',()=>{
+ const result=normalizeEditorDocument({slug:'contact',title:'Contact & care',html:'<html><head><style>body{color:blue}</style></head><body><h1>Contact</h1><script id="existing-runtime">safeRuntime()</script></body></html>'});
+ assert.match(result.html,/<!doctype html>/);assert.match(result.html,/<title>Contact &amp; care<\/title>/);assert.match(result.html,/id="existing-runtime"/);assert.match(result.html,/body\{color:blue\}/);
 });

@@ -13,9 +13,11 @@ export default function ComponentInspector({editor,pages}:Props){
  const [,refresh]=useState(0);
  useEffect(()=>{
   if(!editor)return;
-  const select=()=>{const component=editor.getSelected()||null;setSelected(component);setStyles({});setMessage('');if(component){const attrs=component.getAttributes();setFields({text:component.getEl()?.textContent||'',src:String(component.get('src')||attrs.src||''),alt:String(attrs.alt||''),href:String(attrs.href||'')})}};
-  editor.on('component:selected component:deselected undo redo',select);select();
-  return ()=>{editor.off('component:selected component:deselected undo redo',select)};
+  let active=true;
+  const select=(chosen?:Component)=>{if(!active)return;const component=chosen||editor.getSelected()||null;setSelected(component);setStyles({});setMessage('');if(component){const attrs=component.getAttributes();setFields({text:component.getEl()?.textContent||'',src:String(component.get('src')||attrs.src||''),alt:String(attrs.alt||''),href:String(attrs.href||'')})}};
+  const settled=()=>queueMicrotask(()=>select());
+  editor.on('component:selected',select);editor.on('component:deselected undo redo',settled);select();
+  return ()=>{active=false;editor.off('component:selected',select);editor.off('component:deselected undo redo',settled)};
  },[editor]);
  const tag=String(selected?.get('tagName')||'').toLowerCase();
  const element=selected?.getEl();

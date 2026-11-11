@@ -38,7 +38,7 @@ test('selected image, link, typography, layout and placement controls work witho
  await inspector.getByRole('button',{name:'Move element down',exact:true}).click();await expect(frame.locator('main > :last-child')).toHaveText('New paragraph');
 });
 test('unsafe edits block page switching and broken destinations block website export',async({page})=>{
- await open(page);await page.getByRole('textbox',{name:'HTML body',exact:true}).fill('<h1>Unsafe</h1><a href="java&#115;cript:alert(1)">Click</a>');await expect(page.getByRole('alert')).toContainText('Preview blocked');
+ await open(page);await page.getByRole('textbox',{name:'HTML body',exact:true}).fill('<h1>Unsafe</h1><a href="java&#115;cript:alert(1)">Click</a>');await expect(page.locator('p[role="alert"]')).toContainText('Preview blocked');
  await page.getByRole('combobox',{name:'Website page',exact:true}).selectOption('contact');await expect(page.getByRole('status')).toContainText('Page switch blocked');await expect(page.getByRole('combobox',{name:'Website page',exact:true})).toHaveValue('index');
  await page.getByRole('textbox',{name:'HTML body',exact:true}).fill('<h1>Safe content</h1><a href="missing.html">Missing page</a>');await page.getByRole('button',{name:'Validate and download website ZIP',exact:true}).click();await expect(page.getByRole('status')).toContainText('broken internal link');
 });

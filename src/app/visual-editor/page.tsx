@@ -3,7 +3,7 @@ import {useEffect,useRef,useState} from 'react';
 import Link from 'next/link';
 import dynamic from 'next/dynamic';
 import {prepareVisualEditorDocument,serializeEditorDraft,serializeVisualEditorDocument} from '../../lib/visual-editor-adapter';
-import {parseEditorSite,replaceEditorPage} from '../../lib/visual-editor-site';
+import {normalizeEditorDocument,parseEditorSite,replaceEditorPage} from '../../lib/visual-editor-site';
 import {auditGeneratedDraft} from '../../lib/draft-quality-gate';
 import {downloadText,escapeHtml} from '../../lib/export';
 import type {GeneratedPage} from '../../lib/business-site';
@@ -56,7 +56,7 @@ export default function VisualEditor(){
   try{const next=currentPages();const selected=next.find(item=>item.slug===slug);if(selected&&openPage(selected,canvasOpen)){setSite(next);setMessage('Page loaded. Your other page edits are preserved.')}}catch(error){setMessage('Page switch blocked: '+(error instanceof Error?error.message:'Invalid page.'))}
  }
  function checkedSite(exporting=false){
-  const current=currentPages();
+  const current=currentPages().map(normalizeEditorDocument);
   const pages=exporting?current.map(item=>{const result=serializeVisualEditorDocument(item);if(!result.html)throw Error(item.title+': '+result.warnings.join(' '));return {...item,html:result.html}}):current;
   const report=auditGeneratedDraft(pages);if(!report.readyForReview)throw Error(report.errors.join(' '));
   return pages;
