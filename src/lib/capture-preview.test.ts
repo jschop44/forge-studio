@@ -90,3 +90,19 @@ test('optional preview depth respects reduced motion and hover capability',()=>{
  assert.match(html,/@media\(prefers-reduced-motion:reduce\)/);
  assert.match(html,/transition:none;transform:none!important/);
 });
+
+
+test('renders sanitized computed font and color evidence without executing captured CSS',()=>{
+ const tokenPage={...evidence.pages[0],designTokens:{backgroundColor:'rgb(20, 34, 48)',textColor:'rgb(245, 245, 245)',fontFamily:'"Source Sans", sans-serif',headingFontFamily:'Georgia, serif',headingFontSize:'44px',baseFontSize:'16px'}};
+ const html=capturePreviewPages({...evidence,pages:[tokenPage]})[0].html;
+ assert.match(html,/data-forge-computed-style/);
+ assert.match(html,/body\{background:rgb\(20, 34, 48\);color:rgb\(245, 245, 245\)/);
+ assert.match(html,/font-family:"Source Sans", sans-serif/);
+ assert.match(html,/Observed computed colors and fonts are approximated/);
+ assert.match(html,/Do not publish without review/);
+ assert.doesNotMatch(html,/<script\b/i);
+});
+test('rejects untrusted computed CSS before an isolated preview is rendered',()=>{
+ const bad={...evidence.pages[0],designTokens:{backgroundColor:'rgb(0,0,0);}</style><script>alert(1)</script>',textColor:'#fff',fontFamily:'Arial',headingFontFamily:'Georgia',headingFontSize:'40px',baseFontSize:'16px'}};
+ assert.throws(()=>capturePreviewPages({...evidence,pages:[bad]}),/Invalid browser evidence/);
+});
