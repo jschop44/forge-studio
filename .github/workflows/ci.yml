@@ -62,6 +62,8 @@ jobs:
           restore-keys: |
             next-${{ runner.os }}-
       - run: npm run build
+      - name: Verify publishing opt-in and authorization routes
+        run: node scripts/verify-publishing-gates.mjs
       - name: Build summary
         if: always()
         run: |

@@ -1,3 +1,4 @@
+import {runtimeValue} from '../../../../lib/server/runtime-env';
 import {publicationJson,PublicationJsonError} from '../../../../lib/server/publication-json';
 import {randomUUID} from 'node:crypto';
 import {NextRequest,NextResponse} from 'next/server';
@@ -10,7 +11,7 @@ export const runtime='nodejs';
 /** Opt-in publication; no write occurs without session, same-origin and explicit approval. */
 export async function POST(req:NextRequest){
  if(!sameOrigin(req))return NextResponse.json({error:'Origin rejected'},{status:403});
- if(process.env.ENABLE_BUSINESS_PUBLISHING!=='true')return NextResponse.json({error:'Business publishing is not configured'},{status:503});
+ if(runtimeValue('ENABLE_BUSINESS_PUBLISHING')!=='true')return NextResponse.json({error:'Business publishing is not configured'},{status:503});
  const owner=await currentUserId();
  if(!owner)return NextResponse.json({error:'Unauthorized'},{status:401});
  try{
@@ -34,7 +35,7 @@ export async function POST(req:NextRequest){
 
 /** Owner-only listing; never expose HTML bodies or other owners' publications. */
 export async function GET(){
- if(process.env.ENABLE_BUSINESS_PUBLISHING!=='true')return NextResponse.json({error:'Business publishing is not configured'},{status:503});
+ if(runtimeValue('ENABLE_BUSINESS_PUBLISHING')!=='true')return NextResponse.json({error:'Business publishing is not configured'},{status:503});
  const owner=await currentUserId();
  if(!owner)return NextResponse.json({error:'Unauthorized'},{status:401});
  try{

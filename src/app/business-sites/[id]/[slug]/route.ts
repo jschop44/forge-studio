@@ -1,10 +1,11 @@
+import {runtimeValue} from '../../../../lib/server/runtime-env';
 import {NextRequest,NextResponse} from 'next/server';
 import {database} from '../../../../lib/server/db';
 export const runtime='nodejs';
 
 /** Serve only stored publication pages. Scripts and active embedded content are disabled. */
 export async function GET(_request:NextRequest,{params}:{params:Promise<{id:string;slug:string}>}){
- if(process.env.ENABLE_BUSINESS_PUBLISHING!=='true')return new NextResponse('Publication unavailable',{status:503,headers:{'Cache-Control':'no-store'}});
+ if(runtimeValue('ENABLE_BUSINESS_PUBLISHING')!=='true')return new NextResponse('Publication unavailable',{status:503,headers:{'Cache-Control':'no-store'}});
  const {id,slug:rawSlug}=await params;
  const slug=rawSlug.endsWith('.html')?rawSlug.slice(0,-5):rawSlug;
  if(!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id)||!/^[a-z0-9-]{1,64}$/.test(slug))

@@ -1,3 +1,4 @@
+import {runtimeValue} from '../../../../../../lib/server/runtime-env';
 import {NextResponse} from 'next/server';
 import {currentUserId} from '../../../../../../lib/server/auth';
 import {database} from '../../../../../../lib/server/db';
@@ -5,7 +6,7 @@ export const runtime='nodejs';
 
 /** Owner-only snapshot metadata, without exposing stored HTML. */
 export async function GET(_req:Request,{params}:{params:Promise<{id:string}>}){
- if(process.env.ENABLE_BUSINESS_PUBLISHING!=='true')return NextResponse.json({error:'Business publishing is not configured'},{status:503});
+ if(runtimeValue('ENABLE_BUSINESS_PUBLISHING')!=='true')return NextResponse.json({error:'Business publishing is not configured'},{status:503});
  const owner=await currentUserId();
  if(!owner)return NextResponse.json({error:'Unauthorized'},{status:401});
  const {id}=await params;

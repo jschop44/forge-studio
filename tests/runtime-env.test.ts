@@ -13,3 +13,11 @@ test('the signed ecosystem context switch honors Worker runtime configuration ov
  assert.equal(runtimeValue(name,{[name]:'true'},()=>({[name]:'false'})),'false');
  assert.equal(runtimeValue(name,{},()=>({[name]:'true'})),'true');
 });
+
+
+test('business publishing remains opt-in and honors request-time Worker switches',()=>{
+ const name='ENABLE_BUSINESS_PUBLISHING';
+ assert.equal(runtimeValue(name,{[name]:'true'},()=>({[name]:'false'})),'false');
+ assert.equal(runtimeValue(name,{[name]:'false'},()=>({[name]:'true'})),'true');
+ assert.equal(runtimeValue(name,{},()=>({})),undefined);
+});
