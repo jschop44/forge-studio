@@ -1,5 +1,5 @@
 import {validateBrowserEvidence} from './browser-evidence';
-type HtmlPage={html:string};
+type HtmlPage={html:string;slug?:string};
 function safeColor(value:unknown):string|undefined{
  if(typeof value!=='string')return;
  const raw=value.trim();
@@ -39,9 +39,24 @@ function pixels(value:unknown,min:number,max:number):number|undefined{
  const number=Number(value.slice(0,-2));
  return number>=min&&number<=max?number:undefined;
 }
+function appearanceRules(tokens:unknown):string{
+ if(!tokens||typeof tokens!=='object')return '';
+ const t=tokens as Record<string,unknown>;
+ const background=safeColor(t.backgroundColor);
+ const ink=background?readableInk(background,safeColor(t.textColor)):undefined;
+ const bodyFont=family(t.fontFamily),headingFont=family(t.headingFontFamily);
+ const bodySize=pixels(t.baseFontSize,12,24),headingSize=pixels(t.headingFontSize,24,96);
+ return [
+  background?':root{--business-paper:'+background+';--business-ink:'+ink+'}body{background:'+background+';color:'+ink+'}main:before{background:'+background+'}p,main p,.card p,body>nav,body>footer{color:'+ink+'}':'',
+  bodyFont?'body{font-family:'+bodyFont+'}':'',
+  bodySize?'body{font-size:'+bodySize+'px}':'',
+  headingFont?'h1,h2,h3{font-family:'+headingFont+'}':'',
+  headingSize?'h1{font-size:clamp(2rem,6vw,'+headingSize+'px)}':''
+ ].join('');
+}
 /** CSS-only, strictly bounded computed style reuse. Source CSS and scripts are never executed. */
 export function applyCapturedAppearance<T extends HtmlPage>(
- pages:T[],capture:unknown,expectedSource:string,mode:string
+ pages:T[],capture:unknown,expectedSource:string,mode:string,pageSources:Record<string,string>={}
 ):{pages:T[];warnings:string[]}{
  if((mode!=='inspired'&&mode!=='preserve')||!capture)return {pages,warnings:[]};
  if(!validateBrowserEvidence(capture))return {pages,warnings:['Unverified browser appearance evidence was ignored.']};
@@ -52,20 +67,28 @@ export function applyCapturedAppearance<T extends HtmlPage>(
  const expectedPath=original.pathname+original.search;
  const selected=capture.pages.find(page=>page.path===expectedPath);
  if(!selected)return {pages,warnings:['Browser appearance evidence did not include the inspected source page.']};
- const tokens=(selected as typeof selected&{designTokens?:unknown})?.designTokens;
- if(!tokens||typeof tokens!=='object')return {pages,warnings:[]};
- const t=tokens as Record<string,unknown>;
- const background=safeColor(t.backgroundColor);
- const ink=background?readableInk(background,safeColor(t.textColor)):undefined;
- const bodyFont=family(t.fontFamily),headingFont=family(t.headingFontFamily);
- const bodySize=pixels(t.baseFontSize,12,24),headingSize=pixels(t.headingFontSize,24,96);
- const rules=[
-  background?':root{--business-paper:'+background+';--business-ink:'+ink+'}body{background:'+background+';color:'+ink+'}main:before{background:'+background+'}p,main p,.card p,body>nav,body>footer{color:'+ink+'}':'',
-  bodyFont?'body{font-family:'+bodyFont+'}':'',
-  bodySize?'body{font-size:'+bodySize+'px}':'',
-  headingFont?'h1,h2,h3{font-family:'+headingFont+'}':'',
-  headingSize?'h1{font-size:clamp(2rem,6vw,'+headingSize+'px)}':''
- ].join('');
- if(!rules)return {pages,warnings:['No safely reusable computed colors or typography were found in the browser evidence.']};
- return {pages:pages.map(page=>({...page,html:page.html.replace(/<style id="forge-captured-appearance">[\s\S]*?<\/style>/g,'').replace(/<\/head>/i,'<style id="forge-captured-appearance">'+rules+'</style></head>')})),warnings:['Applied bounded browser-observed colors and typography. Downloaded fonts, responsive layout fidelity and source-site behavior remain unverified.']};
+ const rules=appearanceRules(selected.designTokens);
+ const warnings=['Applied bounded browser-observed colors and typography. Downloaded fonts, responsive layout fidelity and source-site behavior remain unverified.'];
+ let applied=0;
+ const styled=pages.map(page=>{
+  let pageRules=rules;
+  const source=page.slug&&Object.hasOwn(pageSources,page.slug)?pageSources[page.slug]:undefined;
+  if(source){
+   let matched=false;
+   try{
+    const url=new URL(source);
+    if(url.origin===original.origin&&!url.username&&!url.password){
+     const captured=capture.pages.find(item=>item.path===url.pathname+url.search);
+     const specific=appearanceRules(captured?.designTokens);
+     if(specific){pageRules=specific;matched=true}
+    }
+   }catch{}
+   const missing=rules?'Some source pages lacked matching captured styles; shared source branding was used.':'Some source pages lacked matching captured styles; no captured style was applied to those pages.';
+   if(!matched&&!warnings.includes(missing))warnings.push(missing);
+  }
+  if(!pageRules)return page;
+  applied++;
+  return {...page,html:page.html.replace(/<style id="forge-captured-appearance">[\s\S]*?<\/style>/g,'').replace(/<\/head>/i,'<style id="forge-captured-appearance">'+pageRules+'</style></head>')};
+ });
+ return applied?{pages:styled,warnings}:{pages,warnings:['No safely reusable computed colors or typography were found in the browser evidence.']};
 }

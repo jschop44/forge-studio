@@ -127,3 +127,25 @@ test('authorized computed browser colors and fonts reach preserve preview, not t
  const contact=page.frameLocator('iframe[title="Website preview: Contact"]');
  await expect(contact.locator('body')).toHaveCSS('background-color','rgb(240, 233, 220)');
 });
+
+for(const width of [390,1280])test(`captured subpage styling survives extraction and generation at ${width}px`,async({page})=>{
+ await page.setViewportSize({width,height:900});
+ await page.route('**/api/site-reference',route=>route.fulfill({status:200,json:{...extracted,pageSummaries:[{path:'/portfolio?view=recent',label:'Portfolio',title:'Recent residential projects',description:'Residential and commercial spaces designed by Harbor Studio.',headings:['Residential design'],paragraphs:['Explore our residential design work.']}]}}));
+ await generationFixture(page);await openExtraction(page);
+ await page.getByRole('button',{name:'Extract website appearance',exact:true}).click();
+ await expect(page.getByText(/Ready to generate/)).toBeVisible();
+ const tokens={backgroundColor:'#f0e9dc',textColor:'#141e28',fontFamily:'Georgia, serif',headingFontFamily:'Georgia, serif',headingFontSize:'48px',baseFontSize:'17px'};
+ const evidence={version:1,sourceUrl:'https://reference.example/',capturedAt:'2026-11-11T12:00:00Z',viewport:{width:1280,height:800},warnings:[],pages:[{path:'/',title:'Home',landmarks:[],interactions:[],designTokens:tokens},{path:'/portfolio?view=recent',title:'Portfolio',landmarks:[],interactions:[],designTokens:{...tokens,backgroundColor:'#dce9f0',fontFamily:'Courier New, monospace'}}]};
+ await page.getByText('Import optional browser-verification evidence',{exact:true}).click();
+ await page.getByRole('textbox',{name:'Browser verification JSON'}).fill(JSON.stringify(evidence));
+ await page.getByRole('button',{name:'Review browser evidence'}).click();
+ await expect(page.getByRole('button',{name:'Preview captured layout (review only)'})).toBeVisible();
+ await page.getByRole('button',{name:/generate my website/i}).click();
+ const home=page.frameLocator('iframe[title="Website preview: Home"]');
+ await expect(home.locator('body')).toHaveCSS('background-color','rgb(240, 233, 220)');
+ await page.getByRole('navigation',{name:'Website pages'}).getByRole('button',{name:'Portfolio',exact:true}).click();
+ const portfolio=page.frameLocator('iframe[title="Website preview: Portfolio"]');
+ await expect(portfolio.locator('body')).toHaveCSS('background-color','rgb(220, 233, 240)');
+ await expect(portfolio.locator('body')).toHaveCSS('font-family',/Courier New.*monospace/);
+ await expect(portfolio.getByRole('heading',{name:'Recent residential projects',exact:true})).toBeVisible();
+});

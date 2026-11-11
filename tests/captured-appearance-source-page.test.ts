@@ -32,3 +32,43 @@ test('protocol-relative or missing page paths cannot supply a fallback style',()
  const empty={...capture,pages:[]};
  assert.deepEqual(applyCapturedAppearance(pages,empty,capture.sourceUrl,'inspired').pages,pages);
 });
+
+test('extracted page source identities select their own captured styles including query strings',async()=>{
+ const {createExtractedPages,extractedPageSources}=await import('../src/lib/extracted-pages');
+ const evidence={url:'https://shop.example/',title:'Shop',description:'',headings:[],pageSummaries:[{path:'/catalog?type=coffee',label:'Catalog',title:'Coffee',description:'Coffee beans',headings:['Beans']},{path:'/catalog-special',label:'Special',title:'Special',description:'Special beans',headings:['Special']}]};
+ const extracted=createExtractedPages(evidence,'Shop');
+ const distinct={...tokens,backgroundColor:'#f0e0d0',textColor:'#111111',fontFamily:'Courier New, monospace'};
+ const captured={...capture,pages:[...capture.pages,{...capture.pages[0],path:'/catalog?type=coffee',designTokens:distinct}]};
+ const result=applyCapturedAppearance([...pages,...extracted],captured,evidence.url,'preserve',extractedPageSources(evidence));
+ assert.match(result.pages[0].html,/--business-paper:#142230/);
+ assert.match(result.pages[1].html,/--business-paper:#f0e0d0/);
+ assert.match(result.pages[1].html,/font-family:"Courier New",monospace/);
+ assert.match(result.pages[2].html,/--business-paper:#142230/);
+ assert.ok(result.warnings.some(w=>w.includes('shared source branding')));
+ assert.deepEqual(Object.keys(result.pages[1]).sort(),['html','slug','title']);
+});
+test('foreign, credentialed and wrong-query source mappings cannot select captured styles',()=>{
+ const captured={...capture,pages:[...capture.pages,{...capture.pages[0],path:'/catalog?type=coffee',designTokens:{...tokens,backgroundColor:'#f0e0d0'}}]};
+ for(const source of ['https://other.example/catalog?type=coffee','https://name:password@shop.example/catalog?type=coffee','https://shop.example/catalog?type=baseball','not a URL']){
+  const result=applyCapturedAppearance(pages,captured,capture.sourceUrl,'preserve',{index:source});
+  assert.match(result.pages[0].html,/--business-paper:#142230/);
+  assert.doesNotMatch(result.pages[0].html,/--business-paper:#f0e0d0/);
+  assert.ok(result.warnings.some(w=>w.includes('shared source branding')));
+ }
+});
+test('source mapping shares the collision-safe extracted page allocator',async()=>{
+ const {createExtractedPages,extractedPageSources}=await import('../src/lib/extracted-pages');
+ const summary=(path:string)=>({path,label:path,title:path,description:'',headings:[]});
+ const evidence={url:'https://shop.example/',title:'Shop',description:'',headings:[],pageSummaries:['/a/b','/a-b','/about','https://foreign.example/a'].map(summary)};
+ const extracted=createExtractedPages(evidence,'Shop');
+ assert.deepEqual(extracted.map(p=>p.slug),['a-b','a-b-2']);
+ assert.deepEqual(extractedPageSources(evidence),{'a-b':'https://shop.example/a/b','a-b-2':'https://shop.example/a-b'});
+});
+
+test('a captured subpage remains usable when the inspected homepage has no computed tokens',()=>{
+ const captured={...capture,pages:[{path:'/',title:'Home',landmarks:[],interactions:[]},{...capture.pages[0],path:'/catalog',designTokens:tokens}]};
+ const inputs=[...pages,{slug:'catalog',html:'<html><head></head><body>Catalog</body></html>'}];
+ const result=applyCapturedAppearance(inputs,captured,capture.sourceUrl,'preserve',{catalog:'https://shop.example/catalog'});
+ assert.equal(result.pages[0].html,inputs[0].html);
+ assert.match(result.pages[1].html,/--business-paper:#142230/);
+});
