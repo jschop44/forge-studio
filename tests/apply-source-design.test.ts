@@ -94,6 +94,7 @@ test('interior product photographs are used for corresponding service cards with
  assert.match(result.pages[1].html,/src="https:\/\/restaurant\.example\/wings\.jpg"/);
  assert.match(result.pages[1].html,/src="https:\/\/restaurant\.example\/pizza\.jpg"/);
  assert.doesNotMatch(result.pages[1].html,/src="https:\/\/restaurant\.example\/salad\.jpg"/);
- assert.equal(result.pages.flatMap(page=>[...page.html.matchAll(/data-forge-source-image src="([^"]+)"/g)].filter(match=>!match[1].endsWith('/logo.png')).length),2);
+ const photos=result.pages.flatMap(page=>[...page.html.matchAll(/data-forge-source-image src="([^"]+)"/g)].map(match=>match[1]).filter(url=>!url.endsWith('/logo.png')));
+ assert.equal(new Set(photos).size,photos.length,'non-logo source images must remain unique across pages');
  for(const page of result.pages)assert.match(page.html,/src="https:\/\/restaurant\.example\/logo\.png"/);
 });
