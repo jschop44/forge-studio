@@ -4,6 +4,9 @@ on:
     branches: [main]
     paths:
       - 'e2e/builder.spec.ts'
+      - 'e2e/editor-completion.spec.ts'
+      - 'src/app/visual-editor/**'
+      - 'src/lib/visual-editor-*.ts'
       - 'src/app/business/**'
       - 'src/lib/business-site.ts'
       - 'playwright.config.ts'
@@ -13,6 +16,9 @@ on:
     branches: [main]
     paths:
       - 'e2e/builder.spec.ts'
+      - 'e2e/editor-completion.spec.ts'
+      - 'src/app/visual-editor/**'
+      - 'src/lib/visual-editor-*.ts'
       - 'src/app/business/**'
       - 'src/lib/business-site.ts'
       - 'playwright.config.ts'
@@ -38,8 +44,8 @@ jobs:
           node-version: '22'
       - run: npm install --no-audit --no-fund
       - run: npx playwright install --with-deps chromium
-      - name: Verify builder previews and unavailable/busy recovery
-        run: npm run test:e2e -- e2e/builder.spec.ts --project=chromium --workers=2
+      - name: Verify builder previews, editor controls and unavailable/busy recovery
+        run: npm run test:e2e -- e2e/builder.spec.ts e2e/editor-completion.spec.ts --project=chromium --workers=2
       - name: Record scope of browser verification
         if: always()
         run: |

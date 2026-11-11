@@ -94,3 +94,16 @@
  .forge-visual-editor button { max-width: 100%; }
  .forge-visual-editor .forge-grapes-layout { gap: 12px; }
 }
+.forge-page-switcher{max-width:380px;margin:20px 0}
+.forge-visual-editor select{box-sizing:border-box;max-width:100%;width:100%;padding:10px;border:1px solid #b5cbe3;border-radius:10px;background:white;color:#14263e;font:inherit}
+.forge-quick-text{padding:18px;border:1px solid #c8d8ec;margin:20px 0}
+.forge-quick-text input,.forge-quick-text textarea{display:block;width:100%;margin:6px 0 14px}
+.forge-element-inspector input,.forge-element-inspector textarea{display:block;width:100%;margin:5px 0 12px}
+.forge-element-inspector h3{margin-top:0}.forge-element-inspector p{font-size:13px}
+.forge-element-inspector button{width:100%;font-size:13px}
+.forge-style-controls{display:grid;gap:8px;margin-top:12px}
+.forge-style-controls input[type=color]{height:40px;padding:3px}
+.forge-code-editor{margin:24px 0}.forge-code-editor summary{cursor:pointer;font-weight:650;padding:12px 0}
+.forge-code-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(280px,100%),1fr));gap:16px}
+.forge-code-grid textarea{display:block;width:100%;font-family:monospace}
+.forge-editor-actions{display:flex;flex-wrap:wrap;gap:6px}
