@@ -4,7 +4,7 @@ import dynamic from 'next/dynamic';
 import Link from 'next/link';
 import {makeExperience,type Experience} from '../../lib/experiences';
 import {loadExperiences,saveExperience,deleteExperience} from '../../lib/experience-store';
-import {reviewExperience,renderExperienceHtml} from '../../lib/experience-quality';
+import {reviewExperience,renderExperienceHtml,experienceCtaTarget} from '../../lib/experience-quality';
 import {downloadText} from '../../lib/export';
 const ExperienceCanvas=dynamic(()=>import('../../components/ExperienceCanvas'),{ssr:false});
 export default function Experiences(){
@@ -19,6 +19,7 @@ export default function Experiences(){
  function loadModel(file:File){if(file.size>12000000||!file.name.toLowerCase().endsWith('.glb')){window.alert('Select a GLB model under 12 MB');return}const url=URL.createObjectURL(file);updateScene({modelUrl:url})}
  function remove(){if(!current)return;deleteExperience(current.id);const all=loadExperiences();setItems(all);setCurrent(all[0]||makeExperience('cinematic-product'))}
  if(!loaded||!current)return <main style={{padding:40}}>Loading experiences…</main>;
+ const ctaTarget=experienceCtaTarget(current);
  return <div className="experience-app"><div className="experience-top"><Link href="/">← Forge Studio</Link><strong>EXPERIENCE LAB</strong><div><button onClick={()=>downloadText("forge-experience.html",renderExperienceHtml(current),"text/html")}>Export HTML</button> <button onClick={save}>Save experience</button></div></div>
  <div className="experience-grid"><aside className="experience-panel"><p className="eyebrow">GENERATE</p><div className="experience-actions"><button onClick={()=>create('cinematic-product')}>3D product</button><button onClick={()=>create('luxury-brand')}>Luxury brand</button><button onClick={()=>create('business')}>Business</button></div>
  <label>Experience name<input value={current.name} onChange={e=>update({name:e.target.value})}/></label>
@@ -39,7 +40,7 @@ export default function Experiences(){
  <label>Button text<input value={current.hero.cta} onChange={e=>updateHero({cta:e.target.value})}/></label>
  <p className="eyebrow">QUALITY REVIEW</p><div className="experience-review">{reviewExperience(current).issues.length===0?"No issues detected by basic review":reviewExperience(current).issues.map((issue,i)=><p key={i}>{issue.severity.toUpperCase()}: {issue.message}</p>)}</div><p className="eyebrow">SAVED EXPERIENCES</p>{items.map(x=><button key={x.id} onClick={()=>setCurrent(x)}>{x.name}</button>)}<button onClick={remove}>Delete current saved experience</button>
  </aside><div className="experience-preview" style={{background:current.scene.background}}><div className="experience-navigation"><strong>{current.name.toUpperCase()}</strong><span>EXPERIENCE / 001</span></div>
- <div className="experience-hero"><div className="experience-art"><ExperienceCanvas scene={current.scene}/></div><div className="experience-copy"><span>{current.hero.eyebrow}</span><h1>{current.hero.headline}</h1><p>{current.hero.description}</p><a href="#experience-story">{current.hero.cta} ↗</a></div></div>
+ <div className="experience-hero"><div className="experience-art"><ExperienceCanvas scene={current.scene}/></div><div className="experience-copy"><span>{current.hero.eyebrow}</span><h1>{current.hero.headline}</h1><p>{current.hero.description}</p>{ctaTarget&&<a href={"#"+ctaTarget}>{current.hero.cta} ↗</a>}</div></div>
  {current.sections.map(x=><section id={x.id} key={x.id} className="experience-section"><h2>{x.title}</h2><p>{x.body}</p></section>)}
  <footer>FORGE STUDIO · INTERACTIVE EXPERIENCE PREVIEW</footer></div></div></div>
 }
