@@ -90,3 +90,38 @@ test('reduced motion keeps scene portals and an always-available keyboard page f
  await expect(page).toHaveURL(/about\.html$/);
  await expect(page.locator('#forge-immersive-world [data-world-page="contact"]')).toBeVisible();
 });
+
+
+for(const width of [390,1440])test('uncommon business scene offers bounded guided depth without skewing typography at '+width,async({page})=>{
+ await page.setViewportSize({width,height:850});
+ const site=generateBusinessWebsite({businessName:'Meridian Horology',industry:'Clock restoration',description:'Specialists in restoring antique clocks and mechanical timepieces.',services:['Clock restoration','Mechanical servicing'],experienceStyle:'immersive'});
+ await page.route('https://guided.test/**',route=>{
+  const slug=new URL(route.request().url()).pathname.split('/').pop()?.replace('.html','')||'index';
+  return route.fulfill({status:200,contentType:'text/html',body:site.pages.find(p=>p.slug===slug)?.html||''});
+ });
+ await page.goto('https://guided.test/index.html');
+ const stage=page.locator('[data-content-stage]'),card=page.locator('[data-content-card]:not([inert])');
+ await expect(stage).toHaveAttribute('data-depth-step','0');
+ await stage.focus();await page.keyboard.press('w');
+ await expect(stage).toHaveAttribute('data-depth-step','60');
+ await expect(card).toHaveAttribute('style',/translateZ\(60px\)/);
+ await page.keyboard.press('ArrowUp');await page.keyboard.press('ArrowUp');await page.keyboard.press('ArrowUp');
+ await expect(stage).toHaveAttribute('data-depth-step','180');
+ await page.keyboard.press('s');await expect(stage).toHaveAttribute('data-depth-step','120');
+ await page.keyboard.press('Escape');await expect(stage).toHaveAttribute('data-depth-step','0');
+ await expect(card).toHaveAttribute('style',/translateZ\(0px\)/);
+ const before=await card.getAttribute('style');
+ const bounds=(await stage.boundingBox())!;
+ await page.mouse.move(bounds.x+bounds.width/2,bounds.y+bounds.height/2);
+ await page.mouse.down();
+ await page.mouse.move(bounds.x+bounds.width/2,bounds.y+bounds.height/2-90,{steps:3});
+ await page.mouse.up();
+ await expect(stage).toHaveAttribute('data-depth-step','60');
+ expect((await card.getAttribute('style'))).not.toBe(before);
+ const allTransforms=await page.locator('[data-content-card]').evaluateAll(cards=>cards.map(card=>(card as HTMLElement).style.transform));
+ expect(allTransforms.every(value=>!value.includes('rotateY('))).toBe(true);
+ await stage.focus();await page.keyboard.press('ArrowRight');
+ await expect(stage).toHaveAttribute('data-depth-step','0');
+ await expect(page.locator('[data-content-card]:not([inert]) h2')).toContainText('Services');
+ await page.getByRole('link',{name:'Open Services',exact:false}).click();await expect(page).toHaveURL(/services\.html$/);
+});
