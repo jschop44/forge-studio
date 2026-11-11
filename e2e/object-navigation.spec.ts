@@ -192,7 +192,7 @@ test('immersive panorama exposes direct business-specific offering portals',asyn
  await expect(portals.getByRole('link',{name:/Coffee beans/})).toHaveAttribute('href','services.html#offering-0');
  await expect(portals.getByRole('link',{name:/Ceramic mugs/})).toHaveAttribute('href','services.html#offering-1');
  await portals.getByRole('link',{name:/Ceramic mugs/}).click();
- await expect(page).toHaveURL(/services\\.html#offering-1$/);
+ await expect(page).toHaveURL(/services\.html#offering-1$/);
  await expect(page.locator('#offering-1')).toContainText('Ceramic mugs');
 });
 test('panoramic object portals preserve baseball-specific destinations',async({page})=>{
