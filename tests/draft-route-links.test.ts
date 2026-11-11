@@ -45,3 +45,15 @@ test('non-page static assets explicitly require live checking',()=>{
  assert.equal(result.readyForReview,true);
  assert.ok(result.warnings.some(w=>w.includes('requires live destination verification')));
 });
+
+test('browser-decoded character entities cannot hide unsafe links or form actions',()=>{
+ const obfuscated=['java&#x73;cript:alert(1)','javascript&#58;alert(1)','java&Tab;script:alert(1)','data&colon;text/html,test'];
+ const html=obfuscated.map(href=>'<a href="'+href+'">Click</a>').join('')+
+  '<form action="java&#x73;cript:alert(1)" method="post"><button type="submit">Send</button></form>';
+ const result=auditGeneratedDraft([page('index',html)]);
+ assert.equal(result.readyForReview,false);
+ assert.equal(result.errors.filter(e=>e.includes('unsafe link destination')).length,obfuscated.length,result.errors.join('; '));
+ assert.ok(result.errors.some(e=>e.includes('form has no functioning submission destination')));
+ const safe=auditGeneratedDraft([page('index','<a href="https://example.com/?a=1&amp;b=2">Reference</a>')]);
+ assert.equal(safe.readyForReview,true,safe.errors.join('; '));
+});
