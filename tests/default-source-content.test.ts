@@ -1,6 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {applyDefaultSourceContent,defaultSourcePages} from '../src/lib/default-source-content';
+import {homepageSourceParagraphs} from '../src/lib/forge-intelligence';
 import {extractedPageSources} from '../src/lib/extracted-pages';
 import {applyCapturedAppearance} from '../src/lib/captured-appearance';
 const text='Our studio develops accessible spaces for neighborhood businesses.';
@@ -93,4 +94,12 @@ test('sole excluded paragraph is omitted without creating a misleading original-
  const result=applyDefaultSourceContent(pages,inspected,'redesign');
  assert.equal(result.pages[2].html,pages[2].html);
  assert.ok(result.warnings.some(w=>w.includes('excluded business categories')));
+});
+
+test('homepage extraction retains bounded visible paragraphs without scripts, forms or duplicates',()=>{
+ const html='<html><body><p>Outside main content should not be selected.</p><main><script><p>Malicious script paragraph content.</p></script><form><p>Do not copy this unhosted form text.</p></form><p>Our local studio designs welcoming community spaces.</p><p>Our local studio designs welcoming community spaces.</p><p>Short</p><p>Visit our studio for a consultation with our design team.</p></main></body></html>';
+ assert.deepEqual(homepageSourceParagraphs(html),['Our local studio designs welcoming community spaces.','Visit our studio for a consultation with our design team.']);
+ assert.deepEqual(homepageSourceParagraphs('<body><p>Our neighborhood bakery serves fresh bread every day.</p></body>'),['Our neighborhood bakery serves fresh bread every day.']);
+ const many='<main>'+Array.from({length:40},(_,i)=>'<p>Our studio offers distinct service number '+i+'.</p>').join('')+'</main>';
+ assert.equal(homepageSourceParagraphs(many).length,12);
 });
