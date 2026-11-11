@@ -89,3 +89,24 @@ test("actual interactive product navigation still passes static fragment checks"
  const report=auditGeneratedDraft(website.pages);
  assert.equal(report.readyForReview,true,report.errors.join("; "));
 });
+
+
+test("empty, placeholder and unsafe contact forms block a reviewable generated site",()=>{
+ const wrap=(form:string)=>'<!doctype html><html><head><title>Contact</title><meta name="viewport" content="width=device-width"></head><body><main><h1>Contact the team</h1><p>Ask our company about your upcoming project and services.</p>'+form+'</main></body></html>';
+ for(const action of ['', ' action="#"',' action="#contact"',' action="javascript:void(0)"',' action="http://example.com/submit"',' action="//outside.example/submit"']){
+  const form='<form'+action+' method="post"><input name="email"><button type="submit">Send inquiry</button></form>';
+  const report=auditGeneratedDraft([{slug:'index',title:'Contact',html:wrap(form)}]);
+  assert.equal(report.readyForReview,false,action);
+  assert.ok(report.errors.some(error=>error.includes('form ')&&error.includes('destination')||error.includes('form submission scheme')),JSON.stringify(report.errors));
+ }
+});
+test("explicit HTTPS or owned API form actions remain reviewable but never claim verified delivery",()=>{
+ const wrap=(form:string)=>'<!doctype html><html><head><title>Contact</title></head><body><main><h1>Contact</h1><p>Tell the service team about your next project.</p>'+form+'</main></body></html>';
+ for(const action of ['https://forms.example.com/intake','/api/contact']){
+  const page={slug:'contact',title:'Contact',html:wrap('<form action="'+action+'" method="post"><input name="email"><button type="submit">Contact us</button></form>')};
+  const result=auditGeneratedDraft([page]);
+  assert.equal(result.readyForReview,true,result.errors.join('; '));
+  assert.equal(result.readyForPublishing,false);
+  assert.ok(result.warnings.some(warning=>warning.includes('backend and delivery remain unverified')));
+ }
+});
