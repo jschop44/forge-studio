@@ -129,7 +129,11 @@ jobs:
           key: playwright-${{ runner.os }}-${{ hashFiles('package-lock.json') }}
           restore-keys: |
             playwright-${{ runner.os }}-
-      - run: npx playwright install --with-deps chromium
+      # Hosted runners already provide Chromium runtime libraries and Liberation fonts.
+      # Fail on actual launch/render problems without a redundant apt font download.
+      - run: npx playwright install chromium
+      - name: Verify installed browser runtime
+        run: node scripts/verify-browser-runtime.mjs
       - name: Run Chromium browser tests
         run: npm run test:e2e -- --project=chromium --workers=2 --shard=${{ matrix.shard }}/2
       - name: Publish browser verification summary

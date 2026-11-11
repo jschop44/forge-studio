@@ -1,5 +1,12 @@
 # Production acceptance ledger
 
+## Isolated database acceptance — November 11, 2026
+
+PR #46 deployed successfully as 1d154f824381cf99658e5d191093a4a48ea9b9c0 through workflow 43029191604. Live health matched that full source revision and the publication endpoint remained disabled (503). The deployment passed recognition, real-AI diagnostic and authenticated worker checks.
+
+The actual publication/revision/versions/rollback/deletion SQL then passed 24/24 assertions on the existing isolated Neon branch br-nameless-lake-bb8rrmnk. Every synthetic mutation rolled back; an independent query confirmed zero fixture users, publications and snapshots. Exact SQL and limits are retained in PUBLISHING_SQL_ACCEPTANCE_20261111.md. Independent connections subsequently verified a genuine 23505 revision conflict, and 52 authenticated API/database assertions passed through an isolated production server using live Neon. Fixture users, publications, snapshots and rate-limit rows were removed; an independent query confirmed zero remaining fixture rows. Customer publishing stays disabled; Cloudflare-hosted browser, visual/asset and broader application acceptance remain open.
+
+
 ## Publishing follow-up — November 11, 2026
 
 Baseline main/live source remains 9bd3171d2c72e804753357b3a331b51f48611228. Standard generated pages were reproduced as failing publication because their JSON-LD metadata was rejected. The follow-up validates a narrow inert metadata exception, keeps all other protections on the original HTML, aligns builder eligibility with the server, and resolves publication feature switches from Worker runtime bindings. Publishing remains opt-in and has not been enabled.
