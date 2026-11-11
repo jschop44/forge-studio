@@ -38,7 +38,7 @@ describe('agent multi-page quality handoff',()=>{
   for(const payload of [{},{html:''},{pages:[]},{pages:'invalid'},{pages:Array(13).fill(generatedPages()[0])}])assert.equal(decision(payload).status,'blocked');
  });
  it('supports legacy supplied HTML while preserving explicit page-list validation',()=>{
-  const html=generatedPages()[0].html.replace(/href=["'][a-z0-9-]+\.html["']/g,'href="#contact"');
+  const html=generatedPages()[0].html.replace(/href=["'][a-z0-9-]+\.html["']/g,'href="#main-content"');
   assert.equal(decision({html}).status,'ready');
   assert.equal(decision({html,pages:[]}).status,'blocked');
  });
