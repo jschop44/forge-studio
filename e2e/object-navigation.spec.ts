@@ -203,3 +203,24 @@ test('panoramic object portals preserve baseball-specific destinations',async({p
  await expect(portals.getByRole('link',{name:/Gloves/})).toHaveAttribute('href','services.html#offering-2');
  await expect(portals.getByRole('link',{name:/Coffee beans/})).toHaveCount(0);
 });
+
+test('mobile panorama offering links navigate and disappear in reading mode',async({page})=>{
+ await page.setViewportSize({width:390,height:844});
+ const pages=generateBusinessWebsite({...coffee,experienceStyle:'immersive'}).pages;
+ await page.route('https://objects.test/**',route=>{
+  const slug=new URL(route.request().url()).pathname.split('/').pop()?.replace('.html','')||'index';
+  return route.fulfill({status:200,contentType:'text/html',body:pages.find(p=>p.slug===slug)?.html||'Missing fixture'});
+ });
+ await page.goto('https://objects.test/index.html');
+ const portals=page.getByRole('navigation',{name:'Interactive object parts'});
+ await expect(portals).toBeVisible();
+ await expect(portals.getByRole('link',{name:/Ceramic mugs/})).toHaveAttribute('href','services.html#offering-1');
+ await page.getByRole('button',{name:'Read Home page'}).click();
+ await expect(page.locator('body')).toHaveClass(/forge-world-reading/);
+ await expect(portals).toBeHidden();
+ await page.getByRole('button',{name:/Explore immersive world/i}).click();
+ await expect(portals).toBeVisible();
+ await portals.getByRole('link',{name:/Ceramic mugs/}).click();
+ await expect(page).toHaveURL(/services\.html#offering-1$/);
+ await expect(page.locator('#offering-1')).toContainText('Ceramic mugs');
+});
