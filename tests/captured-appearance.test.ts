@@ -69,3 +69,12 @@ test('bounded computed line height improves source typography fidelity without u
  const absent=applyCapturedAppearance(pages,sample,sample.sourceUrl,'preserve').pages[0].html;
  assert.doesNotMatch(absent,/body\{line-height:/);
 });
+
+test('observed heading spacing is retained only when validated and bounded',()=>{
+ const evidence={...sample,pages:[{...sample.pages[0],designTokens:{...sample.pages[0].designTokens,headingLineHeight:'72px'}}]};
+ const html=applyCapturedAppearance(pages,evidence,sample.sourceUrl,'preserve').pages[0].html;
+ assert.match(html,/h1\{line-height:72px\}/);
+ const invalid={...sample,pages:[{...sample.pages[0],designTokens:{...sample.pages[0].designTokens,headingLineHeight:'72px;}body{display:none'}}]};
+ assert.deepEqual(applyCapturedAppearance(pages,invalid,sample.sourceUrl,'preserve').pages,pages);
+ assert.doesNotMatch(applyCapturedAppearance(pages,sample,sample.sourceUrl,'preserve').pages[0].html,/h1\{line-height:/);
+});

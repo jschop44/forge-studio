@@ -10,6 +10,8 @@ export type CapturedDesignTokens={
  baseFontSize:string;
  /** Optional browser-computed body line height, bounded and inert. */
  lineHeight?:string;
+ /** Optional browser-computed primary heading line height. */
+ headingLineHeight?:string;
 };
 const computedColor=(value:unknown):value is string=>typeof value==='string'&&value.length<=90&&/^(?:#[0-9a-f]{3,8}|rgba?\([0-9.,%\s/]+\))$/i.test(value);
 const computedFont=(value:unknown):value is string=>typeof value==='string'&&value.length>0&&value.length<=180&&/^[a-z0-9\s,'"._-]+$/i.test(value);
@@ -24,12 +26,13 @@ export function validCapturedDesignTokens(value:unknown):value is CapturedDesign
  return computedColor(tokens.backgroundColor)&&computedColor(tokens.textColor)
   &&computedFont(tokens.fontFamily)&&computedFont(tokens.headingFontFamily)
   &&computedSize(tokens.headingFontSize)&&computedSize(tokens.baseFontSize)
-  &&(tokens.lineHeight===undefined||typeof tokens.lineHeight==='string'&&/^\d{1,3}(?:\.\d{1,3})?px$/.test(tokens.lineHeight)&&Number(tokens.lineHeight.slice(0,-2))>=12&&Number(tokens.lineHeight.slice(0,-2))<=72);
+  &&(tokens.lineHeight===undefined||typeof tokens.lineHeight==='string'&&/^\d{1,3}(?:\.\d{1,3})?px$/.test(tokens.lineHeight)&&Number(tokens.lineHeight.slice(0,-2))>=12&&Number(tokens.lineHeight.slice(0,-2))<=72)
+  &&(tokens.headingLineHeight===undefined||typeof tokens.headingLineHeight==='string'&&/^\d{1,3}(?:\.\d{1,3})?px$/.test(tokens.headingLineHeight)&&Number(tokens.headingLineHeight.slice(0,-2))>=20&&Number(tokens.headingLineHeight.slice(0,-2))<=150);
 }
 /** Input must be validated before interpolation. No URLs, selectors, or source CSS permitted. */
 export function capturedTokensPreviewStyle(tokens:CapturedDesignTokens):string{
  if(!validCapturedDesignTokens(tokens))throw Error('Invalid computed design tokens');
  return 'body{background:'+tokens.backgroundColor+';color:'+tokens.textColor+';font-family:'+tokens.fontFamily+';font-size:'+tokens.baseFontSize+(tokens.lineHeight?';line-height:'+tokens.lineHeight:'')+'}'+
   '.region{background:'+tokens.backgroundColor+';color:'+tokens.textColor+'}.region p{color:'+tokens.textColor+'}'+
-  'h1,h2,h3{font-family:'+tokens.headingFontFamily+'}h1{font-size:'+tokens.headingFontSize+'}';
+  'h1,h2,h3{font-family:'+tokens.headingFontFamily+'}h1{font-size:'+tokens.headingFontSize+(tokens.headingLineHeight?';line-height:'+tokens.headingLineHeight:'')+'}';
 }
