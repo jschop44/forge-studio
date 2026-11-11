@@ -131,7 +131,7 @@ test('immersive coffee experience exposes a clickable 3D handle alongside its pa
  await expect(page.locator('[data-object-navigation] canvas')).toBeVisible();
  const handle=await meshPoint(page,[1.57,.86,.06]);
  await page.mouse.click(handle.x,handle.y);
- await expect(page).toHaveURL(/services\\.html#offering-1$/);
+ await expect(page).toHaveURL(/services\.html#offering-1$/);
  await expect(page.locator('#offering-1')).toContainText('Ceramic mugs');
 });
 
@@ -141,7 +141,7 @@ test('immersive baseball experience keeps baseball-specific mesh destinations',a
  await expect(page.locator('[data-object-part="coffee"]')).toHaveCount(0);
  const bat=await meshPoint(page,[-.8,1.3,.1]);
  await page.mouse.click(bat.x,bat.y);
- await expect(page).toHaveURL(/services\\.html#offering-0$/);
+ await expect(page).toHaveURL(/services\.html#offering-0$/);
 });
 
 test('immersive coffee handle is touch-accessible on a mobile viewport',async({page})=>{
@@ -149,5 +149,5 @@ test('immersive coffee handle is touch-accessible on a mobile viewport',async({p
  await fixture(page,{...coffee,experienceStyle:'immersive'});
  const handle=await meshPoint(page,[1.57,.86,.06]);
  await page.mouse.click(handle.x,handle.y);
- await expect(page).toHaveURL(/services\\.html#offering-1$/);
+ await expect(page).toHaveURL(/services\.html#offering-1$/);
 });
