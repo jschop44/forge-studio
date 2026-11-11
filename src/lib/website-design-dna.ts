@@ -55,7 +55,7 @@ export function extractWebsiteDesignDna(input:string,sourceUrl:string,stylesheet
   const variable=token[2]?.toLowerCase();
   return variable?declarations.get(variable):undefined;
  };
- const bodyBackground=[...css.matchAll(/(?:^|[},])\s*body(?:\s*,\s*[a-z]*)?\s*\{([^}]*)\}/gi)]
+ const bodyBackground=[...css.matchAll(/\bbody\s*\{([^}]*)\}/gi)]
   .map(rule=>declaredBackground(rule[1])).find(Boolean);
  const rootBackground=documentRules.map(rule=>rule[1].match(/(?:background(?:-color)?|--(?:background|bg|surface))\s*:\s*(#[a-f\d]{6}\b|#[a-f\d]{3}\b)/i)?.[1]).find(Boolean);
  const background=bodyBackground||rootBackground;
