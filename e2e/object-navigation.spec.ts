@@ -122,3 +122,32 @@ test('builder exposes one 3D immersion experience and keeps the full business ra
  await expect(menu.locator('#offering-2')).toContainText('Community events');
 });
 
+
+
+test('immersive coffee experience exposes a clickable 3D handle alongside its panoramic world',async({page})=>{
+ const immersive={...coffee,experienceStyle:'immersive'};
+ await fixture(page,immersive);
+ await expect(page.locator('#forge-webgl-atmosphere')).toHaveCount(1);
+ await expect(page.locator('[data-object-navigation] canvas')).toBeVisible();
+ const handle=await meshPoint(page,[1.57,.86,.06]);
+ await page.mouse.click(handle.x,handle.y);
+ await expect(page).toHaveURL(/services\\.html#offering-1$/);
+ await expect(page.locator('#offering-1')).toContainText('Ceramic mugs');
+});
+
+test('immersive baseball experience keeps baseball-specific mesh destinations',async({page})=>{
+ await fixture(page,{...coffee,businessName:'Baseball Supply',industry:'Baseball store',services:['Baseball bats','Baseballs','Gloves'],experienceStyle:'immersive'});
+ await expect(page.locator('#forge-webgl-atmosphere')).toHaveCount(1);
+ await expect(page.locator('[data-object-part="coffee"]')).toHaveCount(0);
+ const bat=await meshPoint(page,[-.8,1.3,.1]);
+ await page.mouse.click(bat.x,bat.y);
+ await expect(page).toHaveURL(/services\\.html#offering-0$/);
+});
+
+test('immersive coffee handle is touch-accessible on a mobile viewport',async({page})=>{
+ await page.setViewportSize({width:390,height:844});
+ await fixture(page,{...coffee,experienceStyle:'immersive'});
+ const handle=await meshPoint(page,[1.57,.86,.06]);
+ await page.mouse.click(handle.x,handle.y);
+ await expect(page).toHaveURL(/services\\.html#offering-1$/);
+});
