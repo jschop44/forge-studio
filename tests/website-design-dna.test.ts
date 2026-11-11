@@ -77,3 +77,27 @@ test('interior image aggregation rejects other-site evidence and respects image 
  assert.equal(merged.images.some(image=>image.url.includes('unrelated')),false);
  assert.equal(mergeSourcePageImages(home,[{path:'/products',images:[{url:'javascript:bad()',alt:'Product',role:'content',sourcePage:'https://studio.example/products'}]}]).images.length,0);
 });
+
+
+test('CSS variable backgrounds preserve the actual body surface ahead of accent declarations',()=>{
+ const source='<style>:root{--brand-accent:#ed6700;--brand-surface:#faf0da;--brand-ink:#191c23}body{background-color:var(--brand-surface);color:var(--brand-ink)}</style>';
+ const dna=extractWebsiteDesignDna(source,'https://cafe.example/');
+ assert.equal(dna.palette[0],'#faf0da');
+ assert.ok(dna.palette.includes('#ed6700'));
+});
+test('CSS-only company logos are discovered without copying executable source styles',()=>{
+ const source='<header><a href="/">Studio</a></header><style>.site-logo{display:block;background-image:url("/assets/brand-logo.svg")} .hero{background-image:url("/assets/studio.jpg")}</style>';
+ const dna=extractWebsiteDesignDna(source,'https://studio.example/');
+ assert.equal(dna.logo?.url,'https://studio.example/assets/brand-logo.svg');
+ assert.equal(dna.logo?.role,'logo');
+ assert.equal(dna.images.some(image=>image.role==='background'&&image.url==='https://studio.example/assets/studio.jpg'),true);
+ assert.equal(dna.images.filter(image=>image.url.endsWith('brand-logo.svg')).length,1);
+});
+test('CSS logo detection ignores unsafe non-HTTPS URLs and unrelated selectors',()=>{
+ const source='<style>.logo{background:url("javascript:alert(1)")}.catalogo{background:url("/catalog.jpg")}.hero{background:url("/banner.jpg")}</style>';
+ const dna=extractWebsiteDesignDna(source,'https://studio.example/');
+ assert.equal(dna.logo,undefined);
+ assert.equal(dna.images.some(image=>image.url.includes('javascript:')),false);
+ assert.equal(dna.images.some(image=>image.role==='logo'),false);
+ assert.ok(dna.images.some(image=>image.url==='https://studio.example/banner.jpg'));
+});
