@@ -1,3 +1,11 @@
+## November 11 typography fidelity — PR #54 deployed
+
+- PR #54 https://github.com/jschop44/forge-studio/pull/54 merged after six exact-head checks succeeded; main SHA `a81f149b3cb990ca2a6fee7ca307797f551083e5`.
+- Main Verify https://github.com/jschop44/forge-studio/actions/runs/43069052627, validation https://github.com/jschop44/forge-studio/actions/runs/43069052807 and browser-capture smoke https://github.com/jschop44/forge-studio/actions/runs/43069052687 succeeded on the exact main SHA.
+- **Deployed to existing canonical Cloudflare preview**: https://github.com/jschop44/forge-studio/actions/runs/43069530227. Actual upload, health/database readiness, live business recognition, AI generation/approval and authenticated worker steps succeeded.
+- Current verified live revision `a81f149b3cb990ca2a6fee7ca307797f551083e5`. Bounded, optional browser-computed body line height is captured for homepage/interior pages, validated and applied to preserve/inspired drafts; missing or unsafe values are omitted.
+- Phase still **Website Extraction & Visual Reconstruction**, partially complete; original geometry, responsive fidelity, images, true interactive immersion, live multi-app delivery and publishing acceptance remain unverified. No invented completion percentage.
+
 ## November 11 release — PR #53 verified and deployed
 
 - PR #53 https://github.com/jschop44/forge-studio/pull/53 merged as `b3ffd60fbeef0f32b6ff84075ec15782c82c41d1` after all six exact-head checks passed, including production build, browser groups, application, validation and Worker packaging.
