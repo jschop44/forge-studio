@@ -3,7 +3,10 @@
 const objectNavigationRuntimeSource=String.raw`function objectNavigationRuntime(config){
  const root=document.querySelector('[data-object-navigation]'),canvas=root?.querySelector('canvas'),status=root?.querySelector('[role=status]');
  if(!canvas)return;
- const gl=canvas.getContext('webgl',{alpha:true,antialias:true});
+ let gl;
+ // Browsers can throw during WebGL initialization (GPU denied/driver failure), not only return null.
+ // Keep ordinary offering links usable even in those environments.
+ try{gl=canvas.getContext('webgl',{alpha:true,antialias:true})}catch{gl=null}
  if(!gl){status.textContent='3D is unavailable. Use the offering links below.';canvas.hidden=true;root.querySelector('[data-reset-object]').hidden=true;return}
  const reduced=matchMedia('(prefers-reduced-motion: reduce)');
  const faces=[];const targets=config.targets;
