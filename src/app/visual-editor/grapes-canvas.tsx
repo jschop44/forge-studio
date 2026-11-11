@@ -98,8 +98,14 @@ export default function GrapesVisualCanvas({html,css,onChange,pages,bodyAttribut
     // Resolve the clicked DOM element after GrapesJS's delegated selection handler.
     // Nested links must not leave their parent selected, particularly on a fitted canvas.
     const doc=frameWindow.document;
-    doc?.addEventListener('click',event=>{
-     const target=event.target as Element|null;
+    let pressed:{element:Element;x:number;y:number}|null=null;
+    doc.addEventListener('pointerdown',event=>{pressed=event.button===0?{element:event.target as Element,x:event.clientX,y:event.clientY}:null},true);
+    doc.addEventListener('pointercancel',()=>{pressed=null},true);
+    doc.addEventListener('click',event=>{
+     // A selection overlay can retarget click to the common parent after pointerdown.
+     // Preserve the user's original element for a stationary click; never for a drag.
+     const start=pressed;pressed=null;
+     const target=start&&Math.hypot(event.clientX-start.x,event.clientY-start.y)<6&&doc.contains(start.element)?start.element:event.target as Element|null;
      if(!target||target.closest('[contenteditable="true"]'))return;
      const components=instance.getWrapper()?.find('*')||[];
      let element:Element|null=target;
