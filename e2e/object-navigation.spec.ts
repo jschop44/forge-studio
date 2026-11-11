@@ -82,7 +82,7 @@ test('WebGL initialization exception keeps offering navigation accessible',async
   HTMLCanvasElement.prototype.getContext=function(this:HTMLCanvasElement,...args:Parameters<HTMLCanvasElement['getContext']>){
    if(args[0]==='webgl')throw new Error('Simulated GPU initialization failure');
    return Reflect.apply(original,this,args);
-  };
+  } as typeof HTMLCanvasElement.prototype.getContext;
  });
  await fixture(page,coffee,false);
  const scene=page.locator('[data-object-navigation]');
@@ -91,7 +91,7 @@ test('WebGL initialization exception keeps offering navigation accessible',async
  await expect(page.getByRole('button',{name:'Reset view'})).toBeHidden();
  expect(errors).toEqual([]);
  await page.getByRole('link',{name:'Ceramic mugs',exact:true}).click();
- await expect(page).toHaveURL(/services\\.html#offering-1$/);
+ await expect(page).toHaveURL(/services\.html#offering-1$/);
 });
 test.describe('touch mesh navigation',()=>{
  test.use({hasTouch:true,viewport:{width:390,height:844}});
