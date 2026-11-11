@@ -59,3 +59,34 @@ test('builder keeps extracted destinations inside the business environment',asyn
  await page.locator('iframe[title="Website preview: Home"]').scrollIntoViewIfNeeded();const home=page.frameLocator('iframe[title="Website preview: Home"]');await expect(home.locator('#forge-immersive-world')).toBeVisible();await home.locator('[data-world-page="events"]').click();
  const events=page.frameLocator('iframe[title="Website preview: Events"]');await expect(events.locator('#forge-immersive-world')).toBeVisible();await events.getByRole('button',{name:'Read Events page',exact:true}).click();await expect(events.getByRole('heading',{name:'Community events',exact:true})).toBeVisible();
 });
+
+
+test('immersive camera projects business page portals that move with the view and navigate on click',async({page})=>{
+ await page.setViewportSize({width:1280,height:900});
+ await fixture(page);
+ const world=page.locator('#forge-immersive-world');
+ const portal=world.locator('[data-world-portal-page="about"]');
+ await expect(portal).toBeVisible();
+ await expect(portal).toHaveAttribute('href','about.html');
+ const original=await portal.evaluate(node=>(node as HTMLElement).style.left);
+ const canvas=world.locator('canvas');
+ await canvas.focus();
+ await page.keyboard.press('ArrowRight');
+ await expect.poll(()=>portal.evaluate(node=>(node as HTMLElement).style.left)).not.toBe(original);
+ await expect(portal).toHaveCSS('transform',/matrix\(/);
+ await portal.click();
+ await expect(page).toHaveURL(/about\.html$/);
+ await expect(page.locator('[data-world-page="about"]')).toHaveAttribute('aria-current','page');
+});
+test('reduced motion keeps scene portals and an always-available keyboard page fallback',async({page})=>{
+ await page.emulateMedia({reducedMotion:'reduce'});
+ await page.setViewportSize({width:1280,height:900});
+ await fixture(page);
+ const world=page.locator('#forge-immersive-world');
+ const portal=world.locator('[data-world-portal-page="about"]');
+ await expect(portal).toBeVisible();
+ await expect(portal).toHaveCSS('transition-duration','0s');
+ await portal.focus();await page.keyboard.press('Enter');
+ await expect(page).toHaveURL(/about\.html$/);
+ await expect(page.locator('#forge-immersive-world [data-world-page="contact"]')).toBeVisible();
+});

@@ -45,3 +45,18 @@ test('exported runtime includes the tested sizing helper and safe texture filter
  assert.match(html,/generateMipmap/);
  assert.ok(!html.includes('TEXTURE_SIZE_HELPER'));
 });
+
+
+test('scene portals are actual accessible links projected by the camera rather than static fake hotspots',()=>{
+ const html=immersiveWorldMarkup({businessName:'Harbor Coffee',industry:'Coffee shop',pageTitle:'Home',theme:'coffee',environment,targets});
+ assert.match(html,/aria-label="Scene portals"/);
+ assert.match(html,/data-world-portal-page="services" href="services\.html"/);
+ assert.match(html,/data-world-portal-page="about" href="about\.html"/);
+ assert.match(html,/data-world-portal-page="contact" href="contact\.html"/);
+ assert.doesNotMatch(html,/data-world-portal-page="index"/,'active page should not duplicate a scene portal');
+ assert.match(html,/Math\.atan2\(Math\.sin\(direction-yaw\),Math\.cos\(direction-yaw\)\)/);
+ assert.match(html,/link\.hidden=!shown/);
+ assert.match(html,/\.world-portal\{[^}]*transform:translate\(-50%,-50%\)/);
+ assert.match(html,/prefers-reduced-motion:reduce/);
+ assert.match(html,/aria-label="Immersive pages"/,'the ordinary page navigation is still available');
+});
