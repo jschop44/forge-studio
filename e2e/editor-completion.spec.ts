@@ -42,3 +42,24 @@ test('unsafe edits block page switching and broken destinations block website ex
  await page.getByRole('combobox',{name:'Website page',exact:true}).selectOption('contact');await expect(page.getByRole('status')).toContainText('Page switch blocked');await expect(page.getByRole('combobox',{name:'Website page',exact:true})).toHaveValue('index');
  await page.getByRole('textbox',{name:'HTML body',exact:true}).fill('<h1>Safe content</h1><a href="missing.html">Missing page</a>');await page.getByRole('button',{name:'Validate and download website ZIP',exact:true}).click();await expect(page.getByRole('status')).toContainText('broken internal link');
 });
+
+
+test('edited ZIP rewrites preview-style internal routes into portable sibling HTML files',async({page})=>{
+ await open(page);
+ await page.getByRole('textbox',{name:'HTML body',exact:true}).fill(
+  '<main id="main-content"><h1>Portable home</h1><p>Browse our completed website pages.</p>'+
+  '<a href="/contact">Contact us</a><a href="./index.html#main-content">Main content section</a>'+
+  '<a href="https://example.com/terms">External terms</a></main>');
+ const requested=page.waitForEvent('download');
+ await page.getByRole('button',{name:'Validate and download website ZIP',exact:true}).click();
+ const download=await requested;
+ const stream=await download.createReadStream();if(!stream)throw Error('Website ZIP missing');
+ const chunks:Buffer[]=[];for await(const chunk of stream)chunks.push(Buffer.from(chunk));
+ const files=unzipSync(Buffer.concat(chunks));
+ const exported=strFromU8(files['index.html']);
+ expect(exported).toContain('href="contact.html"');
+ expect(exported).toContain('href="index.html#main-content"');
+ expect(exported).toContain('href="https://example.com/terms"');
+ expect(exported).not.toContain('href="/contact"');
+ expect(strFromU8(files['contact.html'])).toContain('Original contact');
+});
