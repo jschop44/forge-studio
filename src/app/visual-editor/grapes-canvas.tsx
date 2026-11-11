@@ -93,11 +93,11 @@ export default function GrapesVisualCanvas({html,css,onChange,pages,bodyAttribut
    });
    editor=instance;
    editorRef.current=instance;setEditorUi(instance);
-   instance.on('canvas:frame:load',()=>{
+   instance.on('canvas:frame:load:body',({window:frameWindow}:{window:Window})=>{
     const body=instance.Canvas.getBody();if(body)for(const [key,value] of Object.entries(bodyAttributes))body.setAttribute(key,value);
     // Resolve the clicked DOM element after GrapesJS's delegated selection handler.
     // Nested links must not leave their parent selected, particularly on a fitted canvas.
-    const doc=instance.Canvas.getDocument();
+    const doc=frameWindow.document;
     doc?.addEventListener('click',event=>{
      const target=event.target as Element|null;
      if(!target||target.closest('[contenteditable="true"]'))return;
