@@ -49,3 +49,39 @@ export function extractWebsiteDesignDna(input:string,sourceUrl:string,stylesheet
  if(!images.length)warnings.push('No reusable public HTTPS images were discovered; supply authorized business assets.');
  return {version:1,sourceUrl,...(businessName?{businessName}:{}),images,logo:images.find(image=>image.role==='logo'),contact:{emails,phones},typography:{families:[...new Set(families)].slice(0,8)},palette,layout:{header:/<header\b/i.test(html),hero:/(?:class|id)\s*=\s*["'][^"']*(?:hero|banner|masthead)/i.test(html),sectionCount:(html.match(/<section\b/gi)||[]).length,breakpoints,...(heroAlignment?{heroAlignment}:{})},warnings};
 }
+
+
+/** Merge bounded, same-site image evidence from inspected interior pages.
+ * Homepage identity and assets take priority. Page assets remain observed references:
+ * the caller must still verify reuse rights and live availability before publication.
+ */
+export function mergeSourcePageImages(
+ homepage:WebsiteDesignDna,
+ pages:readonly {path:string;images?:readonly SourceImage[]}[]
+):WebsiteDesignDna{
+ const root=new URL(homepage.sourceUrl);
+ const images=[...homepage.images.slice(0,30)];
+ const seen=new Set(images.map(image=>image.url));
+ let logo=homepage.logo;
+ for(const page of pages.slice(0,4)){
+  if(!page.path.startsWith('/')||page.path.startsWith('//'))continue;
+  let pageUrl:URL;
+  try{pageUrl=new URL(page.path,root)}catch{continue}
+  if(pageUrl.origin!==root.origin||!Array.isArray(page.images))continue;
+  for(const image of page.images.slice(0,30)){
+   if(images.length>=30)break;
+   if(!image||!['content','background','logo'].includes(image.role)||typeof image.url!=='string')continue;
+   // Never mix in images from a page redirected to another origin.
+   try{if(new URL(image.sourcePage).origin!==root.origin)continue}catch{continue}
+   const url=publicSourceAsset(image.url,root.href);
+   if(!url||seen.has(url))continue;
+   const width=Number.isInteger(image.width)&&image.width!>0&&image.width!<=20000?image.width:undefined;
+   const height=Number.isInteger(image.height)&&image.height!>0&&image.height!<=20000?image.height:undefined;
+   if(width&&height&&width<32&&height<32)continue;
+   const safe:SourceImage={url,alt:typeof image.alt==='string'?text(image.alt):'',role:image.role,sourcePage:pageUrl.href,...(width?{width}:{}),...(height?{height}:{})};
+   images.push(safe);seen.add(url);
+   if(!logo&&safe.role==='logo')logo=safe;
+  }
+ }
+ return {...homepage,images,...(logo?{logo}:{})};
+}
