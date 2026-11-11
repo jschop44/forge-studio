@@ -45,11 +45,12 @@ function appearanceRules(tokens:unknown):string{
  const background=safeColor(t.backgroundColor);
  const ink=background?readableInk(background,safeColor(t.textColor)):undefined;
  const bodyFont=family(t.fontFamily),headingFont=family(t.headingFontFamily);
- const bodySize=pixels(t.baseFontSize,12,24),headingSize=pixels(t.headingFontSize,24,96);
+ const bodySize=pixels(t.baseFontSize,12,24),headingSize=pixels(t.headingFontSize,24,96),lineHeight=pixels(t.lineHeight,12,72);
  return [
   background?':root{--business-paper:'+background+';--business-ink:'+ink+'}body{background:'+background+';color:'+ink+'}main:before{background:'+background+'}p,main p,.card p,body>nav,body>footer{color:'+ink+'}':'',
   bodyFont?'body{font-family:'+bodyFont+'}':'',
   bodySize?'body{font-size:'+bodySize+'px}':'',
+  lineHeight?'body{line-height:'+lineHeight+'px}':'',
   headingFont?'h1,h2,h3{font-family:'+headingFont+'}':'',
   headingSize?'h1{font-size:clamp(2rem,6vw,'+headingSize+'px)}':''
  ].join('');
