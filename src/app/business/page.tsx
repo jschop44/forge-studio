@@ -20,7 +20,7 @@ import {validateBrowserEvidence} from '../../lib/browser-evidence';
 import {capturePreviewPages} from '../../lib/capture-preview';
 import {navigationQualityRecommendations} from '../../lib/navigation-quality-recommendations';
 import type {BrowserEvidence} from '../../lib/browser-evidence';
-import {downloadText} from '../../lib/export';
+
 import {portableStaticSiteLinks} from '../../lib/portable-static-site-links';
 import {inferBusinessIndustry} from '../../lib/website-experience';
 import {analyzeSiteEvidence,inspectionCoverage} from '../../lib/forge-intelligence';
@@ -192,6 +192,28 @@ export default function BusinessGenerator(){
  }
  const current=pages.find(p=>p.slug===active);
  const draftAudit=pages.length?auditGeneratedDraft(pages):null;
+ async function downloadWebsiteZip(){
+  if(!draftAudit?.readyForReview){setStatus('Website download blocked: '+(draftAudit?.errors.slice(0,3).join('; ')||'Generate and review the pages first.'));return}
+  try{
+   if(pages.length>30)throw Error('Website exceeds the download page limit.');
+   const {zipSync,strToU8}=await import('fflate');
+   let totalBytes=0;
+   const entries=pages.map(page=>{
+    const html=portableStaticSiteLinks(page.html,pages);
+    const bytes=strToU8(html);
+    totalBytes+=bytes.length;
+    if(totalBytes>8_000_000)throw Error('Website exceeds the 8 MB HTML download budget. Remove excess page content.');
+    return [page.slug+'.html',bytes] as const;
+   });
+   const compressed=zipSync(Object.fromEntries(entries),{level:6});
+   const objectUrl=URL.createObjectURL(new Blob([new Uint8Array(compressed).buffer],{type:'application/zip'}));
+   const link=document.createElement('a');link.href=objectUrl;link.download='forge-website.zip';
+   document.body.appendChild(link);link.click();link.remove();
+   setTimeout(()=>URL.revokeObjectURL(objectUrl),2000);
+   setStatus('Complete '+pages.length+'-page website ZIP downloaded. Verify images and external links before publishing.');
+  }catch(error){setStatus('Website download failed: '+(error instanceof Error?error.message:'Unable to package website'))}
+ }
+
  const previewHtml=businessPreviewHtml(current,pages,previewAnchor);
  async function inspectWebsite():Promise<Inspection|null>{
   const requested=siteAddressRef.current.trim()||siteUrl.trim();
@@ -325,7 +347,7 @@ export default function BusinessGenerator(){
  <p className="forge-auto-note">For the best results, include your products, services and atmosphere. Business-specific visuals are selected automatically. Automatically generates Home, Services, About and Contact pages.</p>
  {pages.length>0&&<div role="status" className="forge-auto-note"><strong>Automatic website check:</strong> {draftAudit?.readyForReview?'Ready for your review':'Needs corrections before publishing'}{(draftAudit?.errors.length??0)>0&&<p>{draftAudit?.errors.slice(0,3).join(' · ')}</p>}<button type="button" onClick={()=>setShowAdvancedReview(value=>!value)} aria-expanded={showAdvancedReview}>{showAdvancedReview?'Hide technical check details':'Show technical check details'}</button>{showAdvancedReview&&<p>{draftAudit?.errors.length} errors · {draftAudit?.warnings.length} warnings. Publishing has not been verified.</p>}</div>}
  {pages.length>0&&<div className="forge-auto-note"><details className="forge-auto-advanced"><summary>Update an existing published website</summary><label>Existing publication ID (optional, to save a new revision)<input value={revisionId} onChange={e=>{setRevisionId(e.target.value);setPublishApproved(false)}} placeholder="Publication UUID, leave blank for a new website"/></label><label>Current publication version (required for revisions)<input type="number" min="1" step="1" value={revisionVersion} onChange={e=>{setRevisionVersion(e.target.value);setPublishApproved(false)}} placeholder="Check saved versions in Manage published websites"/></label><button type="button" onClick={()=>void loadCurrentPublicationVersion()} disabled={!revisionId.trim()}>Load current publication version</button></details><label><input type="checkbox" checked={publishApproved} onChange={e=>setPublishApproved(e.target.checked)}/> I reviewed every generated page and approve publishing this business website.</label><button type="button" disabled={!publishApproved||!draftAudit?.readyForReview||publishBusy||(!!revisionId.trim()&&(!Number.isSafeInteger(Number(revisionVersion))||Number(revisionVersion)<1))} onClick={()=>void publishReviewedDraft()}>{publishBusy?"Publishing…":"Publish approved draft (if enabled)"}</button>{publishedUrls.map(url=><p key={url}><a href={url} target="_blank" rel="noopener noreferrer">View published page: {url}</a></p>)}<p>Publishing requires sign-in and server configuration; it is disabled by default.</p></div>}
- {pages.length>0&&<div className="forge-auto-export"><button onClick={()=>pages.forEach(p=>downloadText(p.slug+'.html',portableStaticSiteLinks(p.html,pages),'text/html'))}>↓ Download website pages</button><Link href="/business/publications">Manage published websites ↗</Link></div>}
+ {pages.length>0&&<div className="forge-auto-export"><button type="button" disabled={!draftAudit?.readyForReview} onClick={()=>void downloadWebsiteZip()}>↓ Download complete website ZIP</button><Link href="/business/publications">Manage published websites ↗</Link></div>}
  <p><Link href="/redesign" style={{color:"#eac9a0",fontWeight:700}}>✦ Score a website & plan an intelligent redesign →</Link></p>
  <details className="forge-auto-advanced"><summary>Advanced editing and intelligence tools</summary><div><button type="button" disabled={!pages.length} onClick={()=>{const selected=pages.find(page=>page.slug===active)||pages[0];try{sessionStorage.setItem("forge:visual-editor:context",serializeGeneratorEditorState({version:1,name,brief,contactEmail,siteUrl,referenceMarkup,designMode,experienceStyle,visualDesignMode,visualPatternId,autoImmersive,reviewIndustry,reviewServices}));sessionStorage.setItem("forge:visual-editor:handoff",JSON.stringify(selected));sessionStorage.setItem("forge:visual-editor:site",JSON.stringify(pages));window.location.assign("/visual-editor")}catch{setStatus("Unable to open editor. Download the HTML page and import it manually.")}}}>Edit current generated page</button><Link href="/visual-editor">Import HTML into editor</Link><Link href="/editor">Existing project editor</Link><Link href="/intelligence">Intelligence</Link><Link href="/assets">Asset library</Link></div></details>
  </aside>
