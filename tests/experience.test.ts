@@ -11,3 +11,38 @@ describe('cinematic 3D builder safety',()=>{
  it('exports HTTPS product images without executable markup',()=>{const e=makeExperience('cinematic-product');e.scene.object='product-image';e.scene.imageUrl='https://example.com/product.webp';const html=renderExperienceHtml(e);assert.ok(html.includes('<img src="https://example.com/product.webp"'));assert.ok(!html.includes('<script type="module"'))});
  it('flags missing business experience content',()=>{const e=makeExperience('business');e.sections=[];assert.ok(reviewExperience(e).issues.length>0)});
 });
+
+
+describe('experience export destination and mobile safeguards',()=>{
+ it('routes a contact CTA to a real contact section even when story is absent',()=>{
+  const e=makeExperience('business');
+  e.sections=[{id:'overview',title:'Our values',body:'We help local companies.'},{id:'contact',title:'Contact us',body:'Send an inquiry.'}];
+  const html=renderExperienceHtml(e);
+  assert.ok(html.includes('<a class="experience-cta" href="#contact">Get in touch</a>'));
+  assert.ok(html.includes('<section id="contact">'));
+  assert.ok(!html.includes('href="#story"'));
+ });
+ it('removes dead CTA links and reports missing sections',()=>{
+  const e=makeExperience('business');
+  e.sections=[];
+  assert.equal(reviewExperience(e).passed,false);
+  const html=renderExperienceHtml(e);
+  assert.ok(!html.includes('class="experience-cta"'));
+ });
+ it('does not render CTA links to duplicate or unsafe section IDs',()=>{
+  const e=makeExperience('luxury-brand');
+  e.sections=[{id:'overview',title:'Overview',body:'First'},{id:'overview',title:'Other',body:'Second'}];
+  assert.equal(reviewExperience(e).passed,false);
+  assert.ok(!renderExperienceHtml(e).includes('class="experience-cta"'));
+  e.sections[1].id='weird value';
+  assert.equal(reviewExperience(e).passed,false);
+  assert.ok(!renderExperienceHtml(e).includes('class="experience-cta"'));
+ });
+ it('exports responsive and keyboard-accessible layout rules',()=>{
+  const html=renderExperienceHtml(makeExperience('business'));
+  assert.ok(html.includes('padding:clamp(72px,10vw,120px)'));
+  assert.ok(html.includes('overflow-wrap:anywhere'));
+  assert.ok(html.includes('a:focus-visible'));
+  assert.ok(html.includes('min-height:44px'));
+ });
+});
