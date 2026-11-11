@@ -102,3 +102,28 @@ test('images inspected on a product subpage survive extraction and reach matchin
  await expect(menu.locator('#offering-1 img[data-forge-source-image]')).toHaveAttribute('src','https://reference.example/pizza.jpg');
  await expect(menu.locator('nav img.source-brand-logo')).toHaveAttribute('src','https://reference.example/brand-logo.png');
 });
+
+
+test('authorized computed browser colors and fonts reach preserve preview, not the redesign mode',async({page})=>{
+ await page.route('**/api/site-reference',route=>route.fulfill({status:200,json:extracted}));
+ await generationFixture(page);
+ await openExtraction(page);
+ await page.getByRole('button',{name:'Extract website appearance',exact:true}).click();
+ const browserCapture={version:1,sourceUrl:'https://reference.example/',capturedAt:'2026-11-10T18:00:00Z',viewport:{width:1280,height:800},warnings:[],pages:[{
+  path:'/',title:'Harbor Studio',landmarks:[],interactions:[],designTokens:{
+   backgroundColor:'rgb(240, 233, 220)',textColor:'rgb(20, 30, 40)',fontFamily:'"Avenir Next", Arial',headingFontFamily:'Georgia',headingFontSize:'66px',baseFontSize:'17px'
+  }
+ }]};
+ await page.getByText('Import optional browser-verification evidence',{exact:true}).click();
+ await page.getByRole('textbox',{name:'Browser verification JSON'}).fill(JSON.stringify(browserCapture));
+ await page.getByRole('button',{name:'Review browser evidence'}).click();
+ await expect(page.getByRole('button',{name:'Preview captured layout (review only)'})).toBeVisible();
+ await page.getByRole('button',{name:/generate my website/i}).click();
+ const home=page.frameLocator('iframe[title="Website preview: Home"]');
+ await expect(home.locator('body')).toHaveCSS('background-color','rgb(240, 233, 220)');
+ await expect(home.locator('body')).toHaveCSS('font-family',/Avenir Next/);
+ await expect(home.locator('h1')).toHaveCSS('font-family',/Georgia/);
+ await page.getByRole('navigation',{name:'Website pages'}).getByRole('button',{name:'Contact',exact:true}).click();
+ const contact=page.frameLocator('iframe[title="Website preview: Contact"]');
+ await expect(contact.locator('body')).toHaveCSS('background-color','rgb(240, 233, 220)');
+});
