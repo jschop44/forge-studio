@@ -50,3 +50,19 @@ test('editor and export block residual scripts without complete closing tags',()
  assert.equal(serializeVisualEditorDocument(page).html,'');
  }
 });
+
+test('HTML parser blocks entity-obfuscated active URLs and Grapes script configuration',()=>{
+ for(const url of ['java&#115;cript:alert(1)','java&#x0a;script:alert(1)','javascript&colon;alert(1)']){
+  const page={slug:'index',title:'Home',html:'<html><body><a href="'+url+'">Unsafe</a></body></html>'};
+  assert.equal(serializeVisualEditorDocument(page).html,'');
+ }
+ const safe=serializeVisualEditorDocument({slug:'index',title:'Home',html:'<html><body data-forge-layout="image-led" data-forge-experience="standard"><h1 data-gjs-script="alert(1)">Safe</h1></body></html>'});
+ assert.doesNotMatch(safe.html,/data-gjs-script/);assert.match(safe.html,/data-forge-layout="image-led"/);assert.match(safe.html,/data-forge-experience="standard"/);
+});
+test('escaped and comment-obfuscated CSS resource loads remain blocked',()=>{
+ for(const css of ['body{background:u\\72l(https://example.com/x)}','@im/**/port "https://example.com/x";'])assert.equal(serializeVisualEditorDocument({slug:'index',title:'Home',html:'<html><head><style>'+css+'</style></head><body><h1>Page</h1></body></html>'}).html,'');
+});
+test('safe export retains language and escaped description metadata',()=>{
+ const page={slug:'index',title:'Home',html:'<html lang="es" dir="ltr"><head><meta name="description" content="Coffee &amp; mugs &quot;daily&quot;"></head><body><h1>Hola</h1></body></html>'};
+ const result=serializeVisualEditorDocument(page);assert.match(result.html,/<html lang="es" dir="ltr">/);assert.match(result.html,/name="description" content="Coffee &amp; mugs &quot;daily&quot;"/);
+});
