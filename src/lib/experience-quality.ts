@@ -4,6 +4,8 @@ export type ExperienceIssue={severity:'error'|'warning';message:string};
 /** A CTA must navigate to an existing section, never an invented #story anchor. */
 export function experienceCtaTarget(experience:Pick<Experience,'sections'|'hero'>):string|null{
  if(!experience.hero.cta.trim()||!experience.sections.length)return null;
+ const ids=experience.sections.map(section=>section.id);
+ if(ids.some(id=>!/^([a-z][a-z0-9-]{0,63})$/.test(id))||new Set(ids).size!==ids.length)return null;
  const wantsContact=/\b(contact|touch|book|call|appointment|reserve|reservation)\b/i.test(experience.hero.cta);
  const match=wantsContact?experience.sections.find(section=>/\b(contact|booking|appointment|reservation)\b/i.test(section.title+' '+section.id)):undefined;
  return (match||experience.sections[0]).id;
