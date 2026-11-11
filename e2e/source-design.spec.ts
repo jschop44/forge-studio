@@ -26,15 +26,15 @@ for(const mode of ['inspired','redesign'] as const)test(mode+': Extract then Gen
  await expect(home.locator('.source-brand-logo')).toHaveAttribute('src',source+'logo.png');
  // A specific product image belongs on the menu rather than being repeated on a homepage teaser.
  await expect(home.locator('main img[src="'+source+'beans.png"]')).toHaveCount(0);
+ if(mode==='inspired'){
+  await expect(home.locator('body')).toHaveCSS('background-color','rgb(17, 34, 51)');await expect(home.locator('body')).toHaveCSS('font-family',/Georgia/);
+  await expect(home.locator('body>nav a').first()).toHaveCSS('color','rgb(248, 248, 248)');
+ }else await expect(home.locator('body')).not.toHaveCSS('background-color','rgb(17, 34, 51)');
  await page.getByRole('navigation',{name:'Website pages'}).getByRole('button',{name:'Menu',exact:true}).click();
  const menu=page.frameLocator('iframe[title="Website preview: Menu"]');
  const sourcePhoto=menu.locator('#offering-0 img[data-forge-source-image]');
  await expect(sourcePhoto).toHaveAttribute('src',source+'beans.png');
  await sourcePhoto.scrollIntoViewIfNeeded();await expect(sourcePhoto).toHaveJSProperty('naturalWidth',1);
- if(mode==='inspired'){
-  await expect(home.locator('body')).toHaveCSS('background-color','rgb(17, 34, 51)');await expect(home.locator('body')).toHaveCSS('font-family',/Georgia/);
-  await expect(home.locator('body>nav a').first()).toHaveCSS('color','rgb(248, 248, 248)');
- }else await expect(home.locator('body')).not.toHaveCSS('background-color','rgb(17, 34, 51)');
  await page.getByRole('navigation',{name:'Website pages'}).getByRole('button',{name:'Contact',exact:true}).click();
  const contact=page.frameLocator('iframe[title="Website preview: Contact"]');await expect(contact.locator('.source-brand-logo')).toHaveAttribute('src',source+'logo.png');
  await expect(contact.locator('a[href="mailto:hello@reference.example"]').first()).toBeVisible();await expect(contact.locator('a[href="tel:+15551234567"]').first()).toBeVisible();
