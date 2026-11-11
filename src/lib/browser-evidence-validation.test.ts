@@ -29,3 +29,13 @@ test('rejects navigation probes with success flags inconsistent with status',()=
  const navigationChecks=[{path:'/missing',status:404,ok:true,verifiedBy:'navigation-get'}];
  assert.equal(validateBrowserEvidence({...base,pages:[{...base.pages[0],navigationChecks}]}),false);
 });
+
+
+test('accepts bounded computed browser design tokens and rejects CSS injection',()=>{
+ const tokens={backgroundColor:'rgb(20, 34, 48)',textColor:'rgb(245, 245, 245)',fontFamily:'"Source Sans", sans-serif',headingFontFamily:'Georgia, serif',headingFontSize:'44px',baseFontSize:'16px'};
+ const page={...base.pages[0],designTokens:tokens};
+ assert.equal(validateBrowserEvidence({...base,pages:[page]}),true);
+ for(const [key,value] of [['backgroundColor','rgb(0, 0, 0);background:url(https://evil.example)'],['fontFamily','Arial;}</style><script>bad()</script>'],['headingFontSize','9999px']]){
+  assert.equal(validateBrowserEvidence({...base,pages:[{...page,designTokens:{...tokens,[key]:value}}]}),false,String(key));
+ }
+});
