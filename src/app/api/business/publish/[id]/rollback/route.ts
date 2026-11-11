@@ -1,3 +1,4 @@
+import {publicationJson,PublicationJsonError,ROLLBACK_BODY_LIMIT} from '../../../../../../lib/server/publication-json';
 import {NextRequest,NextResponse} from 'next/server';
 import {sameOrigin} from '../../../../../../lib/server/request-security';
 import {currentUserId} from '../../../../../../lib/server/auth';
@@ -14,12 +15,12 @@ export async function POST(req:NextRequest,{params}:{params:Promise<{id:string}>
  if(!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id))
   return NextResponse.json({error:'Invalid publication id'},{status:400});
  try{
-  const body=await req.json();
+  const body=await publicationJson(req,ROLLBACK_BODY_LIMIT) as Record<string,unknown>;
   const version=body?.version;
   const expectedVersion=body?.expectedVersion;
-  if(!Number.isSafeInteger(expectedVersion)||expectedVersion<1)return NextResponse.json({error:'Expected current version required'},{status:400});
+  if(typeof expectedVersion!=='number'||!Number.isSafeInteger(expectedVersion)||expectedVersion<1)return NextResponse.json({error:'Expected current version required'},{status:400});
   if(!body||typeof body!=='object'||Array.isArray(body)||Object.keys(body).some(key=>!['version','expectedVersion'].includes(key)))return NextResponse.json({error:'Unexpected rollback fields'},{status:400});
-  if(!Number.isSafeInteger(version)||version<1)return NextResponse.json({error:'Invalid snapshot version'},{status:400});
+  if(typeof version!=='number'||!Number.isSafeInteger(version)||version<1)return NextResponse.json({error:'Invalid snapshot version'},{status:400});
   const sql=database();
   // Restore content only when the current page set exactly matches the snapshot.
   // This avoids unsafe delete-and-reinsert operations on the same table in a CTE.
@@ -50,6 +51,7 @@ export async function POST(req:NextRequest,{params}:{params:Promise<{id:string}>
   if(!rows.length||Number(rows[0].page_count)===0)return NextResponse.json({error:'Publication, snapshot, or current version mismatch. Refresh before restoring.'},{status:409});
   return NextResponse.json({restored:true,version,versionCreated:Number(rows[0].new_version),pageCount:Number(rows[0].page_count)});
  }catch(error){
+  if(error instanceof PublicationJsonError)return NextResponse.json({error:error.message},{status:error.status});
   if(error&&typeof error==='object'&&'code' in error&&error.code==='23505')return NextResponse.json({error:'Rollback conflict. Reload saved versions and retry.'},{status:409});
   return NextResponse.json({error:'Rollback unavailable'},{status:503});
  }

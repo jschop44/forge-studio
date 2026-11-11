@@ -1,3 +1,4 @@
+import {publicationJson,PublicationJsonError} from '../../../../../../lib/server/publication-json';
 import {NextRequest,NextResponse} from 'next/server';
 import {sameOrigin} from '../../../../../../lib/server/request-security';
 import {currentUserId} from '../../../../../../lib/server/auth';
@@ -15,9 +16,9 @@ export async function POST(req:NextRequest,{params}:{params:Promise<{id:string}>
  if(!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id))
   return NextResponse.json({error:'Invalid publication id'},{status:400});
  try{
-  const payload=await req.json();
+  const payload=await publicationJson(req) as Record<string,unknown>;
   const expectedVersion=payload?.expectedVersion;
-  if(!Number.isSafeInteger(expectedVersion)||expectedVersion<1)return NextResponse.json({error:'Expected publication version required'},{status:400});
+  if(typeof expectedVersion!=='number'||!Number.isSafeInteger(expectedVersion)||expectedVersion<1)return NextResponse.json({error:'Expected publication version required'},{status:400});
   if(!payload||typeof payload!=='object'||Array.isArray(payload)||Object.keys(payload).some(key=>!['ownerApproved','businessName','pages','expectedVersion'].includes(key)))return NextResponse.json({error:'Unexpected revision fields'},{status:400});
   const checked=validateBusinessPublicationRequest({ownerApproved:payload.ownerApproved,businessName:payload.businessName,pages:payload.pages});
   if(!checked.valid||!checked.pages)return NextResponse.json({error:'Invalid revision',details:checked.errors.slice(0,10)},{status:422});
@@ -51,6 +52,7 @@ export async function POST(req:NextRequest,{params}:{params:Promise<{id:string}>
   if(!result||Number(result.page_count)===0)return NextResponse.json({error:'Publication missing, revision conflict, or page structure changed. Refresh versions before retrying.'},{status:409});
   return NextResponse.json({saved:true,id,version:Number(result.version),pageCount:Number(result.page_count)});
  }catch(error){
+  if(error instanceof PublicationJsonError)return NextResponse.json({error:error.message},{status:error.status});
   // A simultaneous request may win the immutable snapshot unique constraint.
   // Report a conflict rather than a transient infrastructure failure.
   if(error&&typeof error==='object'&&'code' in error&&error.code==='23505')

@@ -1,3 +1,4 @@
+import {publicationJson,PublicationJsonError} from '../../../../lib/server/publication-json';
 import {randomUUID} from 'node:crypto';
 import {NextRequest,NextResponse} from 'next/server';
 import {sameOrigin} from '../../../../lib/server/request-security';
@@ -13,7 +14,7 @@ export async function POST(req:NextRequest){
  const owner=await currentUserId();
  if(!owner)return NextResponse.json({error:'Unauthorized'},{status:401});
  try{
-  const body=await req.json();
+  const body=await publicationJson(req);
   const checked=validateBusinessPublicationRequest(body);
   if(!checked.valid||!checked.pages)return NextResponse.json({error:'Publication validation failed',details:checked.errors.slice(0,10)},{status:422});
   const id=randomUUID(),sql=database();
@@ -25,7 +26,8 @@ export async function POST(req:NextRequest){
    INSERT INTO forge_business_publication_snapshots(publication_id,owner_id,version,slug,html)
    SELECT id,owner_id,1,slug,html FROM stored`;
   return NextResponse.json({id,urls:checked.pages.map(page=>'/business-sites/'+id+'/'+page.slug),published:true},{status:201});
- }catch{
+ }catch(error){
+  if(error instanceof PublicationJsonError)return NextResponse.json({error:error.message},{status:error.status});
   return NextResponse.json({error:'Business publication unavailable; check database migrations'},{status:503});
  }
 }
