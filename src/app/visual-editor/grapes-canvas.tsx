@@ -103,8 +103,8 @@ export default function GrapesVisualCanvas({html,css,onChange,pages,bodyAttribut
      if(!target||target.closest('[contenteditable="true"]'))return;
      const components=instance.getWrapper()?.find('*')||[];
      let element:Element|null=target;
-     while(element&&element!==body){const chosen=components.find(component=>component.getEl()===element);if(chosen&&chosen.get('selectable')!==false){if(element.closest('a'))event.preventDefault();instance.select(chosen);break}element=element.parentElement}
-    });
+     while(element&&element!==body){const chosen=components.find(component=>component.getEl()===element);if(chosen&&chosen.get('selectable')!==false){if(element.closest('a'))event.preventDefault();queueMicrotask(()=>{if(active)instance.select(chosen)});break}element=element.parentElement}
+    },true);
    });
    resizeObserver=new ResizeObserver(()=>fitDevice(instance));
    resizeObserver.observe(mount.current);
