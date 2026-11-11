@@ -1,9 +1,22 @@
 import type {GeneratedPage} from './business-site';
 import {escapeHtml as esc} from './export';
 import {publicSourceAsset,type SourceImage,type WebsiteDesignDna} from './website-design-dna';
-const generic=new Set(['the','and','our','your','with','from','this','that','for','about','services','service','products','product','menu','home','contact','photography','image','photo','website','business','offer','offering']);
+const generic=new Set(['the','and','our','your','with','from','this','that','for','about','services','service','products','product','menu','home','contact','photography','photograph','image','photo','picture','restaurant','food','website','business','offer','offering']);
 function terms(value:string){return value.toLowerCase().replace(/<[^>]*>/g,' ').replace(/[^a-z0-9 ]/g,' ').split(/\s+/).filter(term=>term.length>2&&!generic.has(term)).map(term=>term.endsWith('s')&&term.length>4?term.slice(0,-1):term)}
-function matchingImage(subject:string,images:SourceImage[],used:Set<string>){const wanted=terms(subject);if(!wanted.length)return;return images.filter(image=>!used.has(image.url)&&image.role!=='logo'&&image.alt.trim()).map(image=>({image,score:terms(image.alt).filter(term=>wanted.includes(term)).length})).filter(item=>item.score>0).sort((a,b)=>b.score-a.score)[0]?.image}
+/** Only match source photos when their alt text actually describes the offering.
+ * A partial lexical overlap (e.g. chicken salad for chicken wings, ceramic tile
+ * for ceramic mugs) is not evidence that the photograph depicts the product.
+ * Prefer no substitution over introducing an unrelated image.
+ */
+function matchingImage(subject:string,images:SourceImage[],used:Set<string>){
+ const wanted=[...new Set(terms(subject))];
+ if(!wanted.length)return;
+ return images.filter(image=>!used.has(image.url)&&image.role!=='logo'&&image.alt.trim()).map(image=>{
+  const observed=new Set(terms(image.alt));
+  const overlap=wanted.filter(term=>observed.has(term)).length;
+  return {image,overlap,full:overlap===wanted.length,extra:Math.max(0,observed.size-overlap)};
+ }).filter(item=>item.full).sort((a,b)=>a.extra-b.extra)[0]?.image;
+}
 function sourceImage(image:SourceImage,className='source-photo'){return '<img class="'+className+'" data-forge-source-image src="'+esc(image.url)+'" alt="'+esc(image.alt)+'" loading="lazy" decoding="async"'+(image.width?' width="'+image.width+'"':'')+(image.height?' height="'+image.height+'"':'')+'>'}
 function foreground(background:string){const rgb=(background.length===4?background.slice(1).split('').map(c=>c+c).join(''):background.slice(1)).match(/../g)!.map(c=>parseInt(c,16));return rgb[0]*.299+rgb[1]*.587+rgb[2]*.114>150?'#151515':'#f8f8f8'}
 /** Reuse observed assets and bounded design tokens without executing source HTML/CSS. */

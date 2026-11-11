@@ -100,3 +100,32 @@ test('interior product photographs are used for corresponding service cards with
  assert.equal(new Set(photos).size,photos.length,'non-logo source images must remain unique across pages');
  for(const page of result.pages)assert.match(page.html,/src="https:\/\/restaurant\.example\/logo\.png"/);
 });
+
+
+test('partial offering matches never substitute an unrelated source product photograph',()=>{
+ const source=extractWebsiteDesignDna(
+  '<img src="/salad.jpg" alt="Chicken salad with greens"><img src="/tile.jpg" alt="Ceramic wall tiles"><img src="/bean.jpg" alt="Coffee table made from wood"><img src="/wing.jpg" alt="Chicken wings with sauce"><img src="/mug.jpg" alt="Ceramic mugs">',
+  'https://cafe.example/');
+ const page={slug:'services',title:'Menu',html:wrap(
+  '<article><h2>Chicken wings</h2><img src="https://stock.example/unmatched-a.jpg"></article>'+
+  '<article><h2>Ceramic mugs</h2><img src="https://stock.example/unmatched-b.jpg"></article>'+
+  '<article><h2>Coffee beans</h2><img src="https://stock.example/unmatched-c.jpg"></article>')};
+ const revised=applySourceDesign([page],source,'redesign').pages[0].html;
+ assert.match(revised,/src="https:\/\/cafe\.example\/wing\.jpg"/);
+ assert.match(revised,/src="https:\/\/cafe\.example\/mug\.jpg"/);
+ assert.doesNotMatch(revised,/src="https:\/\/cafe\.example\/salad\.jpg"/);
+ assert.doesNotMatch(revised,/src="https:\/\/cafe\.example\/tile\.jpg"/);
+ assert.doesNotMatch(revised,/src="https:\/\/cafe\.example\/bean\.jpg"/);
+ assert.match(revised,/src="https:\/\/stock\.example\/unmatched-c\.jpg"/,
+  'the original Coffee beans placeholder is safer than incorrectly using a photo of a coffee table');
+});
+test('a single distinctive item and harmless inflection still permit a verified match',()=>{
+ const source=extractWebsiteDesignDna('<img src="/pizza.jpg" alt="House pizzas"><img src="/wings.jpg" alt="Chicken wings photograph">','https://restaurant.example/');
+ const pages=[
+  {slug:'services',title:'Menu',html:wrap('<article><h2>Pizza</h2></article>')},
+  {slug:'index',title:'Home',html:wrap('<h1>Chicken wings</h1><figure class="editorial-photo"><img src="https://stock.example/photo.jpg" alt="Restaurant photography"></figure>')}
+ ];
+ const result=applySourceDesign(pages,source,'redesign');
+ assert.match(result.pages[0].html,/src="https:\/\/restaurant\.example\/pizza\.jpg"/);
+ assert.match(result.pages[1].html,/src="https:\/\/restaurant\.example\/wings\.jpg"/);
+});
