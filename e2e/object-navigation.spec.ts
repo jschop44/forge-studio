@@ -56,6 +56,17 @@ test('standard is the builder default and the selected experience travels with i
  await expect(frame.locator('#forge-webgl-atmosphere')).toHaveCount(0);
 });
 
+test('external model failure preserves interactive baseball geometry and navigation',async({page})=>{
+ await page.route('https://dl.polyhaven.org/file/ph-assets/Models/**',route=>route.abort());
+ await fixture(page,{...coffee,businessName:'Baseball Supply',industry:'Baseball store',services:['Baseball bats','Baseballs','Gloves']});
+ const scene=page.locator('[data-object-navigation]');
+ await expect(scene).toHaveAttribute('data-model-quality','procedural-fallback');
+ await expect(scene.locator('canvas')).toBeVisible();
+ await expect(page.getByRole('button',{name:'Reset view'})).toBeVisible();
+ await expect(scene.getByRole('status')).toContainText('interactive 3D object');
+ const bat=await meshPoint(page,[-.8,1.3,.1]);await page.mouse.click(bat.x,bat.y);
+ await expect(page).toHaveURL(/services\\.html#offering-0$/);
+});
 test('WebGL failure preserves offering navigation without unusable 3D controls',async({page})=>{
  await page.addInitScript(()=>{HTMLCanvasElement.prototype.getContext=()=>null});
  await fixture(page,coffee,false);
