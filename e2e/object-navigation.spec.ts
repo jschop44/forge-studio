@@ -179,3 +179,27 @@ for(const mobile of [false,true]){
   await expect(page).toHaveURL(/services\.html#offering-1$/);
  });
 }
+
+test('immersive panorama exposes direct business-specific offering portals',async({page})=>{
+ const pages=generateBusinessWebsite({...coffee,experienceStyle:'immersive'}).pages;
+ await page.route('https://objects.test/**',route=>{
+  const slug=new URL(route.request().url()).pathname.split('/').pop()?.replace('.html','')||'index';
+  return route.fulfill({status:200,contentType:'text/html',body:pages.find(p=>p.slug===slug)?.html||'Missing fixture'});
+ });
+ await page.goto('https://objects.test/index.html');
+ await expect(page.locator('body')).toHaveClass(/forge-world-exploring/);
+ const portals=page.getByRole('navigation',{name:'Interactive object parts'});
+ await expect(portals.getByRole('link',{name:/Coffee beans/})).toHaveAttribute('href','services.html#offering-0');
+ await expect(portals.getByRole('link',{name:/Ceramic mugs/})).toHaveAttribute('href','services.html#offering-1');
+ await portals.getByRole('link',{name:/Ceramic mugs/}).click();
+ await expect(page).toHaveURL(/services\.html#offering-1$/);
+ await expect(page.locator('#offering-1')).toContainText('Ceramic mugs');
+});
+test('panoramic object portals preserve baseball-specific destinations',async({page})=>{
+ const pages=generateBusinessWebsite({...coffee,businessName:'Baseball Supply',industry:'Baseball store',services:['Baseball bats','Baseballs','Gloves'],experienceStyle:'immersive'}).pages;
+ await page.setContent(pages.find(p=>p.slug==='index')!.html,{waitUntil:'domcontentloaded'});
+ const portals=page.getByRole('navigation',{name:'Interactive object parts'});
+ await expect(portals.getByRole('link',{name:/Baseball bats/})).toHaveAttribute('href','services.html#offering-0');
+ await expect(portals.getByRole('link',{name:/Gloves/})).toHaveAttribute('href','services.html#offering-2');
+ await expect(portals.getByRole('link',{name:/Coffee beans/})).toHaveCount(0);
+});
