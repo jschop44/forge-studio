@@ -22,9 +22,17 @@ function readableInk(background:string,foreground?:string){
 }
 function family(value:unknown):string|undefined{
  if(typeof value!=='string'||value.length>220)return;
- const part=value.split(',')[0].trim().replace(/^["']|["']$/g,'');
- if(!/^[a-z][a-z0-9 .-]{0,49}$/i.test(part))return;
- return /^(?:serif|sans-serif|monospace|system-ui)$/i.test(part)?part:'"'+part+'"';
+ const parts=value.split(',');
+ if(parts.length>8)return;
+ const safe=parts.map(value=>{
+  const raw=value.trim();
+  const quoted=raw.startsWith('"')||raw.startsWith("'");
+  if(quoted&&(raw.length<2||raw.at(-1)!==raw[0]))return;
+  const part=quoted?raw.slice(1,-1):raw;
+  if(!/^[a-z][a-z0-9 .-]{0,49}$/i.test(part))return;
+  return /^(?:serif|sans-serif|monospace|system-ui|cursive|fantasy|ui-serif|ui-sans-serif|ui-monospace|ui-rounded)$/i.test(part)?part.toLowerCase():'"'+part+'"';
+ });
+ return safe.every(Boolean)?safe.join(','):undefined;
 }
 function pixels(value:unknown,min:number,max:number):number|undefined{
  if(typeof value!=='string'||! /^\d{1,3}(?:\.\d{1,2})?px$/.test(value))return;
@@ -53,9 +61,9 @@ export function applyCapturedAppearance<T extends HtmlPage>(
  const bodySize=pixels(t.baseFontSize,12,24),headingSize=pixels(t.headingFontSize,24,96);
  const rules=[
   background?':root{--business-paper:'+background+';--business-ink:'+ink+'}body{background:'+background+';color:'+ink+'}main:before{background:'+background+'}p,main p,.card p,body>nav,body>footer{color:'+ink+'}':'',
-  bodyFont?'body{font-family:'+bodyFont+',sans-serif}':'',
+  bodyFont?'body{font-family:'+bodyFont+'}':'',
   bodySize?'body{font-size:'+bodySize+'px}':'',
-  headingFont?'h1,h2,h3{font-family:'+headingFont+',sans-serif}':'',
+  headingFont?'h1,h2,h3{font-family:'+headingFont+'}':'',
   headingSize?'h1{font-size:clamp(2rem,6vw,'+headingSize+'px)}':''
  ].join('');
  if(!rules)return {pages,warnings:['No safely reusable computed colors or typography were found in the browser evidence.']};

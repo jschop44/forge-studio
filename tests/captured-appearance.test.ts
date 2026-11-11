@@ -10,8 +10,8 @@ test('preserve mode applies computed source colors and typography across all pag
  for(const page of result.pages){
   assert.match(page.html,/--business-paper:#eff1f4/);
   assert.match(page.html,/--business-ink:#222b33/);
-  assert.match(page.html,/font-family:"Avenir Next",sans-serif/);
-  assert.match(page.html,/h1,h2,h3\{font-family:"Georgia",sans-serif/);
+  assert.match(page.html,/font-family:"Avenir Next","Arial",sans-serif/);
+  assert.match(page.html,/h1,h2,h3\{font-family:"Georgia",serif/);
   assert.match(page.html,/h1\{font-size:clamp\(2rem,6vw,64px\)/);
   assert.equal((page.html.match(/id="forge-captured-appearance"/g)||[]).length,1);
  }
@@ -43,4 +43,19 @@ test('rejects malformed browser evidence before CSS injection or unbounded font 
  assert.ok(rejected.warnings.some(w=>w.includes('Unverified browser appearance')));
  const unsafe={...sample,pages:[{...sample.pages[0],designTokens:{backgroundColor:'red;}script{display:block',textColor:'rgb(255, 255, 255)',fontFamily:'sans-serif'}}]};
  assert.deepEqual(applyCapturedAppearance(pages,unsafe,sample.sourceUrl,'inspired').pages,pages);
+});
+
+test('missing custom fonts retain the observed monospace and serif fallbacks',()=>{
+ const evidence={...sample,pages:[{...sample.pages[0],designTokens:{...sample.pages[0].designTokens,fontFamily:'"Unavailable Business Font", "Courier New", monospace',headingFontFamily:'Missing Serif, ui-serif, Georgia, serif'}}]};
+ const html=applyCapturedAppearance(pages,evidence,sample.sourceUrl,'preserve').pages[0].html;
+ assert.match(html,/body\{font-family:"Unavailable Business Font","Courier New",monospace\}/);
+ assert.match(html,/h1,h2,h3\{font-family:"Missing Serif",ui-serif,"Georgia",serif\}/);
+});
+test('a malformed or excessive font stack cannot leak raw CSS into generated pages',()=>{
+ for(const fontFamily of ['Georgia,,serif',Array(9).fill('Arial').join(','),'Arial, "broken']){
+  const evidence={...sample,pages:[{...sample.pages[0],designTokens:{...sample.pages[0].designTokens,fontFamily}}]};
+  const html=applyCapturedAppearance(pages,evidence,sample.sourceUrl,'preserve').pages[0].html;
+  assert.doesNotMatch(html,/body\{font-family:/);
+  assert.match(html,/--business-paper:#eff1f4/);
+ }
 });
