@@ -19,9 +19,31 @@ export function extractWebsiteDesignDna(input:string,sourceUrl:string,stylesheet
   const match=part.trim().match(/^(\S+)(?:\s+(\d+(?:\.\d+)?)[wx])?$/i);
   return match?{url:match[1],resolution:Math.min(20000,Number(match[2]||1))}:null;
  }).filter((item):item is {url:string;resolution:number}=>Boolean(item)).sort((a,b)=>b.resolution-a.resolution).map(item=>item.url);
+
+ // Native <picture><source srcset="..."><img ...></picture> often stores
+ // the real business photo in <source> and a low-resolution placeholder in <img>.
+ // Link each source group to its actual fallback image tag, never to nearby images.
+ const pictureCandidates=new Map<number,string[]>();
+ for(const picture of html.matchAll(/<picture\b[^>]*>[\s\S]*?<\/picture\s*>/gi)){
+  const block=picture[0],fallback=/<img\b[^>]*>/i.exec(block);
+  if(!fallback||picture.index===undefined)continue;
+  const group:[number,string[]][]=[];
+  for(const source of block.slice(0,fallback.index).matchAll(/<source\b[^>]*>/gi)){
+   const tag=source[0],mime=attribute(tag,'type').toLowerCase(),media=attribute(tag,'media');
+   if(mime&&!/^image\/(?:avif|webp|jpeg|jpg|png)$/i.test(mime))continue;
+   const variants=[...responsiveUrls(attribute(tag,'data-srcset')),...responsiveUrls(attribute(tag,'srcset'))];
+   if(!variants.length)continue;
+   // A desktop or unqualified source is more representative for the default
+   // captured layout than a mobile-only art-directed crop.
+   const preference=!media?0:/\bmin-width\b/i.test(media)?1:2;
+   group.push([preference,variants]);
+  }
+  group.sort((a,b)=>a[0]-b[0]);
+  pictureCandidates.set(picture.index+fallback.index,group.flatMap(([,urls])=>urls).slice(0,16));
+ }
  for(const match of html.matchAll(/<img\b[^>]*>/gi)){
   const tag=match[0],alt=attribute(tag,'alt'),label=[alt,attribute(tag,'class'),attribute(tag,'id')].join(' ');
-  const candidates=[attribute(tag,'data-src'),attribute(tag,'data-original'),attribute(tag,'data-lazy-src'),...responsiveUrls(attribute(tag,'data-srcset')),...responsiveUrls(attribute(tag,'srcset')),attribute(tag,'src')];
+  const candidates=[...(pictureCandidates.get(match.index??-1)||[]),attribute(tag,'data-src'),attribute(tag,'data-original'),attribute(tag,'data-lazy-src'),...responsiveUrls(attribute(tag,'data-srcset')),...responsiveUrls(attribute(tag,'srcset')),attribute(tag,'src')];
   const src=candidates.find(candidate=>candidate.trim().length>0&&publicSourceAsset(candidate,sourceUrl));
   const size=(name:string)=>{const n=Number(attribute(tag,name));return Number.isInteger(n)&&n>0&&n<=20000?n:undefined};
   if(!src||/pixel|tracking|spacer/i.test(label))continue;
