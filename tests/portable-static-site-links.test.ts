@@ -23,12 +23,12 @@ test('external and unknown links, fragments, mail and API paths are never hijack
  assert.equal(portableStaticSiteLinks(html,pages),html);
 });
 test('script/style source code is not rewritten and untrusted markup is not executed',()=>{
- const html='<script>const template=\\'<a href="/services">\\';</script>'+
-  '<style>body:before{content:\'<a href="/about">\'}</style>'+
+ const html="<script>const template='<a href=\"/services\">';</script>"+
+  "<style>body:before{content:'<a href=\"/about\">'}</style>"+
   '<a href="/services">Actual link</a>';
  const actual=portableStaticSiteLinks(html,pages);
- assert.ok(actual.includes('<script>const template=\\'<a href="/services">\\';</script>'));
- assert.ok(actual.includes('<style>body:before{content:\'<a href="/about">\'}</style>'));
+ assert.ok(actual.includes("<script>const template='<a href=\"/services\">';</script>"));
+ assert.ok(actual.includes("<style>body:before{content:'<a href=\"/about\">'}</style>"));
  assert.ok(actual.endsWith('<a href="services.html">Actual link</a>'));
 });
 test('works with the real generated page set and preserves fragment identity',()=>{
