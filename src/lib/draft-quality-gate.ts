@@ -17,11 +17,16 @@ export function auditGeneratedDraft(pages: GeneratedPage[]): DraftQualityReport 
   const warnings: string[] = [];
   const slugs = new Set<string>();
   const contentImagePages = new Map<string,Set<string>>();
+  const fragmentTargets = new Map<string,Set<string>>();
   if (pages.length === 0) errors.push("No generated pages");
   for (const page of pages) {
     if (!/^[a-z0-9-]{1,64}$/.test(page.slug)) errors.push("Invalid page slug");
     if (slugs.has(page.slug)) errors.push("Duplicate page slug: " + page.slug);
     slugs.add(page.slug);
+    // Match actual HTML id/name attributes, not data-id, and validate cross-page fragments later.
+    const ids=new Set<string>();
+    for(const match of page.html.matchAll(/\s(?:id|name)\s*=\s*(["'])([^"']+)\1/gi))ids.add(match[2]);
+    fragmentTargets.set(page.slug,ids);
     if (!/<!doctype html>/i.test(page.html) || !/<html\b/i.test(page.html)) errors.push(page.slug + ": missing HTML document structure");
     if (!/<title\b[^>]*>[^<]+<\/title>/i.test(page.html)) errors.push(page.slug + ": missing page title");
     if (!/<meta\s+name=["']viewport["']/i.test(page.html)) warnings.push(page.slug + ": missing mobile viewport");
@@ -52,8 +57,35 @@ export function auditGeneratedDraft(pages: GeneratedPage[]): DraftQualityReport 
 
   }
   for (const page of pages) {
-    for (const match of page.html.matchAll(/\bhref=["']([a-z0-9-]+)\.html(?:[?#][^"']*)?["']/gi)) {
-      if (!slugs.has(match[1])) errors.push(page.slug + ": broken internal link to " + match[1]);
+    for (const match of page.html.matchAll(/\shref\s*=\s*(["'])([^"']*)\1/gi)) {
+      const href=match[2].trim();
+      if(!href||href==='#'||/^javascript:/i.test(href)){
+        errors.push(page.slug+": nonfunctional or unsafe link destination");
+        continue;
+      }
+      // External pages, mail links and verified backend routes are not static anchors.
+      let target=page.slug;
+      let fragment:string|undefined;
+      if(href.startsWith('#'))fragment=href.slice(1);
+      else {
+        const local=href.match(/^(?:\.\/|\/)?([a-z0-9-]+)\.html(?:\?[^#]*)?(?:#(.*))?$/i);
+        if(!local)continue;
+        target=local[1];
+        fragment=local[2];
+        if(!slugs.has(target)){
+          errors.push(page.slug+": broken internal link to "+target);
+          continue;
+        }
+      }
+      if(fragment!==undefined){
+        let id:string;
+        try{id=decodeURIComponent(fragment)}catch{
+          errors.push(page.slug+": malformed internal link fragment");
+          continue;
+        }
+        if(!id||!fragmentTargets.get(target)?.has(id))
+          errors.push(page.slug+": broken internal fragment "+target+"#"+id.slice(0,100));
+      }
     }
   }
   for(const [url,used] of contentImagePages){
