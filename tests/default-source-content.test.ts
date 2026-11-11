@@ -69,3 +69,28 @@ test('source form instructions cannot advertise a nonexistent form while factual
  assert.match(result.pages[2].html,/Tax form preparation services/);
  assert.ok(result.warnings.some(w=>w.includes('form instructions were omitted')));
 });
+
+test('excluded-business paragraphs cannot enter copied default pages after AI brief screening',()=>{
+ const inspected={...evidence,pageSummaries:[
+  {...summary('/about'),paragraphs:['Our studio supports local families.','We also operate adult entertainment services.']},
+  {...summary('/services'),paragraphs:['Order recreational drugs from our catalog.','Book an accessible building design consultation.']},
+  {...summary('/contact'),paragraphs:['Our pharmacy offers prescription support to patients.']}
+ ]};
+ for(const mode of ['preserve','inspired','redesign']){
+  const result=applyDefaultSourceContent(pages,inspected,mode);
+  assert.match(result.pages[1].html,/Our studio supports local families/);
+  assert.doesNotMatch(result.pages[1].html,/adult entertainment/);
+  assert.match(result.pages[2].html,/accessible building design consultation/);
+  assert.doesNotMatch(result.pages[2].html,/recreational drugs/);
+  assert.match(result.pages[3].html,/pharmacy offers prescription support/);
+  assert.ok(result.warnings.some(w=>w.includes('excluded business categories')));
+ }
+ assert.deepEqual(applyDefaultSourceContent(pages,inspected,'new'),{pages,warnings:[]});
+});
+
+test('sole excluded paragraph is omitted without creating a misleading original-page section',()=>{
+ const inspected={...evidence,pageSummaries:[{...summary('/services'),paragraphs:['Visit our cannabis shop.']}]};
+ const result=applyDefaultSourceContent(pages,inspected,'redesign');
+ assert.equal(result.pages[2].html,pages[2].html);
+ assert.ok(result.warnings.some(w=>w.includes('excluded business categories')));
+});
