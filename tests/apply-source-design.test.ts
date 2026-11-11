@@ -129,3 +129,16 @@ test('a single distinctive item and harmless inflection still permit a verified 
  assert.match(result.pages[0].html,/src="https:\/\/restaurant\.example\/pizza\.jpg"/);
  assert.match(result.pages[1].html,/src="https:\/\/restaurant\.example\/wings\.jpg"/);
 });
+
+
+test('preserve applies CSS-hosted company logo and resolved background without executing source CSS',()=>{
+ const source=extractWebsiteDesignDna(
+  '<style>:root{--promo-accent:#ef672b;--brand-surface:#f8f3e9}.site-logo{background-image:url("/brand.svg")}body{background-color:var(--brand-surface)}</style>',
+  'https://atelier.example/');
+ const page={slug:'index',title:'Home',html:wrap('<h1>Atelier</h1><p>Our craftsmanship</p>')};
+ const result=applySourceDesign([page],source,'inspired');
+ const html=result.pages[0].html;
+ assert.match(html,/class="source-brand-logo" data-forge-source-image src="https:\/\/atelier\.example\/brand\.svg"/);
+ assert.match(html,/body\{background:#f8f3e9;color:#151515\}/);
+ assert.doesNotMatch(html,/var\(--brand-surface\)|background-image:url/,'source CSS remains unexecuted evidence');
+});
