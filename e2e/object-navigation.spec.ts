@@ -203,3 +203,16 @@ test('panoramic object portals preserve baseball-specific destinations',async({p
  await expect(portals.getByRole('link',{name:/Gloves/})).toHaveAttribute('href','services.html#offering-2');
  await expect(portals.getByRole('link',{name:/Coffee beans/})).toHaveCount(0);
 });
+
+test('baseball collection pages retain relevant product photography alongside interactive geometry',async({page})=>{
+ const pages=generateBusinessWebsite({...coffee,businessName:'Baseball Supply',industry:'Baseball store',services:['Baseball bats','Baseballs','Gloves'],experienceStyle:'immersive'}).pages;
+ const home=pages.find(p=>p.slug==='index')!.html;
+ const products=pages.find(p=>p.slug==='services')!.html;
+ expect(home).toContain('data-object-navigation');
+ expect(home).toContain('class="service-photo"');
+ expect(products).toContain('class="service-photo"');
+ await page.setContent(products,{waitUntil:'domcontentloaded'});
+ const images=page.locator('img.service-photo');
+ await expect(images.first()).toHaveAttribute('src',/images\.unsplash\.com\/photo-/);
+ await expect(images.first()).toHaveAttribute('alt',/Baseball/);
+});
