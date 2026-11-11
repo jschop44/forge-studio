@@ -58,15 +58,15 @@ test('a source content photograph is not repeated across distinct website pages'
  assert.match(result.pages[2].html,/src="https:\/\/stock\.example\/c\.jpg"/,'an unmatched page keeps its original image rather than repeating a source photograph');
 });
 
-test('service photos are not replaced by unrelated source assets when a matching photo was used earlier',()=>{
+test('specific product cards receive the only matching photograph before a broad homepage hero',()=>{
  const source=extractWebsiteDesignDna('<img src="/wings.jpg" alt="Chicken wings"><img src="/fruit.jpg" alt="Fruit bowl">','https://restaurant.example/');
  const pages=[
   {slug:'index',title:'Chicken wings',html:wrap('<h1>Chicken wings</h1><figure class="editorial-photo"><img src="https://stock.example/wings.jpg" alt="Chicken wings"></figure>')},
   {slug:'services',title:'Menu',html:wrap('<article><h2>Chicken wings</h2><img src="https://stock.example/menu.jpg" alt="Menu photograph"></article>')}
  ];
  const result=applySourceDesign(pages,source,'redesign');
- assert.match(result.pages[0].html,/src="https:\/\/restaurant\.example\/wings\.jpg"/);
- assert.match(result.pages[1].html,/src="https:\/\/stock\.example\/menu\.jpg"/);
+ assert.match(result.pages[0].html,/src="https:\/\/stock\.example\/wings\.jpg"/);
+ assert.match(result.pages[1].html,/src="https:\/\/restaurant\.example\/wings\.jpg"/);
  assert.doesNotMatch(result.pages[1].html,/src="https:\/\/restaurant\.example\/fruit\.jpg"/);
 });
 
