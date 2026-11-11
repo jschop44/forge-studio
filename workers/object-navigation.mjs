@@ -57,7 +57,13 @@ const objectNavigationRuntimeSource=String.raw`function objectNavigationRuntime(
    const keep=faces.filter(face=>face.part!=='ball');faces.length=0;faces.push(...keep);
    for(let i=0;i<indices.length;i+=3){const ids=indices.slice(i,i+3);faces.push({points:ids.map(id=>points[id]),normal:[0,1,0],normals:ids.map(id=>normals[id]),uvs:ids.map(id=>uvs[id]),color:[1,1,1],part:'ball',textured:true})}
    root.dataset.modelQuality='textured-asset';status.textContent='Drag to turn. Select a part to open its offering.';draw();
-  }catch{root.dataset.modelQuality='unavailable';canvas.hidden=true;root.querySelector('[data-reset-object]').hidden=true;status.textContent='The detailed model could not load. Use the offering links below.';}
+  }catch{
+   // Keep the built-in selectable 3D geometry when the optional detailed asset is offline.
+   // Navigation links and the rotatable scene must work without a remote model host.
+   root.dataset.modelQuality='procedural-fallback';
+   status.textContent='Detailed model unavailable. The interactive 3D object and offering links remain available.';
+   draw();
+  }
  }
  if(config.theme==='baseball'||config.theme==='soccer')void loadBall();
  const resize=new ResizeObserver(draw);resize.observe(canvas);document.addEventListener('visibilitychange',draw);
