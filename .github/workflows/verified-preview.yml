@@ -44,6 +44,8 @@ jobs:
       - if: steps.revision.outputs.current == 'true'
         run: npm ci --no-audit --no-fund
       - if: steps.revision.outputs.current == 'true'
+        env:
+          FORGE_BUILD_REVISION: ${{ github.event.workflow_run.head_sha }}
         run: npm run build:cloudflare
       - name: Recheck current revision before publishing
         id: publish
@@ -80,9 +82,11 @@ jobs:
         run: node scripts/sync-preview-secrets.mjs
       - name: Verify preview health and report database readiness
         if: steps.publish.outputs.current == 'true'
+        env:
+          FORGE_EXPECTED_REVISION: ${{ github.event.workflow_run.head_sha }}
         run: |
           curl --fail --silent --show-error --retry 3 --retry-delay 3 --max-time 30 https://forge-studio-preview.stands-old-3h.workers.dev/api/health -o /tmp/forge-health.json
-          node -e 'const fs=require("node:fs");const r=JSON.parse(fs.readFileSync("/tmp/forge-health.json","utf8"));if(r.ok!==true||r.service!=="forge-studio")process.exit(1)'
+          node scripts/verify-deployed-revision.mjs /tmp/forge-health.json
           curl --silent --show-error --max-time 20 https://forge-studio-preview.stands-old-3h.workers.dev/api/health/ready -o /tmp/forge-ready.json
           node --input-type=module <<'JS'
           import {readFileSync,appendFileSync} from 'node:fs';
