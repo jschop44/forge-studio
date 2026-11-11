@@ -1,52 +1,69 @@
-# Latest Forge Studio acceptance checkpoint — November 11, 2026
+# Latest Forge Studio production acceptance checkpoint — November 11, 2026
 
-This supersedes earlier pending statuses in CONTINUATION_20261111.md.
+This supersedes pending statuses in earlier continuation documents.
 
-## Released and verified
-Main/live revision: 3cfbd6ba95245ebd4a1a101ce2d40a23ffbf74a1.
-- PR #47 merged as 64adc2244ededdec84ba37dcc438042d86623389: https://github.com/jschop44/forge-studio/pull/47
-- PR #48 merged as 3cfbd6ba95245ebd4a1a101ce2d40a23ffbf74a1: https://github.com/jschop44/forge-studio/pull/48
-- Main verification passed: https://github.com/jschop44/forge-studio/actions/runs/43043478588
-- Actual deployment passed: https://github.com/jschop44/forge-studio/actions/runs/43044134145
-- Inspected deploy job 130603456195, not just workflow status. Actual upload completed; Cloudflare version 82d871ad-8710-4003-9028-8808f792c1da.
-- Live source attestation matched the exact main revision. Database/auth readiness passed.
-- Live recognition 4/4 passed.
-- Real Cloudflare AI diagnostic verified six stages, four generated pages and quality passed. Result explicitly persisted:false, published:false, publication:needs-approval.
-- Authenticated worker executed successfully, processed zero jobs, stopped idle-or-gated. This does not establish durable queue progression.
+## Current release
+- Main and attested live revision: 928da66cd98ff5fd0c5378a63437eb4a80377c9e.
+- PR #49 merged: d67dfc1de58f08f0b7758635c7ad213702afeacb. https://github.com/jschop44/forge-studio/pull/49
+- PR #50 merged: 928da66cd98ff5fd0c5378a63437eb4a80377c9e. https://github.com/jschop44/forge-studio/pull/50
+- Main Verify passed: https://github.com/jschop44/forge-studio/actions/runs/43047378695
+- Actual deployment: https://github.com/jschop44/forge-studio/actions/runs/43047939589
+- Inspected upload/live steps and logs for job 130616838367. Canonical Worker forge-studio-preview uploaded, Cloudflare version bdab12df-6104-4b1b-b6ec-101635eb7f7d. Exact live SHA matched.
+- Database/auth readiness passed. Recognition 4/4 passed.
+- Real Cloudflare model diagnostic: six stages, four pages, model-selected layout/palette, quality passed, publication needs-approval, persisted:false, published:false.
+- Authenticated worker succeeded, processed zero jobs, stopped idle-or-gated. This is not durable workload progression.
+- No customer publication was created. Publishing remains configured false.
 
-## Changes and tests
-- Captured typography keeps bounded safe fallback stacks, including serif and monospace, instead of forcing sans-serif. Malformed quotes, empty entries and excessive stacks are rejected.
-- Browser regression coverage measures actual rendered font fallback at mobile and desktop widths. PR #48 passed 268/268 browser tests.
-- Combined local release: 554/554 application tests, 121/121 script tests, TypeScript validation, production build and 16/16 production HTTP opt-in/auth/origin checks passed. The HTTP gate check persisted no sites.
-- The browser CI failure was diagnosed from logs: native libraries and Liberation fonts were installed, while nine additional font/X font packages could not download because Ubuntu DNS failed. CI now downloads the matching Chromium binary and fails on actual launch/render readiness before the unchanged full browser suite. No tests or dependency checks were suppressed.
-- Original PR #6 was already merged (a279bd5ad5274165db3841c29f7c6a7f030fba17). The deleted-Worker orphan check was absent on these release heads.
+## Released changes
+1. Extracted extra pages use an explicit collision-safe source mapping to select matching captured colors/typography by same-origin path and query. Foreign, credentialed and wrong-query mappings cannot select styles. Missing captures use shared branding with a warning; a captured subpage can work without homepage tokens. Export/publication page schemas are unchanged.
+2. Approved agent inference now applies retained optional browser evidence in preserve/inspired modes and retains design warnings for review. Planning already carries the payload; quality receives the styled pages. Scratch/redesign ignore captured styles. Mandatory inference, plan approval and provider failure propagation remain intact.
+3. Null entries in nested browser evidence are rejected rather than throwing validation errors after inference. These malformed captures cannot inject styles.
+4. Builder UI workflow uses npm ci and the same verified Chromium launch/render setup as the full browser suite. The manual source-capture workflow retains its broader font installation.
 
-## Isolated backend acceptance
-PR #47 retains the exact route-derived SQL fixture, genuine concurrent SQL evidence and authenticated production-build HTTP acceptance. Existing isolated Neon branch br-nameless-lake-bb8rrmnk in project young-night-65648740 was used. No production schema or provider resources were created.
-- 24/24 SQL state assertions passed.
-- Genuine concurrent SQL yielded one winner and one 23505 conflict with complete snapshots and no mixed content.
-- 52/52 authenticated API/database assertions passed: login/session, tenant isolation, publication, revision, stale conflicts, rollback, concurrent HTTP 200/409, deletion and logout.
-- Independent cleanup queries confirmed zero synthetic users, publications, snapshots and rate-limit rows.
+## Verification
+- Combined application source/test/browser-test tree matched merged main.
+- Local combined 562/562 application tests and TypeScript validation passed.
+- 121/121 script tests and combined production build passed before the final validator-only hardening; full current-main CI subsequently passed.
+- 16/16 local production HTTP publication opt-in/auth/origin gates passed without persistence.
+- PR #49: all 7 checks passed, including builder UI and both browser groups. Browser logs recorded 135 + 134 = 269 passed tests.
+- PR #50: all 6 checks passed on final head 3ea8b29ebcc2a55cb1f09f31a32631622d24fe3f.
+- Newly added agent unit tests use injected generation fixtures; they do not prove live captured-style inference, durable jobs or publication.
+- Live release diagnostic above proves genuine free model inference on the deployed source, not source-site visual fidelity.
+
+## Prior isolated backend evidence retained
+PR #47 includes exact route-derived SQL, optional isolated runner and evidence:
+- 24/24 actual SQL assertions.
+- Independent concurrent SQL requests: one winner, one 23505 conflict, immutable complete snapshot and no mixed content.
+- 52/52 authenticated production-build API/database checks, including sessions, tenant isolation, revision, stale/concurrent conflicts, rollback, deletion and logout.
+- Existing isolated Neon branch br-nameless-lake-bb8rrmnk, project young-night-65648740. No production schema or provider resources changed. Independent cleanup counts were zero for synthetic users, publications, snapshots and rate-limit rows.
 Read docs/PUBLISHING_SQL_ACCEPTANCE_20261111.md and docs/BUSINESS_PUBLISHING_LIVE_VERIFICATION.md before repeating.
 
-## Recovery, access and limits
-Canonical Worker remains forge-studio-preview. Never recreate forge-studio.
-New backup/forge-preview-pre-acceptance-20261111 preserves 1d154f824381cf99658e5d191093a4a48ea9b9c0. Original rollback branches remain intact.
-Publishing is configured false in the deployed source; no customer flags were enabled. A fresh local direct probe received Cloudflare HTTP 403/error 1010, so fresh independent local HTTP publication-gate/UI checks were not possible. Do not confuse this access restriction with an application outage. Deployment-host live checks above did pass.
-Only FORGE_WORKER_SECRET was available to runtime-secret synchronization. Cross-app signing/delivery remains unaccepted; never fabricate it or expose credentials.
+## Cross-app contract inspection
+Read current GrowthAI/backend/forge_events.py, LeadFlow/backend/forge-events.js and LeadFlow/worker/src/forge.js directly. Event fields, source values, millisecond timestamp and HMAC-SHA256 timestamp.raw-body format align with Forge's receiver. LeadFlow's backend forwarding route is protected by its private API token.
+This is source-contract evidence only. No signed event was delivered between deployed apps in this checkpoint. Configured signing, tenant-scoped live delivery, retry/idempotency and persistence remain unaccepted.
 
-## Remaining production acceptance
-No overall percentage is assigned until a complete acceptance inventory is measured. Test pass rates describe executed checks, not total feature readiness.
-1. Extraction: source screenshots/computed layouts, custom font availability, page-specific styling, responsive fidelity and permitted multi-page completeness.
-2. Generation/UX: broad real-business content/imagery, asset availability, complete navigation and desktop/mobile visual/accessibility acceptance.
-3. Editor: complex imported websites, reviewed publication browser journeys and recovery.
-4. Immersive: arbitrary models, authorable hotspots, real mobile GPU/performance and cross-page continuity.
-5. All six engines: durable tenant-scoped progression, separate plan/publication approvals, real-model provenance, retries/failure recovery and fair scheduling under actual live workload.
-6. Backend: Cloudflare-hosted publication/browser/assets acceptance, projects/uploads/forms/leads, broader concurrency and restore drill. Changed page-set revision support remains unimplemented and blocked safely.
-7. Ecosystem: configured signing and actual tenant-isolated/idempotent GrowthLens/LeadFlow deliveries.
-8. Security/operations: wider independent acceptance, backups and restore evidence.
-9. Continue free-only operation; no paid OpenAI, duplicate Workers, new paid accounts or quota bypasses.
+## Recovery and constraints
+New backup/forge-preview-pre-page-styles-20261111 preserves prior verified live 3cfbd6ba95245ebd4a1a101ce2d40a23ffbf74a1. Earlier backup branches remain intact.
+Never recreate forge-studio or rename forge-studio-preview. Use only existing verified-preview deployment authority.
+No paid OpenAI, provider resources, schema migrations, customer mutations, publishing flags or approval bypasses were introduced.
+Earlier direct live probes from this workspace received Cloudflare HTTP 403/error 1010. Deployment-host live attestation and diagnostics above did pass. Hosted browser/UI acceptance remains distinct.
+
+## Remaining acceptance, without invented percentages
+Test pass rates do not establish whole-product completion. No overall or engine completeness percentage is assigned without a measured full acceptance inventory.
+- Extraction: original layouts/screenshots/computed spacing, custom font availability, default-page source content mapping, responsive fidelity and permitted multi-page completeness. Page-specific style mapping released here covers extracted extra pages, not exact reconstruction of every source page.
+- Generation/UX: broader real-business content and imagery, live asset availability, all-page navigation, visual/a11y acceptance across desktop and mobile.
+- Editor: complex imported sites, reviewed hosted publishing/browser journeys and recovery.
+- Immersive: arbitrary models, authored hotspots, real mobile GPU/performance and cross-page continuity.
+- Engine 1 lead-enrichment: durable tenant-scoped source-app delivery and progression.
+- Engine 2 website-audit: durable progression and actual source completeness.
+- Engine 3 site-plan: durable approved handoff and universal application of findings.
+- Engine 4 site-generation: durable real-model provenance, captured-style live acceptance, bounded retry/failure recovery.
+- Engine 5 quality-review: durable progression and real visual/interaction evidence.
+- Engine 6 publish-review: reviewed live publication/browser/rollback and authorization acceptance; approval remains mandatory.
+- Backend: Cloudflare-hosted publication/browser/assets, projects/uploads/forms/leads, broader concurrency/recovery and restore drill. Changed page-set revisions stay safely unsupported.
+- Ecosystem: configured signing and actual tenant-isolated, idempotent GrowthLens/LeadFlow deliveries.
+- Security/operations: wider independent acceptance, backups and restore evidence.
 
 ## Resume
-Fetch fresh main, PRs and workflows before edits; do not overwrite concurrent work. Continue with concrete remaining acceptance fixes, run required tests, merge only verified heads and deploy solely through verified-preview. Preserve existing approval gates and rollback.
-The assistant cannot see the Work usage meter. If the user reports 5% remaining, prepare a normal Chat handoff from fresh state plus this document; do not promise automatic threshold detection.
+Retrieve fresh main, open PRs, workflows and this report before edits. Inspect concurrent changes. Continue concrete fixes, run required checks, merge verified heads only, use established deployment, attest live revision, preserve rollback and independent approvals.
+The assistant cannot read the Work usage meter. If the user reports 5% remaining, prepare a normal Chat handoff from fresh state and this checkpoint. Do not promise automatic threshold detection.
