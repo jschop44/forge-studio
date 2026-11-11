@@ -121,7 +121,7 @@ for(const width of [390,1440])test('uncommon business scene offers bounded guide
  const allTransforms=await page.locator('[data-content-card]').evaluateAll(cards=>cards.map(card=>(card as HTMLElement).style.transform));
  expect(allTransforms.every(value=>!value.includes('rotateY('))).toBe(true);
  await stage.focus();await page.keyboard.press('ArrowRight');
- await expect(stage).toHaveAttribute('data-depth-step','0','changing rooms resets the camera distance');
+ await expect(stage).toHaveAttribute('data-depth-step','0');
  await expect(page.locator('[data-content-card]:not([inert]) h2')).toContainText('Services');
  await page.getByRole('link',{name:'Open Services',exact:false}).click();await expect(page).toHaveURL(/services\.html$/);
 });
