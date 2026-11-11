@@ -60,3 +60,12 @@ test('private, literal-IP and nonstandard-port roots cannot create source naviga
   assert.deepEqual(applyDefaultSourceContent(pages,unsafe,'preserve').pages,pages);
  }
 });
+
+test('source form instructions cannot advertise a nonexistent form while factual services remain',()=>{
+ const original={...evidence,pageSummaries:[{...summary('/contact'),paragraphs:['Please fill out the form below to reach our team.','Use our online contact form for booking.','Our office supports neighborhood businesses.']},{...summary('/services'),paragraphs:['Tax form preparation services for local businesses.']}]};
+ const result=applyDefaultSourceContent(pages,original,'redesign');
+ assert.doesNotMatch(result.pages[3].html,/fill out|online contact form/);
+ assert.match(result.pages[3].html,/Our office supports neighborhood businesses/);
+ assert.match(result.pages[2].html,/Tax form preparation services/);
+ assert.ok(result.warnings.some(w=>w.includes('form instructions were omitted')));
+});

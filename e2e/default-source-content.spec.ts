@@ -5,7 +5,7 @@ for(const {mode,width} of [{mode:'inspired',width:390},{mode:'redesign',width:12
  test(`default About retains inspected source text in ${mode} at ${width}px`,async({page})=>{
   await page.setViewportSize({width,height:900});
   const observed='Our studio collaborates with neighborhood businesses on accessible residential design.';
-  await page.route('**/api/site-reference',route=>route.fulfill({status:200,json:{url:'https://reference.example/',title:'Harbor Studio | Residential design',description:'An independent design practice creating residential and commercial spaces.',headings:['Residential design'],navigation:[],stylesheetsRead:1,styleFound:true,styleReference:{background:'#ffffff',fontFamily:'Georgia'},pageSummaries:[{path:'/about?lang=en',label:'About',title:'Meet Harbor Studio',description:'Our design studio',headings:['Our work'],paragraphs:[observed,observed]}]}}));
+  await page.route('**/api/site-reference',route=>route.fulfill({status:200,json:{url:'https://reference.example/',title:'Harbor Studio | Residential design',description:'An independent design practice creating residential and commercial spaces.',headings:['Residential design'],navigation:[],stylesheetsRead:1,styleFound:true,styleReference:{background:'#ffffff',fontFamily:'Georgia'},pageSummaries:[{path:'/about?lang=en',label:'About',title:'Meet Harbor Studio',description:'Our design studio',headings:['Our work'],paragraphs:[observed,observed,'Please fill out the form below to reach our team.']}]}}));
   await page.route('**/api/ai/business',route=>{const input=route.request().postDataJSON();return route.fulfill({status:200,json:{draft:input,provider:'browser-test-fixture',pages:generateBusinessWebsite(input).pages}})});
   await page.goto('/business');
   await page.getByRole('combobox',{name:/^Design approach/}).selectOption(mode);
@@ -25,6 +25,7 @@ for(const {mode,width} of [{mode:'inspired',width:390},{mode:'redesign',width:12
   await expect(about.getByText(observed,{exact:true})).toBeVisible();
   await expect(about.getByRole('link',{name:'View original page',exact:true})).toHaveAttribute('href','https://reference.example/about?lang=en');
   await expect(about.locator('form')).toHaveCount(0);
+  await expect(about.getByText('Please fill out the form below to reach our team.',{exact:true})).toHaveCount(0);
   if(mode==='inspired')await expect(about.locator('body')).toHaveCSS('background-color','rgb(221, 238, 255)');
   else await expect(about.locator('body')).not.toHaveCSS('background-color','rgb(221, 238, 255)');
  });

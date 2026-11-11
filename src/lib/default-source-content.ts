@@ -26,7 +26,7 @@ export function defaultSourcePages(evidence:SiteEvidence|null|undefined):Array<{
 /** Retain observed text only. Never import source markup, forms, scripts or behaviors. */
 export function applyDefaultSourceContent(pages:GeneratedPage[],evidence:SiteEvidence|null|undefined,mode:string):{pages:GeneratedPage[];warnings:string[]}{
  if(!['preserve','inspired','redesign'].includes(mode))return {pages,warnings:[]};
- const sources=defaultSourcePages(evidence);let applied=0;
+ const sources=defaultSourcePages(evidence);let applied=0,omittedFormInstructions=false;
  const output=pages.map(page=>{
   const source=sources.find(item=>item.slug===page.slug);
   if(!source||!/<\/main>/i.test(page.html))return page;
@@ -36,6 +36,8 @@ export function applyDefaultSourceContent(pages:GeneratedPage[],evidence:SiteEvi
    if(typeof value!=='string')return [];
    const text=value.trim().replace(/\s+/g,' ').slice(0,1200);
    if(!text||seen.has(text.toLowerCase()))return [];
+   // Retained source text cannot advertise a form that this draft does not host.
+   if(/\b(?:fill(?:\s+(?:out|in))?|submit|complete|use|using)\s+(?:(?:the|this|our)\s+)?(?:(?:online|contact|booking|enquiry|inquiry|registration)\s+){0,2}form\b|\bform\s+(?:below|above)\b/i.test(text)){omittedFormInstructions=true;return []}
    seen.add(text.toLowerCase());
    const escaped=escapeHtml(text);
    return html.includes('>'+escaped+'<')?[]:[escaped];
@@ -46,5 +48,5 @@ export function applyDefaultSourceContent(pages:GeneratedPage[],evidence:SiteEvi
   applied++;
   return {...page,html:html.replace(/<\/main>/i,section+'</main>')};
  });
- return {pages:output,warnings:applied?['Observed text from matching source pages was retained. Review its accuracy and authorization before publishing.']:[]};
+ return {pages:output,warnings:[...(applied?['Observed text from matching source pages was retained. Review its accuracy and authorization before publishing.']:[]),...(omittedFormInstructions?['Unverified form instructions were omitted. Configure form handling before adding a contact form.']:[])]};
 }
