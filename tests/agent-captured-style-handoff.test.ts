@@ -41,3 +41,13 @@ test('captured styles never authorize generation or replace failed model inferen
  await assert.rejects(executeAgent({...task,kind:'site-generation',payload:{...task.payload,approvedPlan:true}},generate),/Provider unavailable/);
  assert.equal(calls,1);
 });
+
+test('malformed nested capture entries fail validation without failing approved generation',async()=>{
+ for(const page of [null,{...capture.pages[0],landmarks:[null]},{...capture.pages[0],interactions:[null]},{...capture.pages[0],navigationChecks:[null]}]){
+  const browserEvidence={...capture,pages:[page]};
+  const output=await executeAgent({...task,kind:'site-generation',payload:{...task.payload,approvedPlan:true,browserEvidence}},model);
+  assert.equal(output.data.provider,'cloudflare');
+  assert.deepEqual(output.data.designWarnings,['Unverified browser appearance evidence was ignored.']);
+  for(const generated of output.data.pages as {html:string}[])assert.doesNotMatch(generated.html,/forge-captured-appearance/);
+ }
+});
