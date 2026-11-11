@@ -103,3 +103,24 @@ test('homepage extraction retains bounded visible paragraphs without scripts, fo
  const many='<main>'+Array.from({length:40},(_,i)=>'<p>Our studio offers distinct service number '+i+'.</p>').join('')+'</main>';
  assert.equal(homepageSourceParagraphs(many).length,12);
 });
+
+test('inspected homepage facts are retained only on the generated home page in source-based modes',()=>{
+ const home={...evidence,homepageParagraphs:['Our bakery serves handmade bread to neighborhood families.','Our bakery serves handmade bread to neighborhood families.','Order recreational drugs from our shop.','Please fill out the form below for bookings.']};
+ for(const mode of ['preserve','inspired','redesign']){
+  const result=applyDefaultSourceContent(pages,home,mode);
+  assert.equal(result.pages[0].html.split('Our bakery serves handmade bread').length-1,1);
+  assert.doesNotMatch(result.pages[0].html,/recreational drugs|fill out the form/);
+  assert.match(result.pages[0].html,/View original page/);
+  assert.doesNotMatch(result.pages[1].html,/Our bakery serves handmade bread/);
+  assert.deepEqual(applyDefaultSourceContent(result.pages,home,mode).pages,result.pages);
+  assert.ok(result.warnings.some(w=>w.includes('excluded business categories')));
+ }
+ assert.deepEqual(applyDefaultSourceContent(pages,home,'new'),{pages,warnings:[]});
+});
+
+test('unsafe or non-root homepage URLs cannot inject copied homepage text',()=>{
+ for(const url of ['https://127.0.0.1/','https://studio.example:8443/','https://studio.example/other','https://studio.example/?page=2']){
+  const result=applyDefaultSourceContent(pages,{...evidence,url,homepageParagraphs:['Our bakery serves handmade bread to neighborhood families.']},'preserve');
+  assert.equal(result.pages[0].html,pages[0].html);
+ }
+});
