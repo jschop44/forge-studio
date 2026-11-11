@@ -48,7 +48,7 @@ test('edited ZIP rewrites preview-style internal routes into portable sibling HT
  await open(page);
  await page.getByRole('textbox',{name:'HTML body',exact:true}).fill(
   '<main id="main-content"><h1>Portable home</h1><p>Browse our completed website pages.</p>'+
-  '<a href="/contact">Contact us</a><a href="./contact.html#main-content">Contact section</a>'+
+  '<a href="/contact">Contact us</a><a href="./index.html#main-content">Main content section</a>'+
   '<a href="https://example.com/terms">External terms</a></main>');
  const requested=page.waitForEvent('download');
  await page.getByRole('button',{name:'Validate and download website ZIP',exact:true}).click();
@@ -58,7 +58,7 @@ test('edited ZIP rewrites preview-style internal routes into portable sibling HT
  const files=unzipSync(Buffer.concat(chunks));
  const exported=strFromU8(files['index.html']);
  expect(exported).toContain('href="contact.html"');
- expect(exported).toContain('href="contact.html#main-content"');
+ expect(exported).toContain('href="index.html#main-content"');
  expect(exported).toContain('href="https://example.com/terms"');
  expect(exported).not.toContain('href="/contact"');
  expect(strFromU8(files['contact.html'])).toContain('Original contact');
