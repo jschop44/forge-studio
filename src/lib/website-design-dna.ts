@@ -13,10 +13,21 @@ export function extractWebsiteDesignDna(input:string,sourceUrl:string,stylesheet
  const css=[...(html.match(/<style\b[^>]*>[\s\S]*?<\/style\s*>/gi)||[]),...stylesheets.slice(0,5).map(sheet=>sheet.slice(0,100_000))].join('\n').slice(0,500_000);
  const images:SourceImage[]=[],seen=new Set<string>();
  const add=(value:string,alt:string,role:SourceImage['role'],width?:number,height?:number)=>{const url=publicSourceAsset(value,sourceUrl);if(!url||seen.has(url)||images.length>=30||width&&height&&width<32&&height<32)return;seen.add(url);images.push({url,alt:text(alt),role,sourcePage:sourceUrl,...(width?{width}:{}),...(height?{height}:{})})};
+ // The original photo often lives in srcset while src contains a transparent placeholder.
+ // Treat source markup as URL evidence only; never execute it in a generated page.
+ const responsiveUrls=(value:string)=>value.split(',').map(part=>{
+  const match=part.trim().match(/^(\S+)(?:\s+(\d+(?:\.\d+)?)[wx])?$/i);
+  return match?{url:match[1],resolution:Math.min(20000,Number(match[2]||1))}:null;
+ }).filter((item):item is {url:string;resolution:number}=>Boolean(item)).sort((a,b)=>b.resolution-a.resolution).map(item=>item.url);
  for(const match of html.matchAll(/<img\b[^>]*>/gi)){
-  const tag=match[0],alt=attribute(tag,'alt'),label=[alt,attribute(tag,'class'),attribute(tag,'id')].join(' '),src=attribute(tag,'data-src')||attribute(tag,'src')||attribute(tag,'srcset').split(',')[0]?.trim().split(/\s+/)[0]||'';
+  const tag=match[0],alt=attribute(tag,'alt'),label=[alt,attribute(tag,'class'),attribute(tag,'id')].join(' ');
+  const candidates=[attribute(tag,'data-src'),attribute(tag,'data-original'),attribute(tag,'data-lazy-src'),...responsiveUrls(attribute(tag,'data-srcset')),...responsiveUrls(attribute(tag,'srcset')),attribute(tag,'src')];
+  const src=candidates.find(candidate=>publicSourceAsset(candidate,sourceUrl));
   const size=(name:string)=>{const n=Number(attribute(tag,name));return Number.isInteger(n)&&n>0&&n<=20000?n:undefined};
-  if(!/pixel|tracking|spacer/i.test(label))add(src,alt,/\blogo\b|brand[-_ ]?mark/i.test(label)?'logo':'content',size('width'),size('height'));
+  if(!src||/pixel|tracking|spacer/i.test(label))continue;
+  const filename=src.split(/[?#]/)[0].split('/').pop()||'';
+  const isLogo=/\blogo\b|brand[-_ ]?mark/i.test(label)||/(?:^|[-_.])(?:logo|brandmark)(?:[-_.]|$)/i.test(filename);
+  add(src,alt,isLogo?'logo':'content',size('width'),size('height'));
  }
  let businessName:string|undefined;
  for(const match of html.matchAll(/<meta\b[^>]*>/gi)){const tag=match[0],name=attribute(tag,'property')||attribute(tag,'name');if(/^(?:og:image|twitter:image)$/i.test(name))add(attribute(tag,'content'),'Source website preview','content');if(!businessName&&/^(?:og:site_name|application-name)$/i.test(name)){const observed=text(attribute(tag,'content'));if(observed.length>=2&&observed.length<=100)businessName=observed}}
