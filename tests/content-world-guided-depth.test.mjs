@@ -15,7 +15,7 @@ test('guided spatial exhibition can walk toward a page without rotating text-bea
  assert.match(html,/translateZ\('\+\(i===index\?depth:/);
  assert.match(html,/event\.key\.toLowerCase\(\)==='w'/);
  assert.match(html,/event\.key\.toLowerCase\(\)==='s'/);
- assert.match(html,/data-depth-step/);
+ assert.match(html,/stage\.dataset\.depthStep/,'depth is set in the runtime DOM, not pre-rendered as HTML');
  assert.doesNotMatch(html,/rotateY\(/,'3D depth must not skew textual labels');
  assert.match(html,/touch-action:none/);
  assert.match(html,/data-content-read/,'ordinary reading mode remains available');
