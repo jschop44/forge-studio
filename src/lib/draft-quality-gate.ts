@@ -12,6 +12,13 @@ export type DraftQualityReport = {
  * Static QA for generated drafts. Passing does not imply a deployed site,
  * working backend forms, verified external links, or publishing approval.
  */
+// Browsers resolve character references inside href/action attributes before
+// interpreting navigation schemes. Do not accept encoded schemes as relative URLs.
+// Ordinary &amp; query separators remain allowed.
+function hasUnsafeUrlEntity(value:string){
+ return /&(?!(?:amp);)(?:#(?:x[0-9a-f]+|\d+);?|[a-z][a-z\d]+;)/i.test(value);
+}
+
 export function auditGeneratedDraft(pages: GeneratedPage[]): DraftQualityReport {
   const errors: string[] = [];
   const warnings: string[] = [];
@@ -47,7 +54,7 @@ export function auditGeneratedDraft(pages: GeneratedPage[]): DraftQualityReport 
     for(const match of page.html.matchAll(/<form\b[^>]*>/gi)){
       const tag=match[0];
       const action=tag.match(/\saction\s*=\s*(["'])(.*?)\1/i)?.[2]?.trim();
-      if(!action||action==='#'||action.startsWith('#')||/^(?:javascript:|data:|blob:)/i.test(action)){
+      if(!action||action==='#'||action.startsWith('#')||hasUnsafeUrlEntity(action)||/^(?:javascript:|data:|blob:)/i.test(action)){
         errors.push(page.slug+": form has no functioning submission destination");
         continue;
       }
@@ -84,7 +91,7 @@ export function auditGeneratedDraft(pages: GeneratedPage[]): DraftQualityReport 
       const href=match[2].trim();
       // A browser may treat whitespace/control characters or protocol-relative
       // destinations differently from a naive static string check.
-      if(!href||href==='#'||/[\u0000-\u001f\u007f\\]/.test(href)||href.startsWith('//')){
+      if(!href||href==='#'||hasUnsafeUrlEntity(href)||/[\u0000-\u001f\u007f\\]/.test(href)||href.startsWith('//')){
         errors.push(page.slug+": nonfunctional or unsafe link destination");
         continue;
       }
