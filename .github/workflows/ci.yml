@@ -143,8 +143,11 @@ jobs:
           echo "Elapsed job time: $(( $(date +%s) - VERIFY_STARTED )) seconds" >> "$GITHUB_STEP_SUMMARY"
           echo '- Review the browser job results and attached Playwright report.' >> "$GITHUB_STEP_SUMMARY"
           echo '- Verification, production build, and browser jobs must all pass before release.' >> "$GITHUB_STEP_SUMMARY"
+      # Report upload is diagnostic only; passing Playwright tests must not fail
+      # because GitHub's artifact storage endpoint is temporarily unavailable.
       - uses: actions/upload-artifact@v4
         if: always()
+        continue-on-error: true
         with:
           name: playwright-verification-report-${{ matrix.shard }}
           path: |
