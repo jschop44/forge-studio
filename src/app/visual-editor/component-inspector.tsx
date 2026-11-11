@@ -41,8 +41,11 @@ export default function ComponentInspector({editor,pages}:Props){
  }
  function move(direction:number){
   const parent=selected?.parent();if(!selected||!parent)return;
-  const index=selected.index()+direction;if(index<0||index>=parent.components().length)return;
-  selected.move(parent,{at:index});editor?.select(selected);refresh(value=>value+1);setMessage('Element moved.');
+  const targetIndex=selected.index()+direction;if(targetIndex<0||targetIndex>=parent.components().length)return;
+  // GrapesJS move() counts the existing component before removal when moving forward.
+  // To move one place down, pass targetIndex + 1; otherwise GrapesJS considers it a no-op.
+  selected.move(parent,{at:direction>0?targetIndex+1:targetIndex});
+  editor?.select(selected);refresh(value=>value+1);setMessage('Element moved.');
  }
  const updateStyle=(key:string,value:string)=>setStyles(current=>({...current,[key]:value}));
  return <section className="forge-element-inspector" aria-label="Selected element controls"><h3>Selected element</h3>
