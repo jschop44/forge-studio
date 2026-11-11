@@ -1,4 +1,4 @@
-import type {GeneratedPage} from './business-site';
+import {isExcludedBusiness,type GeneratedPage} from './business-site';
 import type {SiteEvidence} from './forge-intelligence';
 import {escapeHtml} from './export';
 import {publicSourceAsset} from './website-design-dna';
@@ -26,7 +26,7 @@ export function defaultSourcePages(evidence:SiteEvidence|null|undefined):Array<{
 /** Retain observed text only. Never import source markup, forms, scripts or behaviors. */
 export function applyDefaultSourceContent(pages:GeneratedPage[],evidence:SiteEvidence|null|undefined,mode:string):{pages:GeneratedPage[];warnings:string[]}{
  if(!['preserve','inspired','redesign'].includes(mode))return {pages,warnings:[]};
- const sources=defaultSourcePages(evidence);let applied=0,omittedFormInstructions=false;
+ const sources=defaultSourcePages(evidence);let applied=0,omittedFormInstructions=false,omittedExcludedContent=false;
  const output=pages.map(page=>{
   const source=sources.find(item=>item.slug===page.slug);
   if(!source||!/<\/main>/i.test(page.html))return page;
@@ -36,6 +36,10 @@ export function applyDefaultSourceContent(pages:GeneratedPage[],evidence:SiteEvi
    if(typeof value!=='string')return [];
    const text=value.trim().replace(/\s+/g,' ').slice(0,1200);
    if(!text||seen.has(text.toLowerCase()))return [];
+   // The AI brief was screened before generation, but inspected paragraphs are added later.
+   // Reuse the same business-category exclusion policy before copying source text.
+   // Omit individual paragraphs rather than refusing legitimate healthcare/pharmacy pages.
+   if(isExcludedBusiness({businessName:'',industry:'',description:text,services:[]})){omittedExcludedContent=true;return []}
    // Retained source text cannot advertise a form that this draft does not host.
    if(/\b(?:fill(?:\s+(?:out|in))?|submit|complete|use|using)\s+(?:(?:the|this|our)\s+)?(?:(?:online|contact|booking|enquiry|inquiry|registration)\s+){0,2}form\b|\bform\s+(?:below|above)\b/i.test(text)){omittedFormInstructions=true;return []}
    seen.add(text.toLowerCase());
@@ -48,5 +52,5 @@ export function applyDefaultSourceContent(pages:GeneratedPage[],evidence:SiteEvi
   applied++;
   return {...page,html:html.replace(/<\/main>/i,section+'</main>')};
  });
- return {pages:output,warnings:[...(applied?['Observed text from matching source pages was retained. Review its accuracy and authorization before publishing.']:[]),...(omittedFormInstructions?['Unverified form instructions were omitted. Configure form handling before adding a contact form.']:[])]};
+ return {pages:output,warnings:[...(applied?['Observed text from matching source pages was retained. Review its accuracy and authorization before publishing.']:[]),...(omittedFormInstructions?['Unverified form instructions were omitted. Configure form handling before adding a contact form.']:[]),...(omittedExcludedContent?['Source paragraphs matching excluded business categories were omitted. Review source accuracy before publishing.']:[])]};
 }
