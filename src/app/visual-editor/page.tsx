@@ -4,6 +4,7 @@ import Link from 'next/link';
 import dynamic from 'next/dynamic';
 import {prepareVisualEditorDocument,serializeEditorDraft,serializeVisualEditorDocument} from '../../lib/visual-editor-adapter';
 import {normalizeEditorDocument,parseEditorSite,replaceEditorPage} from '../../lib/visual-editor-site';
+import {portableStaticSiteLinks} from '../../lib/portable-static-site-links';
 import {auditGeneratedDraft} from '../../lib/draft-quality-gate';
 import {downloadText,escapeHtml} from '../../lib/export';
 import type {GeneratedPage} from '../../lib/business-site';
@@ -81,7 +82,7 @@ export default function VisualEditor(){
  async function saveSite(){
   try{
    const pages=checkedSite(true);const {zipSync,strToU8}=await import('fflate');
-   const bytes=zipSync(Object.fromEntries(pages.map(item=>[item.slug+'.html',strToU8(item.html)])));
+   const bytes=zipSync(Object.fromEntries(pages.map(item=>[item.slug+'.html',strToU8(portableStaticSiteLinks(item.html,pages))])));
    const url=URL.createObjectURL(new Blob([new Uint8Array(bytes).buffer],{type:'application/zip'}));
    const link=document.createElement('a');link.href=url;link.download='edited-website.zip';document.body.appendChild(link);link.click();link.remove();setTimeout(()=>URL.revokeObjectURL(url),2000);
    setMessage('Validated website ZIP downloaded. Review every page before publishing.');
