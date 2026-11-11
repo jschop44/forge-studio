@@ -6,6 +6,7 @@ import {auditGeneratedSite} from '../site-audit';
 import type {AgentTask} from './types';
 import {reviewAgentPages} from './quality';
 import {createSitePlan} from './site-plan';
+import {applyCapturedAppearance} from '../captured-appearance';
 const Context=z.object({contactEmail:z.string().trim().email().max(254).optional(),experienceStyle:z.enum(['standard','cinematic','object-navigation','immersive']).optional(),businessName:z.string().min(2).max(100).optional(),industry:z.string().max(80).optional(),summary:z.string().max(1800).optional(),website:z.string().url().optional(),services:z.array(z.string()).optional(),html:z.string().max(250000).optional(),approvedPlan:z.boolean().optional()}).passthrough();
 export type AgentOutput={stage:AgentTask['kind'];summary:string;data:Record<string,unknown>};
 export function executeSafeAgent(task:AgentTask,review=reviewAgentPages):AgentOutput{
@@ -32,5 +33,6 @@ export async function executeAgent(task:AgentTask,generate=generateWithLocalAi,r
  if(!context.approvedPlan)throw Error('Site plan approval required');
  const brief=requireGenerationBrief(context);
  const result=await generate({experienceStyle:context.experienceStyle,contactEmail:context.contactEmail,businessName:brief.businessName,industry:brief.industry,description:brief.summary,services:brief.services});
- return {stage:task.kind,summary:'AI-generated four-page site draft',data:{name:result.draft.businessName,provider:result.provider,draft:result.draft,pages:result.pages.map(page=>({slug:page.slug,title:page.title,html:page.html}))}};
+ const captured=applyCapturedAppearance(result.pages,context.browserEvidence,context.website||'',typeof context.designMode==='string'?context.designMode:'new');
+ return {stage:task.kind,summary:'AI-generated four-page site draft',data:{name:result.draft.businessName,provider:result.provider,draft:result.draft,pages:captured.pages.map(page=>({slug:page.slug,title:page.title,html:page.html})),designWarnings:captured.warnings}};
 }
