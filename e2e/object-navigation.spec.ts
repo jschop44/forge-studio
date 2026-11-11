@@ -65,7 +65,7 @@ test('external model failure preserves interactive baseball geometry and navigat
  await expect(page.getByRole('button',{name:'Reset view'})).toBeVisible();
  await expect(scene.getByRole('status')).toContainText('interactive 3D object');
  const bat=await meshPoint(page,[-.8,1.3,.1]);await page.mouse.click(bat.x,bat.y);
- await expect(page).toHaveURL(/services\\.html#offering-0$/);
+ await expect(page).toHaveURL(/services\.html#offering-0$/);
 });
 test('WebGL failure preserves offering navigation without unusable 3D controls',async({page})=>{
  await page.addInitScript(()=>{HTMLCanvasElement.prototype.getContext=()=>null});
