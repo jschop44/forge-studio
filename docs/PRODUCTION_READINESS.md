@@ -46,3 +46,15 @@ Percentages remain unassigned until each area's full acceptance inventory is mea
 6. Complete source-fidelity and real-device 3D visual/performance acceptance.
 
 Historical documents describe earlier environments. The active deployment authority remains `.github/workflows/verified-preview.yml`, targeting only `forge-studio-preview`. Preserve `backup/forge-preview-pre-pr6-20261110`.
+
+## Subsequent verification in this session
+
+- PR #39 merged as `4a75e9e` after all required checks passed: portable exported routes. PR #40 merged as `3fd7440`: exact deployed source verification. PR #41 merged as `95a2c46`: single validated website ZIP. PR #42 merged as `d2bce69`: streamed publication/rollback request limits, after all application/build/packaging/browser checks passed.
+- Live business recognition passed 4/4 cases with Cloudflare inference. Live browser interaction generated a four-page synthetic coffee website, followed the Home-to-Menu link, and switched to the 390px preview. This is a limited acceptance observation, not comprehensive mobile visual acceptance.
+- Live publishing POST returned 503 with publishing disabled, as required. Production dependency audit reported zero vulnerabilities. Rollback branch still points to `36ddcb1e0659755589a6b10f3298e4689f57e631`.
+- Read-only Neon inspection found a same-tenant parent-linked chain: completed planning, approved generation with four persisted pages, completed quality review with status `passed`, and publication review waiting for approval. The historical generation result has no provider field, so it does **not** prove durable real-model generation. Stages 1/2 and live retry/concurrency acceptance remain unverified. No customer payloads were retrieved and no database mutations were made.
+- A local rerun of the isolated audit pipeline returned `AUDIT_SOURCE_TRANSIENT`; the inspected deployed workflow diagnostic passed. Local browser binary download failed; browser acceptance used GitHub Actions and the available live browser. Neither restriction is represented as a product pass.
+- Publication hardening branch: 538/538 TypeScript tests, 114/114 worker/script tests, and type validation passed locally. The prior attestation branch additionally includes three worker/script regressions.
+- Agent contact handoff now validates and passes supplied email into inference/rendering instead of dropping it. Nine focused agent/contract tests and TypeScript validation passed. This is a regression fix, not live publishing acceptance.
+
+Latest merged main at this checkpoint: `d2bce699975471f321b76e082abb9dd3a44b9047`. Current-main CI and a live revision-attested deployment remain required. Avoid interpreting skipped older deployment runs as failures: the workflow intentionally refuses to deploy superseded source.

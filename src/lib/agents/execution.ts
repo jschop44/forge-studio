@@ -6,7 +6,7 @@ import {auditGeneratedSite} from '../site-audit';
 import type {AgentTask} from './types';
 import {reviewAgentPages} from './quality';
 import {createSitePlan} from './site-plan';
-const Context=z.object({experienceStyle:z.enum(['standard','cinematic','object-navigation','immersive']).optional(),businessName:z.string().min(2).max(100).optional(),industry:z.string().max(80).optional(),summary:z.string().max(1800).optional(),website:z.string().url().optional(),services:z.array(z.string()).optional(),html:z.string().max(250000).optional(),approvedPlan:z.boolean().optional()}).passthrough();
+const Context=z.object({contactEmail:z.string().trim().email().max(254).optional(),experienceStyle:z.enum(['standard','cinematic','object-navigation','immersive']).optional(),businessName:z.string().min(2).max(100).optional(),industry:z.string().max(80).optional(),summary:z.string().max(1800).optional(),website:z.string().url().optional(),services:z.array(z.string()).optional(),html:z.string().max(250000).optional(),approvedPlan:z.boolean().optional()}).passthrough();
 export type AgentOutput={stage:AgentTask['kind'];summary:string;data:Record<string,unknown>};
 export function executeSafeAgent(task:AgentTask,review=reviewAgentPages):AgentOutput{
  const context=Context.parse(task.payload);
@@ -17,7 +17,7 @@ export function executeSafeAgent(task:AgentTask,review=reviewAgentPages):AgentOu
  case 'site-generation':{
  if(!context.approvedPlan)throw Error('Site plan approval required');
  const brief=requireGenerationBrief(context);
- const result=generateBusinessWebsite({experienceStyle:context.experienceStyle,businessName:brief.businessName,industry:brief.industry,description:brief.summary,services:brief.services});
+ const result=generateBusinessWebsite({experienceStyle:context.experienceStyle,contactEmail:context.contactEmail,businessName:brief.businessName,industry:brief.industry,description:brief.summary,services:brief.services});
  return {stage:task.kind,summary:'Generated four-page site draft',data:{name:result.name,pages:result.pages.map(p=>({slug:p.slug,title:p.title,html:p.html}))}};
  }
  case 'quality-review':{const result=review(task.payload);return {stage:task.kind,summary:'Reviewed '+result.evidence.pageCount+' supplied page(s)',data:result};}
@@ -31,6 +31,6 @@ export async function executeAgent(task:AgentTask,generate=generateWithLocalAi,r
  const context=Context.parse(task.payload);
  if(!context.approvedPlan)throw Error('Site plan approval required');
  const brief=requireGenerationBrief(context);
- const result=await generate({experienceStyle:context.experienceStyle,businessName:brief.businessName,industry:brief.industry,description:brief.summary,services:brief.services});
+ const result=await generate({experienceStyle:context.experienceStyle,contactEmail:context.contactEmail,businessName:brief.businessName,industry:brief.industry,description:brief.summary,services:brief.services});
  return {stage:task.kind,summary:'AI-generated four-page site draft',data:{name:result.draft.businessName,provider:result.provider,draft:result.draft,pages:result.pages.map(page=>({slug:page.slug,title:page.title,html:page.html}))}};
 }
