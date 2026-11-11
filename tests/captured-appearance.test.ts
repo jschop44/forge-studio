@@ -30,13 +30,17 @@ test('mismatched or invalid captures cannot style another company',()=>{
  const poisoned={...sample,sourceUrl:'https://127.0.0.1/'};
  assert.deepEqual(applyCapturedAppearance(pages,poisoned,sample.sourceUrl,'inspired').pages,pages);
 });
-test('rejects stylesheet escapes and fixes observed unreadable color pairs',()=>{
- const attack={...sample,pages:[{...sample.pages[0],designTokens:{backgroundColor:'rgb(254, 254, 254)',textColor:'rgb(250, 250, 250)',fontFamily:'Arial;}</style><script>alert(1)</script>',headingFontFamily:'url(javascript:bad)',headingFontSize:'1000px',baseFontSize:'6px'}}]};
- const out=applyCapturedAppearance(pages,attack,sample.sourceUrl,'inspired').pages[0].html;
+test('valid low-contrast computed colors retain readable text',()=>{
+ const lowContrast={...sample,pages:[{...sample.pages[0],designTokens:{...sample.pages[0].designTokens,backgroundColor:'rgb(254, 254, 254)',textColor:'rgb(250, 250, 250)'}}]};
+ const out=applyCapturedAppearance(pages,lowContrast,sample.sourceUrl,'inspired').pages[0].html;
  assert.match(out,/--business-paper:#fefefe/);
  assert.match(out,/--business-ink:#000000/);
- assert.doesNotMatch(out,/<script>|javascript:|1000px|font-family:Arial;/);
+});
+test('rejects malformed browser evidence before CSS injection or unbounded font sizes',()=>{
+ const attack={...sample,pages:[{...sample.pages[0],designTokens:{backgroundColor:'rgb(254, 254, 254)',textColor:'rgb(250, 250, 250)',fontFamily:'Arial;}</style><script>alert(1)</script>',headingFontFamily:'url(javascript:bad)',headingFontSize:'1000px',baseFontSize:'6px'}}]};
+ const rejected=applyCapturedAppearance(pages,attack,sample.sourceUrl,'inspired');
+ assert.deepEqual(rejected.pages,pages);
+ assert.ok(rejected.warnings.some(w=>w.includes('Unverified browser appearance')));
  const unsafe={...sample,pages:[{...sample.pages[0],designTokens:{backgroundColor:'red;}script{display:block',textColor:'rgb(255, 255, 255)',fontFamily:'sans-serif'}}]};
- const sanitized=applyCapturedAppearance(pages,unsafe,sample.sourceUrl,'inspired').pages[0].html;
- assert.doesNotMatch(sanitized,/script\{|background:red|font-family:"red/);
+ assert.deepEqual(applyCapturedAppearance(pages,unsafe,sample.sourceUrl,'inspired').pages,pages);
 });
