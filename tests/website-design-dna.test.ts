@@ -101,3 +101,40 @@ test('CSS logo detection ignores unsafe non-HTTPS URLs and unrelated selectors',
  assert.equal(dna.images.some(image=>image.role==='logo'),false);
  assert.ok(dna.images.some(image=>image.url==='https://studio.example/banner.jpg'));
 });
+
+test('responsive picture sources preserve real product photos and alt labels over fallback placeholders',()=>{
+ const source=[
+  '<picture><source type="image/avif" srcset="/wings-400.avif 400w, /wings-1600.avif 1600w"><source type="image/webp" srcset="/wings-1200.webp 1200w"><img alt="Chicken wings" src="/blank.gif" width="1200" height="800"></picture>',
+  '<picture><source media="(max-width: 600px)" srcset="/mobile-mugs.webp 500w"><source media="(min-width: 601px)" srcset="/ceramic-mugs.webp 1600w"><img alt="Ceramic mugs" src="/fallback.jpg"></picture>',
+  '<img src="/outdoor-patio.jpg" alt="Outdoor patio">'
+ ].join('');
+ const dna=extractWebsiteDesignDna(source,'https://cafe.example/');
+ assert.deepEqual(dna.images.map(x=>x.url),[
+  'https://cafe.example/wings-1600.avif',
+  'https://cafe.example/ceramic-mugs.webp',
+  'https://cafe.example/outdoor-patio.jpg'
+ ]);
+ assert.deepEqual(dna.images.map(x=>x.alt),['Chicken wings','Ceramic mugs','Outdoor patio']);
+ assert.equal(dna.images[0].width,1200);
+});
+test('malformed, unsafe or unrelated picture sources never escape the ordinary safe fallback',()=>{
+ const html=[
+  '<picture><source srcset="javascript:alert(1) 400w, https://127.0.0.1/private.avif 1200w" type="image/avif"><img src="/safe.jpg" alt="Local business storefront"></picture>',
+  '<picture><source type="application/javascript" srcset="/malicious.js 2000w"><img src="/real.jpg" alt="Pizza"></picture>',
+  '<picture><source srcset="/tracking.avif 1600w"><img src="/one-pixel.gif" alt="tracking pixel" width="1" height="1"></picture>'
+ ].join('');
+ const dna=extractWebsiteDesignDna(html,'https://shop.example/');
+ assert.deepEqual(dna.images.map(x=>x.url),[
+  'https://shop.example/safe.jpg',
+  'https://shop.example/real.jpg'
+ ]);
+ assert.ok(!dna.images.some(x=>x.url.includes('malicious')||x.url.includes('tracking')));
+});
+test('picture sources belong only to their nested image and preserve filename-based logo identity',()=>{
+ const dna=extractWebsiteDesignDna(
+  '<picture><source type="image/webp" srcset="/logo-large.webp 1200w"><img src="/tiny-placeholder.gif" class="company-logo" alt="Company logo"></picture>'+
+  '<img src="/regular-product.jpg" alt="Chicken wings">',
+  'https://shop.example/');
+ assert.equal(dna.logo?.url,'https://shop.example/logo-large.webp');
+ assert.equal(dna.images[1].url,'https://shop.example/regular-product.jpg');
+});
