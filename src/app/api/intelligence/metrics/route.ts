@@ -1,6 +1,7 @@
 import {NextResponse} from 'next/server';
 import {database} from '../../../../lib/server/db';
 import {currentUserId} from '../../../../lib/server/auth';
+import {summarizeDurableStages} from '../../../../lib/agents/pipeline-observability';
 export const runtime='nodejs';
 export async function GET(){
  const user=await currentUserId();if(!user)return NextResponse.json({error:'Unauthorized'},{status:401});
@@ -14,6 +15,8 @@ export async function GET(){
  (SELECT count(*)::int FROM forge_jobs WHERE tenant_id=${user}::uuid AND status='needs-approval') AS approvals,
  (SELECT count(*)::int FROM forge_jobs WHERE tenant_id=${user}::uuid AND status='blocked') AS blocked,
  (SELECT count(*)::int FROM forge_feedback WHERE owner_id=${user}::uuid) AS feedback`;
- return NextResponse.json({metrics:rows[0]},{headers:{'Cache-Control':'private,no-store'}});
+ const stageRows=await sql`SELECT kind,status,count(*)::int AS total,max(updated_at) AS last_updated
+ FROM forge_jobs WHERE tenant_id=${user}::uuid GROUP BY kind,status`;
+ return NextResponse.json({metrics:rows[0],pipeline:summarizeDurableStages(stageRows)},{headers:{'Cache-Control':'private,no-store'}});
  }catch{return NextResponse.json({error:'Metrics unavailable'},{status:503})}
 }
