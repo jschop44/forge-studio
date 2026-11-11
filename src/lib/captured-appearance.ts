@@ -40,7 +40,10 @@ export function applyCapturedAppearance<T extends HtmlPage>(
  let original:URL,observed:URL;
  try{original=new URL(expectedSource);observed=new URL(capture.sourceUrl)}catch{return {pages,warnings:['Browser appearance evidence did not match the inspected source.']}}
  if(original.protocol!=='https:'||original.origin!==observed.origin)return {pages,warnings:['Browser appearance evidence did not match the inspected source.']};
- const selected=capture.pages.find(page=>page.path===original.pathname)||capture.pages[0];
+ // An unrelated captured page must never be substituted for the inspected source page.
+ const expectedPath=original.pathname+original.search;
+ const selected=capture.pages.find(page=>page.path===expectedPath);
+ if(!selected)return {pages,warnings:['Browser appearance evidence did not include the inspected source page.']};
  const tokens=(selected as typeof selected&{designTokens?:unknown})?.designTokens;
  if(!tokens||typeof tokens!=='object')return {pages,warnings:[]};
  const t=tokens as Record<string,unknown>;
