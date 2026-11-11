@@ -108,6 +108,7 @@ test('builder exposes one 3D immersion experience and keeps the full business ra
   await route.fulfill({status:200,json:{provider:'browser-test-fixture',draft:input,pages:generateBusinessWebsite(input).pages}});
  });
  await page.goto('/business');
+ await expect(page.getByRole('button',{name:/^Interactive 3D objects/})).toHaveCount(0);
  await page.getByRole('button',{name:/^3D immersion/}).click();
  await page.getByPlaceholder('e.g. Northstar Coffee').fill('Northstar Coffee');
  await page.getByPlaceholder('Describe what you offer, who you serve and what makes you different.').fill('Industry: Coffee shop\nOfferings: Coffee beans, Ceramic mugs, Community events');
@@ -121,28 +122,3 @@ test('builder exposes one 3D immersion experience and keeps the full business ra
  await expect(menu.locator('#offering-2')).toContainText('Community events');
 });
 
-
-test('builder has one 3D immersion option with working offering-page navigation',async({page})=>{
- await page.route('**/api/ai/business',route=>{
-  const input=route.request().postDataJSON();
-  expect(input.experienceStyle).toBe('immersive');
-  expect(input.services).toEqual(['Coffee beans','Ceramic mugs']);
-  return route.fulfill({status:200,json:{provider:'browser-test-fixture',draft:input,pages:generateBusinessWebsite(input).pages}});
- });
- await page.goto('/business');
- const immersive=page.getByRole('button',{name:/^3D immersion/});
- await expect(immersive).toBeVisible();
- await expect(page.getByRole('button',{name:/^Interactive 3D objects/})).toHaveCount(0);
- await immersive.click();
- await expect(immersive).toHaveAttribute('aria-pressed','true');
- await page.getByPlaceholder('e.g. Northstar Coffee').fill('Northstar Coffee');
- await page.getByPlaceholder('Describe what you offer, who you serve and what makes you different.').fill('Industry: Coffee shop\\nOfferings: Coffee beans, Ceramic mugs\\nFreshly roasted neighborhood coffee and ceramic drinkware.');
- await page.getByRole('button',{name:/generate my website/i}).click();
- const home=page.frameLocator('iframe[title="Website preview: Home"]');
- await expect(home.locator('#forge-immersive-world')).toBeVisible();
- await home.locator('[data-world-page="services"]').click();
- await expect(page.getByRole('navigation',{name:'Website pages'}).getByRole('button',{name:'Menu',exact:true})).toHaveAttribute('aria-current','page');
- const menu=page.frameLocator('iframe[title="Website preview: Menu"]');
- await menu.getByRole('button',{name:'Read Menu page',exact:true}).click();
- await expect(menu.locator('#offering-1')).toContainText('Ceramic mugs');
-});
