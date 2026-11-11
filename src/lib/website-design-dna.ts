@@ -31,11 +31,34 @@ export function extractWebsiteDesignDna(input:string,sourceUrl:string,stylesheet
  }
  let businessName:string|undefined;
  for(const match of html.matchAll(/<meta\b[^>]*>/gi)){const tag=match[0],name=attribute(tag,'property')||attribute(tag,'name');if(/^(?:og:image|twitter:image)$/i.test(name))add(attribute(tag,'content'),'Source website preview','content');if(!businessName&&/^(?:og:site_name|application-name)$/i.test(name)){const observed=text(attribute(tag,'content'));if(observed.length>=2&&observed.length<=100)businessName=observed}}
+ // Some businesses render their official mark through .logo CSS rather than
+ // <img>. Discover those logo asset references first so later generic background
+ // scans cannot misclassify them. Never copy source selectors or CSS declarations.
+ for(const rule of css.matchAll(/([^{}]{1,220})\{([^{}]{0,10000})\}/g)){
+  const selector=rule[1];
+  if(!/(?:^|[\s.#_-])(?:logo|brand[-_]?mark)(?:$|[\s.#:_>-])/i.test(selector))continue;
+  for(const hit of rule[2].matchAll(/background(?:-image)?\s*:[^;}]*?url\(\s*["']?([^\s"')]+)["']?\s*\)/gi))
+   add(hit[1],'Source website logo','logo');
+ }
  // CSS URLs are read as evidence, never emitted as executable style rules.
  for(const match of css.matchAll(/(?:background(?:-image)?\s*:[^;}]*?)url\(\s*["']?([^\s"')]+)["']?\s*\)/gi))add(match[1],'Source website background','background');
  // Prioritize an observed document background; stylesheet order alone can begin with an icon color.
  const documentRules=[...css.matchAll(/(?:\bbody\b|:root)\s*[^{}]*\{([^}]*)\}/gi)];
- const background=documentRules.map(rule=>rule[1].match(/(?:background(?:-color)?|--(?:background|bg|surface))\s*:\s*(#[a-f\d]{6}\b|#[a-f\d]{3}\b)/i)?.[1]).find(Boolean);
+ // Safely resolve a direct #hex value or a single declared CSS variable.
+ // No CSS functions, imports, custom URLs, or source code are executed.
+ const declarations=new Map([...css.matchAll(/(--[a-z][\w-]{1,78})\s*:\s*(#[a-f\d]{6}\b|#[a-f\d]{3}\b)/gi)]
+  .map(match=>[match[1].toLowerCase(),match[2].toLowerCase()]));
+ const declaredBackground=(rule:string)=>{
+  const token=rule.match(/(?:^|;)\s*background(?:-color)?\s*:\s*(#[a-f\d]{6}\b|#[a-f\d]{3}\b|var\(\s*(--[a-z][\w-]*)\s*\))/i);
+  if(!token)return;
+  if(/^#/.test(token[1]))return token[1];
+  const variable=token[2]?.toLowerCase();
+  return variable?declarations.get(variable):undefined;
+ };
+ const bodyBackground=[...css.matchAll(/(?:^|[},])\s*body(?:\s*,\s*[a-z]*)?\s*\{([^}]*)\}/gi)]
+  .map(rule=>declaredBackground(rule[1])).find(Boolean);
+ const rootBackground=documentRules.map(rule=>rule[1].match(/(?:background(?:-color)?|--(?:background|bg|surface))\s*:\s*(#[a-f\d]{6}\b|#[a-f\d]{3}\b)/i)?.[1]).find(Boolean);
+ const background=bodyBackground||rootBackground;
  const palette=[...new Set([...(background?[background]:[]),...(css.match(/#[a-f\d]{6}\b|#[a-f\d]{3}\b/gi)||[])].map(color=>color.toLowerCase()))].slice(0,12);
  const families=[...css.matchAll(/font-family\s*:\s*([^;}]+)/gi)].map(match=>match[1].replace(/["']/g,'').trim()).filter(value=>value.length<180&&/^[\w ,.-]+$/.test(value));
  const links=[...html.matchAll(/<a\b[^>]*>/gi)].map(match=>attribute(match[0],'href'));
