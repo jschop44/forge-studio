@@ -1,6 +1,6 @@
 # Business publishing: live verification and rollback gate
 
-**Status:** Not yet verified against an isolated live Neon database with test-owner sessions. Keep `ENABLE_BUSINESS_PUBLISHING` unset/false until all checks pass. GitHub Actions success alone does not satisfy this gate.
+**Status:** Rollback-only SQL, true concurrent SQL, and authenticated production-build HTTP acceptance passed against the isolated live Neon branch. Cloudflare-hosted browser/publication acceptance remains unverified. Keep `ENABLE_BUSINESS_PUBLISHING` unset/false until all checks pass. GitHub Actions success alone does not satisfy this gate.
 
 ## Preflight
 1. Select an isolated test environment and Neon branch explicitly; use only existing free resources. The live Worker remains forge-studio-preview and customer publishing must stay disabled. Do not create a duplicate Worker for testing.
@@ -23,7 +23,7 @@
 11. Disable the flag again and confirm public pages return 503.
 
 ## Release blockers
-- No real Neon transaction/concurrency test has been run.
+- Isolated Neon SQL passed 24 assertions, independent connections proved a 23505 revision conflict, and the production-build API passed 52 assertions. Cloudflare-hosted browser, visual/asset and custom-domain acceptance remain required. See PUBLISHING_SQL_ACCEPTANCE_20261111.md.
 - Changed page-set revision/rollback is not implemented.
 - Uniqueness races return 409 in source; real concurrent Neon verification remains required.
 - HTML validation is a conservative regex-based filter, **not** a full HTML sanitizer.

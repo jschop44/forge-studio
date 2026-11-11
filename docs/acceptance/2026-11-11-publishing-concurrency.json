@@ -1,0 +1,20 @@
+{
+  "passed": true,
+  "winners": 1,
+  "conflicts": 1,
+  "conflictCode": "23505",
+  "elapsedMs": 8076,
+  "probeDelaySeconds": 2,
+  "state": {
+    "version": 2,
+    "snapshot_rows": 4,
+    "live_pages": 2,
+    "alpha_pages": 0,
+    "beta_pages": 2
+  },
+  "cleanup": {
+    "fixture_users": 0,
+    "fixture_publications": 0,
+    "fixture_snapshots": 0
+  }
+}
