@@ -59,3 +59,13 @@ test('a malformed or excessive font stack cannot leak raw CSS into generated pag
   assert.match(html,/--business-paper:#eff1f4/);
  }
 });
+
+test('bounded computed line height improves source typography fidelity without unsafe CSS',()=>{
+ const evidence={...sample,pages:[{...sample.pages[0],designTokens:{...sample.pages[0].designTokens,lineHeight:'27px'}}]};
+ const output=applyCapturedAppearance(pages,evidence,sample.sourceUrl,'preserve').pages[0].html;
+ assert.match(output,/body\{line-height:27px\}/);
+ const malicious={...sample,pages:[{...sample.pages[0],designTokens:{...sample.pages[0].designTokens,lineHeight:'27px;}script{display:none'}}]};
+ assert.deepEqual(applyCapturedAppearance(pages,malicious,sample.sourceUrl,'preserve').pages,pages);
+ const absent=applyCapturedAppearance(pages,sample,sample.sourceUrl,'preserve').pages[0].html;
+ assert.doesNotMatch(absent,/body\{line-height:/);
+});
