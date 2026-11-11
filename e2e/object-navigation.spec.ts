@@ -156,3 +156,26 @@ test('immersive coffee handle is touch-accessible on a mobile viewport',async({p
  await page.mouse.click(handle.x,handle.y);
  await expect(page).toHaveURL(/services\.html#offering-1$/);
 });
+
+for(const mobile of [false,true]){
+ test(`immersive world entry opens and focuses business-specific object (${mobile?'mobile':'desktop'})`,async({page})=>{
+  if(mobile)await page.setViewportSize({width:390,height:844});
+  const immersive={...coffee,experienceStyle:'immersive'};
+  const pages=generateBusinessWebsite(immersive).pages;
+  await page.route('https://objects.test/**',route=>{
+   const slug=new URL(route.request().url()).pathname.split('/').pop()?.replace('.html','')||'index';
+   return route.fulfill({status:200,contentType:'text/html',body:pages.find(p=>p.slug===slug)?.html||'Missing fixture'});
+  });
+  await page.goto('https://objects.test/index.html');
+  const entry=page.getByRole('button',{name:'Explore interactive 3D object'});
+  await expect(entry).toBeVisible();
+  await entry.click();
+  await expect(page.locator('body')).toHaveClass(/forge-world-reading/);
+  const canvas=page.locator('[data-object-navigation] canvas');
+  await expect(canvas).toBeVisible();
+  await expect(canvas).toBeFocused();
+  const handle=await meshPoint(page,[1.57,.86,.06]);
+  await page.mouse.click(handle.x,handle.y);
+  await expect(page).toHaveURL(/services\.html#offering-1$/);
+ });
+}
