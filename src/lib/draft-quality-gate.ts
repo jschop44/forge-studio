@@ -82,27 +82,52 @@ export function auditGeneratedDraft(pages: GeneratedPage[]): DraftQualityReport 
   for (const page of pages) {
     for (const match of page.html.matchAll(/\shref\s*=\s*(["'])([^"']*)\1/gi)) {
       const href=match[2].trim();
-      if(!href||href==='#'||/^javascript:/i.test(href)){
+      // A browser may treat whitespace/control characters or protocol-relative
+      // destinations differently from a naive static string check.
+      if(!href||href==='#'||/[\u0000-\u001f\u007f\\]/.test(href)||href.startsWith('//')){
         errors.push(page.slug+": nonfunctional or unsafe link destination");
         continue;
       }
-      // External pages, mail links and verified backend routes are not static anchors.
+      const scheme=href.match(/^([a-z][a-z\d+.-]*):/i)?.[1]?.toLowerCase();
+      if(scheme){
+        if(!['https','mailto','tel'].includes(scheme)||href.toLowerCase()===scheme+':'){
+          errors.push(page.slug+": nonfunctional or unsafe link destination");
+        }else if(scheme==='https'){
+          try{
+            const url=new URL(href);
+            if(url.username||url.password)errors.push(page.slug+": external link must not include credentials");
+          }catch{errors.push(page.slug+": invalid external link destination");}
+        }
+        // Live external delivery and destinations cannot be verified offline.
+        continue;
+      }
+      const local=href.match(/^([^?#]*)(?:\?[^#]*)?(?:#(.*))?$/);
+      if(!local){
+        errors.push(page.slug+": invalid internal link destination");
+        continue;
+      }
+      const path=local[1];
       let target=page.slug;
-      let fragment:string|undefined;
-      if(href.startsWith('#'))fragment=href.slice(1);
-      else {
-        const local=href.match(/^(?:\.\/|\/)?([a-z0-9-]+)\.html(?:\?[^#]*)?(?:#(.*))?$/i);
-        if(!local)continue;
-        target=local[1];
-        fragment=local[2];
-        if(!slugs.has(target)){
-          errors.push(page.slug+": broken internal link to "+target);
+      if(path==='/'||path==='./')target='index';
+      else if(path){
+        // Exported drafts contain flat HTML pages. Support both filename and
+        // extensionless page links, with root-relative and ./ forms.
+        const route=path.match(/^(?:\.\/|\/)?([a-z0-9-]+)(?:\.html)?\/?$/i);
+        if(!route){
+          if(/^(?:\.{1,2}\/|\/)?[^?#]+(?:\/|\.html)$/i.test(path))
+            errors.push(page.slug+": unresolved internal link destination: "+path.slice(0,100));
+          else warnings.push(page.slug+": non-page link requires live destination verification: "+path.slice(0,100));
           continue;
         }
+        target=route[1];
       }
-      if(fragment!==undefined){
+      if(!slugs.has(target)){
+        errors.push(page.slug+": broken internal link to "+target);
+        continue;
+      }
+      if(local[2]!==undefined){
         let id:string;
-        try{id=decodeURIComponent(fragment)}catch{
+        try{id=decodeURIComponent(local[2]);}catch{
           errors.push(page.slug+": malformed internal link fragment");
           continue;
         }
