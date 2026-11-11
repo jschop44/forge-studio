@@ -98,7 +98,7 @@ export default function GrapesVisualCanvas({html,css,onChange,pages,bodyAttribut
     // Resolve the clicked DOM element after GrapesJS's delegated selection handler.
     // Nested links must not leave their parent selected, particularly on a fitted canvas.
     const doc=instance.Canvas.getDocument();
-    doc.addEventListener('click',event=>{
+    doc?.addEventListener('click',event=>{
      const target=event.target as Element|null;
      if(!target||target.closest('[contenteditable="true"]'))return;
      const components=instance.getWrapper()?.find('*')||[];
