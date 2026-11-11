@@ -46,3 +46,14 @@ export function analyzeSiteEvidence(input:SiteEvidence):IntelligenceFinding{
  const services=[...new Set(headings)].slice(0,3);
  return {industry,confidence,signals,services:services.length>=2?services:winner.score>0?winner.category.services:['Explore','About','Contact'],sourcePages:1+(input.pageSummaries?.length||0)};
 }
+
+/** Bounded, plain-text homepage evidence; never preserve source markup or executable behavior. */
+export function homepageSourceParagraphs(html:string):string[]{
+ const main=html.match(/<main\b[^>]*>([\s\S]*?)<\/main>/i)?.[1]||html.match(/<body\b[^>]*>([\s\S]*?)<\/body>/i)?.[1]||html;
+ const safe=main.replace(/<(script|style|noscript|template|svg|form)\b[^>]*>[\s\S]*?<\/\1>/gi,'');
+ const seen=new Set<string>();
+ return [...safe.matchAll(/<p\b[^>]*>([\s\S]*?)<\/p>/gi)].slice(0,80).flatMap(match=>{
+  const value=match[1].replace(/<[^>]*>/g,' ').replace(/&(?:amp|quot|#39|lt|gt);/g,entity=>({'&amp;':'&','&quot;':'"','&#39;':"'",'&lt;':'<','&gt;':'>'}[entity]||entity)).replace(/\s+/g,' ').trim().slice(0,400);
+  const key=value.toLowerCase();if(value.length<20||seen.has(key))return [];seen.add(key);return [value];
+ }).slice(0,12);
+}
