@@ -3,7 +3,8 @@
 const contentRuntimeSource=String.raw`function contentRuntime(){
  const root=document.getElementById('forge-immersive-world'),stage=root.querySelector('[data-content-stage]'),cards=[...root.querySelectorAll('[data-content-card]')];
  const reduced=matchMedia('(prefers-reduced-motion: reduce)');let index=Math.max(0,cards.findIndex(card=>card.dataset.active==='true')),drag=null,reading=false;
- const show=()=>{cards.forEach((card,i)=>{const offset=i-index;card.style.transform='translateX('+offset*112+'%) translateZ('+(i===index?0:-160)+'px) rotateY('+(reduced.matches?0:offset*-12)+'deg)';card.style.opacity=Math.abs(offset)>1?'0':i===index?'1':'.45';card.style.pointerEvents=i===index?'auto':'none';card.inert=i!==index;});root.querySelector('[data-content-status]').textContent=(index+1)+' / '+cards.length+' · '+cards[index].dataset.title;};
+ // Preserve spatial movement without rotating labels into skewed/italic-looking text.
+ const show=()=>{cards.forEach((card,i)=>{const offset=i-index;card.style.transform='translateX('+offset*112+'%) translateZ('+(i===index?0:-160)+'px)';card.style.opacity=Math.abs(offset)>1?'0':i===index?'1':'.45';card.style.pointerEvents=i===index?'auto':'none';card.inert=i!==index;});root.querySelector('[data-content-status]').textContent=(index+1)+' / '+cards.length+' · '+cards[index].dataset.title;};
  const move=amount=>{index=Math.max(0,Math.min(cards.length-1,index+amount));show();};
  root.querySelector('[data-content-prev]').addEventListener('click',()=>move(-1));root.querySelector('[data-content-next]').addEventListener('click',()=>move(1));
  stage.addEventListener('pointerdown',event=>{if(event.button===0&&!event.target.closest('a,button'))drag={x:event.clientX,id:event.pointerId};});

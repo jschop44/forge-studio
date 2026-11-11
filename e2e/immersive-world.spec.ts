@@ -9,6 +9,8 @@ for(const width of [390,1440])test('uncommon niche keeps an interactive content 
  const world=page.locator('#forge-immersive-world'),stage=page.locator('[data-content-stage]');
  await expect(world).toHaveAttribute('data-loaded','true');await expect(world).toHaveAttribute('data-environment','content-exhibition');
  await stage.focus();await page.keyboard.press('ArrowRight');
+ const cardTransforms=await stage.locator('[data-content-card]').evaluateAll(cards=>cards.map(card=>(card as HTMLElement).style.transform));
+ expect(cardTransforms.every(transform=>!transform.includes('rotateY('))).toBe(true);
  await expect(page.locator('[data-content-card]:not([inert]) h2')).toContainText('Services');
  await page.getByRole('link',{name:'Open Services',exact:false}).click();await expect(page).toHaveURL(/services\.html$/);
  await expect(page.locator('[data-content-card]:not([inert]) h2')).toContainText('Services');
