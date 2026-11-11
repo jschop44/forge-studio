@@ -1,3 +1,10 @@
+## November 11 verification — PR #51 live; PR #52 merged, new deployment pending
+
+- PR #51 squash `9e6dc859d4360b8b3cfa69467067483b20795660` passed main Verify, UI regression and code validation. Existing canonical `forge-studio-preview` Worker was actually deployed by successful run https://github.com/jschop44/forge-studio/actions/runs/43056580212. Job 130647519144 confirms successful Cloudflare build, source upload, configuration sync, live health/revision, open-ended recognition, real AI generation/quality/approval and authenticated worker stages. No customer publishing enabled.
+- PR #52 https://github.com/jschop44/forge-studio/pull/52 merged after all seven exact-head checks passed on `b957c18a695b240013b81956f1e62661e94caa59`; squash main SHA `072316a94d331bb02c047e648a7fce4170458cfb`. It captures bounded plain-text homepage paragraphs for inspection and adds typed evidence plus regression tests. This is evidence capture only, not automatic homepage copying or full source layout reconstruction.
+- New main verification https://github.com/jschop44/forge-studio/actions/runs/43063080579 was queued at this checkpoint. **Do not claim PR #52 is live until exact-main verification and a new successful verified-preview deployment attest SHA `072316a94d331bb02c047e648a7fce4170458cfb`.** The currently attested live SHA remains `9e6dc859d4360b8b3cfa69467067483b20795660`.
+- No production database migrations, new Worker, paid provider, approval bypass, or publication configuration changes.
+
 ## November 11 continuation — PR #51 merged, main deployment pending
 
 - PR #51 merged after all seven exact-head checks passed on `23f39b1a9639771e1f127bdce86498ac1eae0622`: https://github.com/jschop44/forge-studio/pull/51
