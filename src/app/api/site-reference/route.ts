@@ -1,7 +1,7 @@
 import {NextRequest,NextResponse} from 'next/server';
 import {publicResearchPolicy} from '../../../lib/server/public-site-policy';
 import {sameOrigin} from '../../../lib/server/request-security';
-import {extractWebsiteDesignDna,type SourceImage} from '../../../lib/website-design-dna';
+import {extractWebsiteDesignDna,mergeSourcePageImages,type SourceImage} from '../../../lib/website-design-dna';
 import {sitemapPages} from '../../../lib/sitemap-discovery';
 import {fetchPublicText,publicSiteUrl} from '../../../lib/server/public-site-fetch';
 export const runtime='nodejs';
@@ -25,7 +25,7 @@ export async function POST(req:NextRequest){
  const stylesheet=(await fetchPublicText(cssUrl,{beforeRequest,timeout:3500,maxBytes:100000,accept:'text/css'})).body;externalCss.push(stylesheet);
  }catch{warnings.push('A stylesheet could not be retrieved: '+href);continue}
  }
- const designDna=extractWebsiteDesignDna(html,url.href,externalCss);
+ const homepageDesignDna=extractWebsiteDesignDna(html,url.href,externalCss);
  const title=clean(html.match(/<title[^>]*>([\s\S]*?)<\/title>/i)?.[1]||'');
  const description=meta(html,'description')||meta(html,'og:description');
  const css=(html.match(/<style\b[^>]*>[\s\S]*?<\/style>/gi)||[]).join(' ').slice(0,70000);
@@ -59,6 +59,7 @@ export async function POST(req:NextRequest){
    pageSummaries.push({paragraphs,images:pageDna.images,path:item.path,label:item.label,title:clean(pageHtml.match(/<title[^>]*>([\s\S]*?)<\/title>/i)?.[1]||item.label),description:meta(pageHtml,'description')||meta(pageHtml,'og:description'),headings:[...pageHtml.matchAll(/<h([1-3])\b[^>]*>([\s\S]*?)<\/h\1>/gi)].slice(0,5).map(m=>clean(m[2])).filter(Boolean)});
   }catch{warnings.push('Page could not be retrieved: '+item.path);continue}
  }
+ const designDna=mergeSourcePageImages(homepageDesignDna,pageSummaries);
  const headings=[...html.matchAll(/<h([1-3])\b[^>]*>([\s\S]*?)<\/h\1>/gi)].slice(0,25).map(m=>clean(m[2])).filter(Boolean).filter((heading,index,all)=>all.findIndex(other=>other.toLowerCase()===heading.toLowerCase())===index).slice(0,12);
  return NextResponse.json({url:url.href,title,description,headings,navigation,pageSummaries,styleReference:{background,accent,fontFamily},styleFound:Boolean(background||accent||fontFamily),stylesheetsRead:externalCss.length,visualSignals,designDna,warnings,extraction:{partial:homepage.extraction?.truncated||warnings.length>0,downloadedBytes:homepage.extraction?.downloadedBytes,scriptsOmitted:homepage.extraction?.scriptsOmitted,warnings},notice:'Public homepage metadata, embedded CSS and a limited number of same-host stylesheets. Scripts were omitted. Image references and bounded page text were retained for authorized reuse.'},{headers:{'Cache-Control':'no-store'}});
  }catch(error){return NextResponse.json({error:error instanceof Error?error.message:'Unable to inspect website'},{status:422})}

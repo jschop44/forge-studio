@@ -1,5 +1,6 @@
 import {test,expect,type Page} from '@playwright/test';
 import {generateBusinessWebsite} from '../src/lib/business-site';
+import {extractWebsiteDesignDna} from '../src/lib/website-design-dna';
 const extracted={url:'https://reference.example/',title:'Harbor Studio | Residential design',description:'An independent design practice creating residential and commercial spaces.',headings:['Residential design','Commercial design'],navigation:[],pageSummaries:[],stylesheetsRead:1,styleFound:true,styleReference:{background:'#112233',accent:'#d4b891',fontFamily:'Georgia'},notice:'Public website metadata.'};
 async function openExtraction(page:Page){
  await page.goto('/business');
@@ -75,4 +76,29 @@ test('extracted extra pages retain appearance and full-site immersive controls',
  await frame.getByRole('button',{name:'Read Portfolio page',exact:true}).click();
  await expect(frame.getByRole('heading',{name:'Harbor projects'})).toBeVisible();
  await expect(frame.locator('body')).toHaveCSS('background-color','rgb(17, 34, 51)');
+});
+
+
+test('images inspected on a product subpage survive extraction and reach matching generated offerings',async({page})=>{
+ const homepage=extractWebsiteDesignDna('<img src="/brand-logo.png" alt="Harbor Wings logo">','https://reference.example/');
+ const offerings=extractWebsiteDesignDna('<img src="/wings.jpg" alt="Chicken wings"><img src="/pizza.jpg" alt="Pizza">','https://reference.example/offerings');
+ await page.route('**/api/site-reference',route=>route.fulfill({status:200,json:{
+  ...extracted,title:'Harbor Wings | Restaurant',
+  description:'Restaurant serving chicken wings and fresh pizza.',
+  headings:['Chicken wings','Pizza'],designDna:homepage,
+  pageSummaries:[{path:'/offerings',label:'Specialties',title:'Our specialties',description:'Chicken wings and pizza',headings:['Chicken wings','Pizza'],paragraphs:[],images:offerings.images}]
+ }}));
+ await generationFixture(page);
+ await openExtraction(page);
+ await page.getByRole('button',{name:'Extract website appearance',exact:true}).click();
+ await expect(page.getByText(/Website extracted: reference\.example\. Ready to generate/)).toBeVisible();
+ await page.getByPlaceholder('Describe what you offer, who you serve and what makes you different.').fill('Industry: Restaurant\nOfferings: Chicken wings, Pizza\nFreshly prepared neighborhood meals.');
+ await page.getByRole('button',{name:/generate my website/i}).click();
+ const nav=page.getByRole('navigation',{name:'Website pages'});
+ await expect(nav).toBeVisible();
+ await nav.getByRole('button',{name:'Menu',exact:true}).click();
+ const menu=page.frameLocator('iframe[title="Website preview: Menu"]');
+ await expect(menu.locator('#offering-0 img[data-forge-source-image]')).toHaveAttribute('src','https://reference.example/wings.jpg');
+ await expect(menu.locator('#offering-1 img[data-forge-source-image]')).toHaveAttribute('src','https://reference.example/pizza.jpg');
+ await expect(menu.locator('nav img.source-brand-logo')).toHaveAttribute('src','https://reference.example/brand-logo.png');
 });

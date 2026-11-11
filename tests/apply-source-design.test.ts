@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {applySourceDesign} from '../src/lib/apply-source-design';
-import {extractWebsiteDesignDna} from '../src/lib/website-design-dna';
+import {extractWebsiteDesignDna,mergeSourcePageImages} from '../src/lib/website-design-dna';
 const dna=extractWebsiteDesignDna('<header><img src="/logo.png" alt="Pizza logo"></header><img src="/wings.jpg" alt="Chicken wings"><img src="/pizza.jpg" alt="Pizza"><a href="mailto:info@example.com">Email</a><a href="tel:+15551234567">Call</a><style>body{background:#fff;font-family:Georgia,serif}</style>','https://example.com/');
 const wrap=(body:string)=>'<!doctype html><html><head><title>Business</title></head><body><nav><a href="index.html"><span class="brand-mark">P</span>Pizza</a></nav><main>'+body+'</main><footer>Business</footer></body></html>';
 test('source branding, semantically matched offering images and observed contact links reach every page',()=>{
@@ -58,15 +58,15 @@ test('a source content photograph is not repeated across distinct website pages'
  assert.match(result.pages[2].html,/src="https:\/\/stock\.example\/c\.jpg"/,'an unmatched page keeps its original image rather than repeating a source photograph');
 });
 
-test('service photos are not replaced by unrelated source assets when a matching photo was used earlier',()=>{
+test('specific product cards receive the only matching photograph before a broad homepage hero',()=>{
  const source=extractWebsiteDesignDna('<img src="/wings.jpg" alt="Chicken wings"><img src="/fruit.jpg" alt="Fruit bowl">','https://restaurant.example/');
  const pages=[
   {slug:'index',title:'Chicken wings',html:wrap('<h1>Chicken wings</h1><figure class="editorial-photo"><img src="https://stock.example/wings.jpg" alt="Chicken wings"></figure>')},
   {slug:'services',title:'Menu',html:wrap('<article><h2>Chicken wings</h2><img src="https://stock.example/menu.jpg" alt="Menu photograph"></article>')}
  ];
  const result=applySourceDesign(pages,source,'redesign');
- assert.match(result.pages[0].html,/src="https:\/\/restaurant\.example\/wings\.jpg"/);
- assert.match(result.pages[1].html,/src="https:\/\/stock\.example\/menu\.jpg"/);
+ assert.match(result.pages[0].html,/src="https:\/\/stock\.example\/wings\.jpg"/);
+ assert.match(result.pages[1].html,/src="https:\/\/restaurant\.example\/wings\.jpg"/);
  assert.doesNotMatch(result.pages[1].html,/src="https:\/\/restaurant\.example\/fruit\.jpg"/);
 });
 
@@ -79,3 +79,24 @@ test('service photos are not replaced by unrelated source assets when a matching
  assert.equal(new Set(urls).size,2,'fallback figures must not repeat a photograph');
  assert.doesNotMatch(result.pages[2].html,/data-forge-source-page-visual/);
  });
+
+
+test('interior product photographs are used for corresponding service cards without unrelated substitutions',()=>{
+ const homepage=extractWebsiteDesignDna('<img src="/logo.png" alt="Wings restaurant logo"><img src="/entrance.jpg" alt="Restaurant entrance">','https://restaurant.example/');
+ const menu=extractWebsiteDesignDna('<img src="/wings.jpg" alt="Chicken wings"><img src="/pizza.jpg" alt="Pizza"><img src="/salad.jpg" alt="Fruit salad">','https://restaurant.example/menu');
+ const siteDna=mergeSourcePageImages(homepage,[{path:'/menu',images:menu.images}]);
+ const pages=[
+  {slug:'index',title:'Home',html:wrap('<h1>Welcome to our restaurant</h1><article><h2>Chicken wings</h2></article><article><h2>Pizza</h2></article>')},
+  {slug:'services',title:'Menu',html:wrap('<article><h2>Chicken wings</h2><img src="https://stock.example/food.jpg"></article><article><h2>Pizza</h2><img src="https://stock.example/food2.jpg"></article>')},
+  {slug:'about',title:'About',html:wrap('<h1>Our story</h1>')}
+ ];
+ const result=applySourceDesign(pages,siteDna,'redesign');
+ assert.match(result.pages[1].html,/src="https:\/\/restaurant\.example\/wings\.jpg"/);
+ assert.match(result.pages[1].html,/src="https:\/\/restaurant\.example\/pizza\.jpg"/);
+ assert.doesNotMatch(result.pages[1].html,/src="https:\/\/restaurant\.example\/salad\.jpg"/);
+ assert.doesNotMatch(result.pages[0].html,/src="https:\/\/restaurant\.example\/wings\.jpg"/,'homepage teaser must not consume the menu photo');
+ assert.doesNotMatch(result.pages[0].html,/src="https:\/\/restaurant\.example\/pizza\.jpg"/,'homepage teaser must not consume the menu photo');
+ const photos=result.pages.flatMap(page=>[...page.html.matchAll(/data-forge-source-image src="([^"]+)"/g)].map(match=>match[1]).filter(url=>!url.endsWith('/logo.png')));
+ assert.equal(new Set(photos).size,photos.length,'non-logo source images must remain unique across pages');
+ for(const page of result.pages)assert.match(page.html,/src="https:\/\/restaurant\.example\/logo\.png"/);
+});

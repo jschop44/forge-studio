@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {extractWebsiteDesignDna,publicSourceAsset} from '../src/lib/website-design-dna';
+import {extractWebsiteDesignDna,mergeSourcePageImages,publicSourceAsset} from '../src/lib/website-design-dna';
 test('source DNA captures original brand assets, contact links and bounded design metadata',()=>{
  const dna=extractWebsiteDesignDna(`<header><img src="/logo.png" alt="Pizza logo" width="180" height="90"></header><section class="hero"><img data-src="/wings.jpg?size=large&amp;fit=cover" alt="Hot wings" width="800" height="600"><a href="mailto:hello@example.com?subject=Menu">Email</a><a href="tel:+1 (555) 123-4567">Call</a></section><style>body{background:#fff;color:#123456;font-family:'Brand Sans', sans-serif}@media(max-width:768px){.hero{display:block}}.hero{background-image:url('/oven.webp')}</style>`,'https://example.com/');
  assert.equal(dna.logo?.url,'https://example.com/logo.png');assert.equal(dna.images[1].url,'https://example.com/wings.jpg?size=large&fit=cover');assert.equal(dna.images[2].role,'background');assert.deepEqual(dna.contact,{emails:['hello@example.com'],phones:['+1 (555) 123-4567']});assert.deepEqual(dna.layout,{header:true,hero:true,sectionCount:1,breakpoints:[768]});assert.deepEqual(dna.palette,['#fff','#123456']);assert.deepEqual(dna.typography.families,['Brand Sans, sans-serif']);
@@ -44,4 +44,36 @@ test('responsive and lazy-loaded images preserve real business photos and filena
 test('responsive sources ignore unsafe URLs and choose a safe remaining candidate',()=>{
  const dna=extractWebsiteDesignDna('<img alt="Pizza" src="data:image/gif;base64,AAAA" srcset="https://127.0.0.1/private.jpg 1600w, https://images.example.com/pizza.jpg 1200w">','https://example.com/');
  assert.deepEqual(dna.images.map(image=>image.url),['https://images.example.com/pizza.jpg']);
+});
+
+
+test('same-site interior page photographs supplement homepage evidence without replacing identity',()=>{
+ const home=extractWebsiteDesignDna('<img src="/logo.png" alt="Restaurant logo"><img src="/hero.jpg" alt="Restaurant entrance">','https://wings.example/');
+ const menu=extractWebsiteDesignDna('<img src="/wings.jpg" alt="Chicken wings"><img src="/pizza.jpg" alt="Pizza">','https://wings.example/menu');
+ const copied=mergeSourcePageImages(home,[{path:'/menu',images:menu.images}]);
+ assert.equal(copied.logo?.url,'https://wings.example/logo.png');
+ assert.deepEqual(copied.images.map(image=>image.url),[
+  'https://wings.example/logo.png','https://wings.example/hero.jpg',
+  'https://wings.example/wings.jpg','https://wings.example/pizza.jpg'
+ ]);
+ assert.equal(copied.images[2].sourcePage,'https://wings.example/menu');
+ assert.equal(home.images.length,2,'original homepage evidence must not be mutated');
+ assert.equal(mergeSourcePageImages(copied,[{path:'/menu',images:menu.images}]).images.length,4);
+});
+test('interior image aggregation rejects other-site evidence and respects image limits',()=>{
+ const home=extractWebsiteDesignDna('<h1>Studio</h1>','https://studio.example/');
+ const good=extractWebsiteDesignDna(
+  Array.from({length:30},(_,index)=>'<img src="/item-'+index+'.jpg" alt="Product '+index+'">').join(''),
+  'https://studio.example/products');
+ const evil=extractWebsiteDesignDna('<img src="/unrelated.jpg" alt="Unrelated">','https://other.example/offer');
+ const merged=mergeSourcePageImages(home,[
+  {path:'//other.example/offer',images:evil.images},
+  {path:'/products',images:evil.images},
+  {path:'/products',images:good.images},
+  {path:'/products',images:good.images}
+ ]);
+ assert.equal(merged.images.length,30);
+ assert.ok(merged.images.every(image=>image.sourcePage==='https://studio.example/products'));
+ assert.equal(merged.images.some(image=>image.url.includes('unrelated')),false);
+ assert.equal(mergeSourcePageImages(home,[{path:'/products',images:[{url:'javascript:bad()',alt:'Product',role:'content',sourcePage:'https://studio.example/products'}]}]).images.length,0);
 });

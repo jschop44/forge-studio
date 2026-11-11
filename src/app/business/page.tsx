@@ -1,6 +1,6 @@
 'use client';
 import {parseGeneratorEditorState,serializeGeneratorEditorState} from '../../lib/editor-generator-state';
-import {extractWebsiteDesignDna,type WebsiteDesignDna,type SourceImage} from '../../lib/website-design-dna';
+import {extractWebsiteDesignDna,mergeSourcePageImages,type WebsiteDesignDna,type SourceImage} from '../../lib/website-design-dna';
 import {applySourceDesign} from '../../lib/apply-source-design';
 import {businessGenerationPayload} from '../../lib/business-generation-payload';
 import {DESIGN_PATTERNS,planAdaptiveDesign} from '../../lib/design-engine';
@@ -250,7 +250,8 @@ export default function BusinessGenerator(){
    let evidence=inspected;
    if(designMode!=='new'&&!evidence&&!referenceMarkup.trim()){evidence=await inspectWebsite();if(!evidence)return}
    const generationEpoch=inspectionEpoch.current;
-   const sourceDna=designMode!=='new'?(evidence?.designDna||(referenceMarkup.trim()?extractWebsiteDesignDna(referenceMarkup,websiteAddressKey(siteUrl)||'https://source.invalid/'):undefined)):undefined;
+   const homepageDna=designMode!=='new'?(evidence?.designDna||(referenceMarkup.trim()?extractWebsiteDesignDna(referenceMarkup,websiteAddressKey(siteUrl)||'https://source.invalid/'):undefined)):undefined;
+   const sourceDna=homepageDna&&evidence?mergeSourcePageImages(homepageDna,evidence.pageSummaries||[]):homepageDna;
    const generationName=!inspected&&evidence?extractedName(evidence):name.trim()||(evidence?extractedName(evidence):'');
    if(generationName.length<2){setStatus('Enter your business name to get started.');return}
    setStatus('Building your website and choosing its design automatically…');
