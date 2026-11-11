@@ -120,3 +120,27 @@ test('builder exposes one 3D immersion experience and keeps the full business ra
  await expect(menu.locator('#offering-1')).toContainText('Ceramic mugs');
  await expect(menu.locator('#offering-2')).toContainText('Community events');
 });
+
+
+test('builder offers a distinct interactive object experience and routes to real business offerings',async({page})=>{
+ await page.route('**/api/ai/business',route=>{
+  const input=route.request().postDataJSON();
+  expect(input.experienceStyle).toBe('object-navigation');
+  expect(input.services).toEqual(['Coffee beans','Ceramic mugs']);
+  return route.fulfill({status:200,json:{provider:'browser-test-fixture',draft:input,pages:generateBusinessWebsite(input).pages}});
+ });
+ await page.goto('/business');
+ const objectChoice=page.getByRole('button',{name:/^Interactive 3D objects/});
+ await expect(objectChoice).toBeVisible();
+ await objectChoice.click();
+ await expect(objectChoice).toHaveAttribute('aria-pressed','true');
+ await page.getByPlaceholder('e.g. Northstar Coffee').fill('Northstar Coffee');
+ await page.getByPlaceholder('Describe what you offer, who you serve and what makes you different.').fill('Industry: Coffee shop\nOfferings: Coffee beans, Ceramic mugs\nFreshly roasted neighborhood coffee and ceramic drinkware.');
+ await page.getByRole('button',{name:/generate my website/i}).click();
+ const home=page.frameLocator('iframe[title="Website preview: Home"]');
+ await expect(home.locator('[data-object-navigation]')).toBeVisible();
+ await home.locator('[data-object-part="handle"]').click();
+ await expect(page.getByRole('navigation',{name:'Website pages'}).getByRole('button',{name:'Menu',exact:true})).toHaveAttribute('aria-current','page');
+ const menu=page.frameLocator('iframe[title="Website preview: Menu"]');
+ await expect(menu.locator('#offering-1')).toContainText('Ceramic mugs');
+});
