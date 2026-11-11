@@ -51,3 +51,29 @@ test('an explicit Professional services industry remains a valid scratch brief',
  await page.getByPlaceholder(/Describe what you offer/).fill('Industry: Professional services\nOfferings: Business consulting, Project support\nWe help small businesses plan and deliver their projects.');
  await page.getByRole('button',{name:/generate my website/i}).click();await expect(page.frameLocator('iframe[title="Website preview: Home"]').locator('main h1')).toHaveText('Harbor Advisory');expect(generations).toBe(1);expect(recognitions).toBe(0);
 });
+
+
+test('preserve mode can reuse same-site browser-observed palette and font after user review',async({page})=>{
+ await page.route('**/api/site-reference',route=>route.fulfill({status:200,json:extracted}));
+ await mockGeneration(page);
+ await page.goto('/business');
+ await page.getByRole('button',{name:/^Standard website/}).click();
+ await page.getByRole('combobox',{name:/^Design approach/}).selectOption('inspired');
+ await page.getByPlaceholder('e.g. disney.com').fill('reference.example');
+ await page.getByRole('button',{name:'Extract website appearance',exact:true}).click();
+ await expect(page.getByText(/Website extracted: reference\.example\. Ready to generate/)).toBeVisible();
+ await page.getByText('Import optional browser-verification evidence').click();
+ const captured={
+  version:1,sourceUrl:'https://reference.example/',capturedAt:'2026-11-11T01:00:00Z',viewport:{width:1280,height:800},
+  pages:[{path:'/',title:'Harbor Coffee',landmarks:[],interactions:[],designTokens:{backgroundColor:'rgb(20, 34, 48)',textColor:'rgb(255, 255, 255)',fontFamily:'Verdana, sans-serif',headingFontFamily:'Georgia, serif',headingFontSize:'48px',baseFontSize:'16px'}}],
+  warnings:[]
+ };
+ await page.getByRole('textbox',{name:'Browser verification JSON'}).fill(JSON.stringify(captured));
+ await page.getByRole('button',{name:'Review browser evidence'}).click();
+ await page.getByRole('button',{name:/generate my website/i}).click();
+ const home=page.frameLocator('iframe[title="Website preview: Home"]');
+ await expect(home.locator('main h1')).toHaveText('Harbor Coffee');
+ await expect(home.locator('body')).toHaveCSS('background-color','rgb(20, 34, 48)');
+ await expect(home.locator('body')).toHaveCSS('font-family',/Verdana/);
+ await expect(home.locator('nav img.source-brand-logo')).toHaveAttribute('src','https://reference.example/logo.png');
+});
