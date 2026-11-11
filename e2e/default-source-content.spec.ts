@@ -10,7 +10,7 @@ for(const {mode,width} of [{mode:'inspired',width:390},{mode:'redesign',width:12
   await page.goto('/business');
   await page.getByRole('combobox',{name:/^Design approach/}).selectOption(mode);
   await page.getByPlaceholder('e.g. disney.com').fill('reference.example');
-  await page.getByRole('button',{name:'Extract website appearance',exact:true}).click();
+  await page.getByRole('button',{name:mode==='inspired'?'Extract website appearance':'Extract website details for redesign',exact:true}).click();
   await expect(page.getByText(/Ready to generate/)).toBeVisible();
   const tokens={backgroundColor:'#ffffff',textColor:'#111111',fontFamily:'Georgia, serif',headingFontFamily:'Georgia, serif',headingFontSize:'48px',baseFontSize:'17px'};
   const capture={version:1,sourceUrl:'https://reference.example/',capturedAt:'2026-11-11T12:00:00Z',viewport:{width:1280,height:800},warnings:[],pages:[{path:'/',title:'Home',landmarks:[],interactions:[],designTokens:tokens},{path:'/about?lang=en',title:'About',landmarks:[],interactions:[],designTokens:{...tokens,backgroundColor:'#ddeeff'}}]};
