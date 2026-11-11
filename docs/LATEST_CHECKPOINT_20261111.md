@@ -1,3 +1,11 @@
+## November 11 release — PR #53 verified and deployed
+
+- PR #53 https://github.com/jschop44/forge-studio/pull/53 merged as `b3ffd60fbeef0f32b6ff84075ec15782c82c41d1` after all six exact-head checks passed, including production build, browser groups, application, validation and Worker packaging.
+- Main Verify https://github.com/jschop44/forge-studio/actions/runs/43065013859 and code validation https://github.com/jschop44/forge-studio/actions/runs/43065013782 both succeeded on that exact merged SHA.
+- **Actual Cloudflare deployment succeeded**: https://github.com/jschop44/forge-studio/actions/runs/43065754420. Job confirms existing canonical preview Worker upload, runtime configuration sync, live health/database readiness, live open-ended recognition, live AI generation through quality/approval, and authenticated worker steps all passed.
+- Current attested live revision is `b3ffd60fbeef0f32b6ff84075ec15782c82c41d1`. Inspected homepage facts can now appear in generated index drafts for preserve/inspired/redesign, using bounded escaped content and existing category/form screening; scratch unchanged. Source authorization and visual fidelity are not proven.
+- **Current phase: extraction/source preservation and visual reconstruction.** Source text and bounded colors/type are in place, but original layout geometry, responsive fidelity, image rights/availability, visual acceptance, true interactive immersion, durable multi-app delivery and customer publishing remain open. No percentage or production-ready claim.
+
 ## November 11 verification — PR #51 live; PR #52 merged, new deployment pending
 
 - PR #51 squash `9e6dc859d4360b8b3cfa69467067483b20795660` passed main Verify, UI regression and code validation. Existing canonical `forge-studio-preview` Worker was actually deployed by successful run https://github.com/jschop44/forge-studio/actions/runs/43056580212. Job 130647519144 confirms successful Cloudflare build, source upload, configuration sync, live health/revision, open-ended recognition, real AI generation/quality/approval and authenticated worker stages. No customer publishing enabled.
