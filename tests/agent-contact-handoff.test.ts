@@ -22,7 +22,7 @@ test('approved planning handoff retains supplied contact email through inference
  assert.equal(executeSafeAgent(generation).stage,'site-generation');
 });
 test('missing contacts remain absent rather than being invented',async()=>{
- const payload={...task.payload,approvedPlan:true};delete payload.contactEmail;
+ const payload:Record<string,unknown>={...task.payload,approvedPlan:true};delete payload.contactEmail;
  await executeAgent({...task,kind:'site-generation',payload},async input=>{
   assert.equal(input.contactEmail,undefined);
   return {draft:input,provider:'cloudflare',pages:generateBusinessWebsite(input).pages};
