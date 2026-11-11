@@ -22,7 +22,7 @@ export function extractWebsiteDesignDna(input:string,sourceUrl:string,stylesheet
  for(const match of html.matchAll(/<img\b[^>]*>/gi)){
   const tag=match[0],alt=attribute(tag,'alt'),label=[alt,attribute(tag,'class'),attribute(tag,'id')].join(' ');
   const candidates=[attribute(tag,'data-src'),attribute(tag,'data-original'),attribute(tag,'data-lazy-src'),...responsiveUrls(attribute(tag,'data-srcset')),...responsiveUrls(attribute(tag,'srcset')),attribute(tag,'src')];
-  const src=candidates.find(candidate=>publicSourceAsset(candidate,sourceUrl));
+  const src=candidates.find(candidate=>candidate.trim().length>0&&publicSourceAsset(candidate,sourceUrl));
   const size=(name:string)=>{const n=Number(attribute(tag,name));return Number.isInteger(n)&&n>0&&n<=20000?n:undefined};
   if(!src||/pixel|tracking|spacer/i.test(label))continue;
   const filename=src.split(/[?#]/)[0].split('/').pop()||'';
