@@ -14,7 +14,7 @@ permissions:
   contents: read
 jobs:
   evaluate:
-    if: ${{ vars.FORGE_WORKER_URL != '' && github.event.repository.private == false }}
+    if: ${{ github.event.repository.private == false }}
     runs-on: ubuntu-latest
     timeout-minutes: 12
     steps:
@@ -27,6 +27,6 @@ jobs:
       - run: node --test tests/drain-agent-queue.test.mjs
       - name: Evaluate queued agent jobs
         env:
-          FORGE_WORKER_URL: ${{ vars.FORGE_WORKER_URL }}
+          FORGE_WORKER_URL: https://forge-studio-preview.stands-old-3h.workers.dev/api/agents/worker
           FORGE_WORKER_SECRET: ${{ secrets.FORGE_WORKER_SECRET }}
         run: node scripts/drain-agent-queue.mjs
