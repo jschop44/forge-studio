@@ -1,3 +1,17 @@
+## November 11 continuation — PR #51 merged, main deployment pending
+
+- PR #51 merged after all seven exact-head checks passed on `23f39b1a9639771e1f127bdce86498ac1eae0622`: https://github.com/jschop44/forge-studio/pull/51
+- Squash merge and new main SHA: `9e6dc859d4360b8b3cfa69467067483b20795660`.
+- Default About/Services/Contact pages now retain bounded escaped observed text and exact-route captured identity, with unhosted form instructions omitted. Scratch generation is unchanged.
+- Additional exclusion safeguard filters retained paragraphs using the existing business-category exclusion policy; legitimate pharmacy text remains permitted. Tests cover both allowed and omitted content. This is a bounded filter, not complete moderation or source authorization verification.
+- PR exact-head checks: application, production build, code validation, Cloudflare packaging, builder UI, browser 1/2, browser 2/2 all passed: https://github.com/jschop44/forge-studio/actions/runs/43052711293
+- Main push Verify: https://github.com/jschop44/forge-studio/actions/runs/43056019892 — **queued at this checkpoint**.
+- Main UI regression: https://github.com/jschop44/forge-studio/actions/runs/43056019508 — in progress at this checkpoint.
+- Main code validation: https://github.com/jschop44/forge-studio/actions/runs/43056019485 — in progress at this checkpoint.
+- **Deployment of the new main SHA not yet attested.** Do not interpret prior skipped workflow_run deployments as upload evidence. Previous attested live SHA remains `928da66cd98ff5fd0c5378a63437eb4a80377c9e` until a new successful deployment proves otherwise.
+- Customer publishing stays disabled; no Neon database, migrations, credentials, or canonical Worker name were changed.
+- Resume: wait for exact-main verification; inspect the triggered `Deploy verified Forge preview` job, upload and diagnostics logs, health revision, readiness, genuine AI smoke and worker results. Update this report with actual deployment evidence only.
+
 # Latest Forge Studio production acceptance checkpoint — November 11, 2026
 
 This supersedes pending statuses in earlier continuation documents.
