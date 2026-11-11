@@ -92,24 +92,24 @@ export default function GrapesVisualCanvas({html,css,onChange,pages,bodyAttribut
     parser:{optionsHtml:{allowScripts:false,allowUnsafeAttr:false,allowUnsafeAttrValue:false}}
    });
    editor=instance;
-   editorRef.current=instance;setEditorUi(instance);
+   editorRef.current=instance;setEditorUi(instance);instance.on('component:selected',component=>console.info('FORGE_SELECTED',component.get('tagName')));
    instance.on('canvas:frame:load:body',({window:frameWindow}:{window:Window})=>{
     const body=instance.Canvas.getBody();if(body)for(const [key,value] of Object.entries(bodyAttributes))body.setAttribute(key,value);
     // Resolve the clicked DOM element after GrapesJS's delegated selection handler.
     // Nested links must not leave their parent selected, particularly on a fitted canvas.
-    const doc=frameWindow.document;
+    const doc=frameWindow.document;console.info('FORGE_BOUND',doc.URL);
     let pressed:{element:Element;x:number;y:number}|null=null;
-    doc.addEventListener('pointerdown',event=>{pressed=event.button===0?{element:event.target as Element,x:event.clientX,y:event.clientY}:null},true);
+    doc.addEventListener('pointerdown',event=>{console.info('FORGE_PRESS',(event.target as Element).tagName);pressed=event.button===0?{element:event.target as Element,x:event.clientX,y:event.clientY}:null},true);
     doc.addEventListener('pointercancel',()=>{pressed=null},true);
     doc.addEventListener('click',event=>{
      // A selection overlay can retarget click to the common parent after pointerdown.
      // Preserve the user's original element for a stationary click; never for a drag.
-     const start=pressed;pressed=null;
+     const start=pressed;pressed=null;console.info('FORGE_CLICK',(event.target as Element).tagName,start?.element.tagName);
      const target=start&&Math.hypot(event.clientX-start.x,event.clientY-start.y)<6&&doc.contains(start.element)?start.element:event.target as Element|null;
      if(!target||target.closest('[contenteditable="true"]'))return;
      const components=instance.getWrapper()?.find('*')||[];
      let element:Element|null=target;
-     while(element&&element!==body){const chosen=components.find(component=>component.getEl()===element);if(chosen&&chosen.get('selectable')!==false){if(element.closest('a'))event.preventDefault();queueMicrotask(()=>{if(active)instance.select(chosen)});break}element=element.parentElement}
+     while(element&&element!==body){const chosen=components.find(component=>component.getEl()===element);if(chosen)console.info('FORGE_CHOSEN',chosen.get('tagName'),chosen.get('selectable'));if(chosen&&chosen.get('selectable')!==false){if(element.closest('a'))event.preventDefault();queueMicrotask(()=>{if(active)instance.select(chosen)});break}element=element.parentElement}
     },true);
    });
    resizeObserver=new ResizeObserver(()=>fitDevice(instance));

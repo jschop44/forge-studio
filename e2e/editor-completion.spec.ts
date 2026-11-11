@@ -4,6 +4,7 @@ const wrap=(body:string)=>'<!doctype html><html><head><style>main{padding:24px}i
 const home={slug:'index',title:'Home',html:wrap('<main><h1>Original home</h1><p>Welcome</p><a class="cta" href="index.html">Visit</a><img src="https://images.example.com/old.jpg" alt="Old photo"></main>')};
 const contact={slug:'contact',title:'Contact',html:wrap('<main><h1>Original contact</h1><p>Contact us</p><a href="index.html">Home</a></main>')};
 async function open(page:Page){
+ page.on('console',message=>{if(message.text().startsWith('FORGE_'))console.log(message.text())});
  await page.route('https://images.example.com/**',route=>route.fulfill({contentType:'image/svg+xml',body:'<svg xmlns="http://www.w3.org/2000/svg" width="200" height="100"><rect width="200" height="100" fill="blue"/></svg>'}));
  await page.goto('/visual-editor');await page.evaluate(({home,contact})=>{sessionStorage.setItem('forge:visual-editor:handoff',JSON.stringify(home));sessionStorage.setItem('forge:visual-editor:site',JSON.stringify([home,contact]))},{home,contact});await page.reload();
  await expect(page.getByRole('status')).toContainText('Generated page loaded');
