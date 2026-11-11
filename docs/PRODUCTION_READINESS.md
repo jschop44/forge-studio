@@ -1,5 +1,12 @@
 # Production acceptance ledger
 
+## Publishing follow-up — November 11, 2026
+
+Baseline main/live source remains 9bd3171d2c72e804753357b3a331b51f48611228. Standard generated pages were reproduced as failing publication because their JSON-LD metadata was rejected. The follow-up validates a narrow inert metadata exception, keeps all other protections on the original HTML, aligns builder eligibility with the server, and resolves publication feature switches from Worker runtime bindings. Publishing remains opt-in and has not been enabled.
+
+Local validation: 550/550 TypeScript tests, completed TypeScript validation and production build passed. The local production server passed 16/16 HTTP opt-in, authorization and origin checks without database writes. Browser, full CI and deployment of this follow-up are still required at this checkpoint. Live test-owner persistence, revision/concurrency/rollback, cross-app signing and full visual/3D acceptance remain open.
+
+
 Updated November 10, 2026 (America/New_York). Source baseline: `7dbf0e83911aa1de3f5fed78ed090a7d4a471d39`.
 
 ## Verified evidence

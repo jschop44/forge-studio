@@ -1,3 +1,4 @@
+import {runtimeValue} from '../../../../../../lib/server/runtime-env';
 import {publicationJson,PublicationJsonError,ROLLBACK_BODY_LIMIT} from '../../../../../../lib/server/publication-json';
 import {NextRequest,NextResponse} from 'next/server';
 import {sameOrigin} from '../../../../../../lib/server/request-security';
@@ -8,7 +9,7 @@ export const runtime='nodejs';
 /** Restore a previous stored snapshot; only the publication owner can mutate it. */
 export async function POST(req:NextRequest,{params}:{params:Promise<{id:string}>}){
  if(!sameOrigin(req))return NextResponse.json({error:'Origin rejected'},{status:403});
- if(process.env.ENABLE_BUSINESS_PUBLISHING!=='true')return NextResponse.json({error:'Business publishing is not configured'},{status:503});
+ if(runtimeValue('ENABLE_BUSINESS_PUBLISHING')!=='true')return NextResponse.json({error:'Business publishing is not configured'},{status:503});
  const owner=await currentUserId();
  if(!owner)return NextResponse.json({error:'Unauthorized'},{status:401});
  const {id}=await params;

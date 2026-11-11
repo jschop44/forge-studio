@@ -1,13 +1,13 @@
 # Business publishing: live verification and rollback gate
 
-**Status:** Not yet verified against a live Neon database or deployed Render service. Keep `ENABLE_BUSINESS_PUBLISHING` unset/false until all checks pass. GitHub Actions success alone does not satisfy this gate.
+**Status:** Not yet verified against an isolated live Neon database with test-owner sessions. Keep `ENABLE_BUSINESS_PUBLISHING` unset/false until all checks pass. GitHub Actions success alone does not satisfy this gate.
 
 ## Preflight
-1. Select the intended Render workspace and Neon project explicitly; confirm the deployment is a private test environment and uses free-tier resources.
+1. Select an isolated test environment and Neon branch explicitly; use only existing free resources. The live Worker remains forge-studio-preview and customer publishing must stay disabled. Do not create a duplicate Worker for testing.
 2. Back up the database and verify a restore procedure before applying migrations.
 3. Confirm migrations create `forge_business_publications` and `forge_business_publication_snapshots`, including owner-scoped indexes.
 4. Verify authentication, same-origin checks, and that publishing is disabled by default.
-5. Ensure published HTML is reviewed and safe: static HTML validation is not a full sanitizer. Reject active content, external scripts and forms.
+5. Ensure published HTML is reviewed and safe: static HTML validation is not a full sanitizer. Reject executable content, external scripts and forms. The sole script exception is a type-only application/ld+json element containing bounded object/array JSON. All other protections inspect the original HTML; data metadata cannot hide unsafe attributes or markup.
 
 ## Acceptance tests (test owner accounts only)
 1. With the flag **off**, GET `/business-sites/{uuid}/index` must return 503 and `Cache-Control: no-store`; POST `/api/business/publish` must return 503.
@@ -25,8 +25,12 @@
 ## Release blockers
 - No real Neon transaction/concurrency test has been run.
 - Changed page-set revision/rollback is not implemented.
-- Revision conflict errors need explicit handling for database uniqueness races.
+- Uniqueness races return 409 in source; real concurrent Neon verification remains required.
 - HTML validation is a conservative regex-based filter, **not** a full HTML sanitizer.
-- No verified live Render deployment or end-to-end custom-domain verification.
+- Live Cloudflare application deployment is verified separately; this does not establish live publishing or custom-domain acceptance.
 
 Do not claim production readiness until these blockers are resolved and the checks above have recorded results.
+
+## Non-writing production route acceptance
+
+After npm run build, run node scripts/verify-publishing-gates.mjs. CI executes this in the production-build job. It starts isolated local production servers with publishing off/on and exercises 16 HTTP authorization, origin and opt-in checks. No authenticated sessions or database writes are used. These checks do not replace the live test-owner publication, revision and rollback matrix above. All publication routes now resolve the feature switch from request-time Worker bindings via runtimeValue, falling back to Node environment values for local tests.
