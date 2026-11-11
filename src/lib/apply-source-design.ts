@@ -1,7 +1,7 @@
 import type {GeneratedPage} from './business-site';
 import {escapeHtml as esc} from './export';
 import {publicSourceAsset,type SourceImage,type WebsiteDesignDna} from './website-design-dna';
-const generic=new Set(['the','and','our','your','with','from','this','that','for','about','services','service','products','product','menu','home','contact','photography','image','photo','website','business','offer','offering']);
+const generic=new Set(['the','and','our','your','with','from','this','that','for','about','services','service','products','product','menu','home','contact','photography','photograph','image','photo','picture','restaurant','food','website','business','offer','offering']);
 function terms(value:string){return value.toLowerCase().replace(/<[^>]*>/g,' ').replace(/[^a-z0-9 ]/g,' ').split(/\s+/).filter(term=>term.length>2&&!generic.has(term)).map(term=>term.endsWith('s')&&term.length>4?term.slice(0,-1):term)}
 /** Only match source photos when their alt text actually describes the offering.
  * A partial lexical overlap (e.g. chicken salad for chicken wings, ceramic tile
