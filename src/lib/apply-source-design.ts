@@ -27,11 +27,15 @@ export function applySourceDesign(pages:GeneratedPage[],dna:WebsiteDesignDna|und
  // Reserve source photos for the most-specific offering cards before assigning generic
  // page heroes. A homepage headline must not consume the only matching product image.
  const reservedForOfferings=new Set<string>();
- for(const page of pages){
+ // The dedicated services/menu page owns its product imagery before homepage
+ // teaser cards are allowed to claim assets with the same headings.
+ const reservedForServices=new Set<string>();
+ const servicePages=pages.filter(page=>page.slug==='services');
+ for(const page of [...servicePages,...pages.filter(page=>page.slug!=='services')]){
   for(const article of page.html.match(/<article\b[^>]*>[\s\S]*?<\/article>/gi)||[]){
    const heading=article.match(/<h[23]\b[^>]*>([\s\S]*?)<\/h[23]>/i)?.[1]||'';
    const selected=matchingImage(heading,images,reservedForOfferings);
-   if(selected)reservedForOfferings.add(selected.url);
+   if(selected){reservedForOfferings.add(selected.url);if(page.slug==='services')reservedForServices.add(selected.url)}
   }
  }
  const output=pages.map(page=>{
@@ -41,7 +45,7 @@ export function applySourceDesign(pages:GeneratedPage[],dna:WebsiteDesignDna|und
    else html=html.replace(/<nav\b[^>]*>[\s\S]*?<\/nav>/i,nav=>nav.replace(/(<a\b[^>]*>)/i,tag=>tag+sourceImage(logo,'source-brand-logo')));
   }
   // Specific offering sections require matching semantic evidence; never substitute a generic source photograph.
-  html=html.replace(/<article\b[^>]*>[\s\S]*?<\/article>/gi,article=>{const heading=article.match(/<h[23]\b[^>]*>([\s\S]*?)<\/h[23]>/i)?.[1]||'';const image=matchingImage(heading,images,used);if(!image)return article;used.add(image.url);assigned++;return /<img\b/i.test(article)?article.replace(/<img\b[^>]*>/i,()=>sourceImage(image,'service-photo')):article.replace(/(<article\b[^>]*>)/i,tag=>tag+sourceImage(image,'service-photo'))});
+  html=html.replace(/<article\b[^>]*>[\s\S]*?<\/article>/gi,article=>{const heading=article.match(/<h[23]\b[^>]*>([\s\S]*?)<\/h[23]>/i)?.[1]||'';const image=matchingImage(heading,images,page.slug==='services'?used:new Set([...used,...reservedForServices]));if(!image)return article;used.add(image.url);assigned++;return /<img\b/i.test(article)?article.replace(/<img\b[^>]*>/i,()=>sourceImage(image,'service-photo')):article.replace(/(<article\b[^>]*>)/i,tag=>tag+sourceImage(image,'service-photo'))});
   let heroAssigned=false;
   html=html.replace(/<figure\b[^>]*class=["'][^"']*\beditorial-photo\b[^"']*["'][^>]*>[\s\S]*?<\/figure>/gi,figure=>{
    const heading=html.match(/<h1\b[^>]*>([\s\S]*?)<\/h1>/i)?.[1]||'';
