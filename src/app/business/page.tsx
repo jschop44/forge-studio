@@ -9,7 +9,7 @@ import {businessPreviewHtml} from '../../lib/business-preview';
 import {industryPhotos} from '../../lib/industry-photos';
 import {VisualAssetSchema,type VisualAsset} from '../../lib/visual-assets';
 import {enhanceImmersiveWorld} from '../../lib/immersive-world';
-import {createExtractedPages,applyExtractedExperience} from '../../lib/extracted-pages';
+import {createExtractedPages,applyExtractedExperience,extractedPageSources} from '../../lib/extracted-pages';
 import {applyReferenceAppearance,websiteAddressKey} from '../../lib/reference-appearance';
 import {applyCapturedAppearance} from '../../lib/captured-appearance';
 import {useEffect,useMemo,useRef,useState} from 'react';
@@ -307,7 +307,7 @@ export default function BusinessGenerator(){
    const result=await response.json();if(generationEpoch!==inspectionEpoch.current){setStatus('Website address changed during generation. Generate again using the current website.');return}const extractedPages=additionalPages(evidence);const extras=applyExtractedExperience(extractedPages,selectedExperience,input);const combined=[...result.pages,...extras];const generated=selectedExperience==='immersive'?enhanceImmersiveWorld(combined,input):combined;
    const themed=automaticallyApplyBrand(generated,appearance);
    const sourceApplied=sourceDna?applySourceDesign(themed,sourceDna,designMode):{pages:themed,warnings:[]};
-   const captured=applyCapturedAppearance(sourceApplied.pages,workerEvidence,evidence?.url||websiteAddressKey(siteUrl)||'',designMode);
+   const captured=applyCapturedAppearance(sourceApplied.pages,workerEvidence,evidence?.url||websiteAddressKey(siteUrl)||'',designMode,extractedPageSources(evidence));
    const finalPages=automaticallyOptimizeMetadata(captured.pages);
    const validation=auditGeneratedDraft(finalPages);
    if(!validation.readyForReview)throw Error('The generated website did not pass its content and navigation checks. Please retry or review the business details.');

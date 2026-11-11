@@ -9,7 +9,7 @@ import type {GeneratedPage} from './business-site';
 import type {SiteEvidence} from './forge-intelligence';
 
 /** Allocate filenames once so navigation uses exactly the pages that will be emitted. */
-export function createExtractedPages(evidence:SiteEvidence,businessName:string):GeneratedPage[]{
+function extractedPageEntries(evidence:SiteEvidence){
  const used=new Set(['index','services','about','contact']);
  const paths=new Set<string>();
  const entries=(evidence.pageSummaries||[]).flatMap(page=>{
@@ -21,6 +21,14 @@ export function createExtractedPages(evidence:SiteEvidence,businessName:string):
   let slug=base;let suffix=2;while(used.has(slug))slug=base+'-'+suffix++;
   used.add(slug);return [{page,slug}];
  });
+ return entries;
+}
+/** Keep source identity separate from exported/published page schemas. */
+export function extractedPageSources(evidence:SiteEvidence|null|undefined):Record<string,string>{
+ return evidence?Object.fromEntries(extractedPageEntries(evidence).map(({page,slug})=>[slug,new URL(page.path,evidence.url).href])):{};
+}
+export function createExtractedPages(evidence:SiteEvidence,businessName:string):GeneratedPage[]{
+ const entries=extractedPageEntries(evidence);
  return entries.map(({page,slug})=>{
   const title=esc(page.title||page.label);const summary=esc(page.description||'');
   const navigation=entries.filter(item=>item.slug!==slug).map(item=>'<a href="'+item.slug+'.html">'+esc(item.page.label)+'</a>').join('');
