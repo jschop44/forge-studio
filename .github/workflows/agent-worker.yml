@@ -8,7 +8,8 @@ on:
       - 'tests/drain-agent-queue.test.mjs'
   workflow_dispatch:
   schedule:
-    - cron: '17 * * * *'
+    # Offset quarter-hour runs to avoid GitHub's top-of-hour schedule congestion.
+    - cron: '2,17,32,47 * * * *'
 permissions:
   contents: read
 jobs:
