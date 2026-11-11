@@ -11,6 +11,7 @@ import {VisualAssetSchema,type VisualAsset} from '../../lib/visual-assets';
 import {enhanceImmersiveWorld} from '../../lib/immersive-world';
 import {createExtractedPages,applyExtractedExperience,extractedPageSources} from '../../lib/extracted-pages';
 import {applyReferenceAppearance,websiteAddressKey} from '../../lib/reference-appearance';
+import {applyDefaultSourceContent} from '../../lib/default-source-content';
 import {applyCapturedAppearance} from '../../lib/captured-appearance';
 import {useEffect,useMemo,useRef,useState} from 'react';
 import Link from 'next/link';
@@ -305,13 +306,14 @@ export default function BusinessGenerator(){
    if(response.status===429){const retrySeconds=Math.min(30,Math.max(1,Number(response.headers.get('retry-after'))||5));setStatus('AI is processing other websites. Please retry in about '+retrySeconds+' seconds.');return}
    if(!response.ok){const failure=await response.json();throw Error(response.status===503?'Website generation is temporarily unavailable. Please try again.':failure.error||'AI generation unavailable')}
    const result=await response.json();if(generationEpoch!==inspectionEpoch.current){setStatus('Website address changed during generation. Generate again using the current website.');return}const extractedPages=additionalPages(evidence);const extras=applyExtractedExperience(extractedPages,selectedExperience,input);const combined=[...result.pages,...extras];const generated=selectedExperience==='immersive'?enhanceImmersiveWorld(combined,input):combined;
-   const themed=automaticallyApplyBrand(generated,appearance);
+   const contentApplied=applyDefaultSourceContent(generated,evidence,designMode);
+   const themed=automaticallyApplyBrand(contentApplied.pages,appearance);
    const sourceApplied=sourceDna?applySourceDesign(themed,sourceDna,designMode):{pages:themed,warnings:[]};
    const captured=applyCapturedAppearance(sourceApplied.pages,workerEvidence,evidence?.url||websiteAddressKey(siteUrl)||'',designMode,extractedPageSources(evidence));
    const finalPages=automaticallyOptimizeMetadata(captured.pages);
    const validation=auditGeneratedDraft(finalPages);
    if(!validation.readyForReview)throw Error('The generated website did not pass its content and navigation checks. Please retry or review the business details.');
-   revealGeneratedPreview.current=true;setPages(finalPages);setActive('index');setStatus('Website draft generated for '+input.industry+'. Review its content and design before publishing.'+visualNotice+(sourceApplied.warnings.length?' '+sourceApplied.warnings.join(' '):'')+(captured.warnings.length?' '+captured.warnings.join(' '):''));
+   revealGeneratedPreview.current=true;setPages(finalPages);setActive('index');setStatus('Website draft generated for '+input.industry+'. Review its content and design before publishing.'+visualNotice+(contentApplied.warnings.length?' '+contentApplied.warnings.join(' '):'')+(sourceApplied.warnings.length?' '+sourceApplied.warnings.join(' '):'')+(captured.warnings.length?' '+captured.warnings.join(' '):''));
   }catch(error){setStatus(error instanceof Error?error.message:'Website generation is temporarily unavailable.')}finally{setBusy(false)}
  }
  return <div className="business-generator forge-auto">

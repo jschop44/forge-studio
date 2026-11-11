@@ -62,7 +62,7 @@ test('source mapping shares the collision-safe extracted page allocator',async()
  const evidence={url:'https://shop.example/',title:'Shop',description:'',headings:[],pageSummaries:['/a/b','/a-b','/about','https://foreign.example/a'].map(summary)};
  const extracted=createExtractedPages(evidence,'Shop');
  assert.deepEqual(extracted.map(p=>p.slug),['a-b','a-b-2']);
- assert.deepEqual(extractedPageSources(evidence),{'a-b':'https://shop.example/a/b','a-b-2':'https://shop.example/a-b'});
+ assert.deepEqual(extractedPageSources(evidence),{'a-b':'https://shop.example/a/b','a-b-2':'https://shop.example/a-b',about:'https://shop.example/about'});
 });
 
 test('a captured subpage remains usable when the inspected homepage has no computed tokens',()=>{
