@@ -18,6 +18,8 @@ test('exported environment rejects unsafe destinations and escapes names and scr
 test('uncommon niches retain a business-specific 3D content exhibition without unrelated photos',()=>{
  const html=immersiveWorldMarkup({businessName:'Meridian Horology',industry:'Clock restoration',pageTitle:'Home',intro:'Mechanical clock restoration and servicing',environment:{...environment,kind:'spatial-gallery',url:'',gallery:[]},targets});
  assert.match(html,/data-environment="content-exhibition"/);assert.match(html,/perspective:1200px/);
+ assert.match(html,/translateZ\(/);
+ assert.doesNotMatch(html,/rotateY\(/,"3D depth must not rotate visible content lettering");
  assert.match(html,/Mechanical clock restoration and servicing/);assert.match(html,/Meridian Horology/);
  assert.ok(!html.includes('Poly Haven'));assert.ok(!html.includes('images.unsplash.com'));
  for(const target of targets)assert.ok(html.includes('href="'+target.slug+'.html"'));
