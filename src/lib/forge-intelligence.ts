@@ -53,7 +53,7 @@ export function homepageSourceParagraphs(html:string):string[]{
  const safe=main.replace(/<(script|style|noscript|template|svg|form)\b[^>]*>[\s\S]*?<\/\1>/gi,'');
  const seen=new Set<string>();
  return [...safe.matchAll(/<p\b[^>]*>([\s\S]*?)<\/p>/gi)].slice(0,80).flatMap(match=>{
-  const value=match[1].replace(/<[^>]*>/g,' ').replace(/&(?:amp|quot|#39|lt|gt);/g,entity=>({'&amp;':'&','&quot;':'"','&#39;':"'",'&lt;':'<','&gt;':'>'}[entity]||entity)).replace(/\s+/g,' ').trim().slice(0,400);
+  const value=match[1].replace(/<[^>]*>/g,' ').replace(/&(?:amp|quot|#39|lt|gt);/g,entity=>({ '&amp;':'&','&quot;':'"','&#39;':"'",'&lt;':'<','&gt;':'>' } as Record<string,string>)[entity]||entity).replace(/\s+/g,' ').trim().slice(0,400);
   const key=value.toLowerCase();if(value.length<20||seen.has(key))return [];seen.add(key);return [value];
  }).slice(0,12);
 }
