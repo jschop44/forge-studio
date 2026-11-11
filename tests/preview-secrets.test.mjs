@@ -19,10 +19,25 @@ test('only supplied allowlisted secrets travel over stdin, never command argumen
  }),true);
  assert.equal(calls,1);
 });
-test('provider failures are fatal without including provider output or secret values',()=>{
- assert.throws(()=>syncPreviewSecrets({AUTH_SECRET:'fake-test-secret'},()=>({status:1,stderr:'fake-test-secret'})),error=>{
-  assert.equal(error.message.includes('fake-test-secret'),false);return true;
+test('transient provider failures use only two bounded retries with protected stdin',()=>{
+ const secret='synthetic-secret-value',env={FORGE_WORKER_SECRET:secret};
+ let attempts=0;const pauses=[];
+ const ok=syncPreviewSecrets(env,(command,args,options)=>{
+  attempts++;
+  assert.equal(command,'npx');assert.deepEqual(args,['wrangler','secret','bulk']);
+  assert.deepEqual(JSON.parse(options.input),{FORGE_WORKER_SECRET:secret});
+  assert.equal(args.join(' ').includes(secret),false);
+  return {status:attempts===3?0:1,stderr:secret};
+ },ms=>pauses.push(ms));
+ assert.equal(ok,true);assert.equal(attempts,3);assert.deepEqual(pauses,[800,1600]);
+});
+test('provider failures remain fatal after bounded attempts without exposing secrets',()=>{
+ let attempts=0;const pauses=[];
+ assert.throws(()=>syncPreviewSecrets({AUTH_SECRET:'fake-test-secret'},()=>{attempts++;return {status:1,stderr:'fake-test-secret'}},ms=>pauses.push(ms)),error=>{
+  assert.equal(error.message.includes('fake-test-secret'),false);
+  assert.match(error.message,/after 3 attempts/);return true;
  });
+ assert.equal(attempts,3);assert.deepEqual(pauses,[800,1600]);
 });
 
 
