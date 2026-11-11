@@ -22,3 +22,26 @@ test('explicit site identity metadata takes precedence over marketing page title
  const absent=extractWebsiteDesignDna('<title>Pizza Delivery & Carryout</title><img src="/logo.jpg" alt="Pizza logo">','https://example.com/');assert.equal(absent.businessName,undefined);assert.ok(!('businessName' in absent));
  const oversized=extractWebsiteDesignDna('<meta property="og:site_name" content="'+('x'.repeat(101))+'">','https://example.com/');assert.equal(oversized.businessName,undefined);
 });
+
+
+test('responsive and lazy-loaded images preserve real business photos and filename-based logos',()=>{
+ const html='<header><img src="/assets/brand-logo.svg"></header>'+
+  '<img src="data:image/gif;base64,AAAA" srcset="/wings-small.webp 320w, /wings-large.webp 1600w" alt="Buffalo chicken wings">'+
+  '<img src="/placeholder.gif" data-srcset="/patio-small.jpg 400w, /patio-large.jpg 1920w" alt="Restaurant patio">'+
+  '<img data-original="/bakery.jpg" src="/blank.gif" alt="Fresh bakery items">'+
+  '<img data-src="data:image/gif;base64,BBBB" data-lazy-src="/staff.jpg" alt="Restaurant staff">';
+ const dna=extractWebsiteDesignDna(html,'https://example.com/');
+ assert.equal(dna.logo?.url,'https://example.com/assets/brand-logo.svg');
+ assert.deepEqual(dna.images.map(image=>image.url),[
+  'https://example.com/assets/brand-logo.svg',
+  'https://example.com/wings-large.webp',
+  'https://example.com/patio-large.jpg',
+  'https://example.com/bakery.jpg',
+  'https://example.com/staff.jpg'
+ ]);
+ assert.ok(dna.images.slice(1).every(image=>image.role==='content'));
+});
+test('responsive sources ignore unsafe URLs and choose a safe remaining candidate',()=>{
+ const dna=extractWebsiteDesignDna('<img alt="Pizza" src="data:image/gif;base64,AAAA" srcset="https://127.0.0.1/private.jpg 1600w, https://images.example.com/pizza.jpg 1200w">','https://example.com/');
+ assert.deepEqual(dna.images.map(image=>image.url),['https://images.example.com/pizza.jpg']);
+});
