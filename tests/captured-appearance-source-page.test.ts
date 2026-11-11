@@ -24,3 +24,11 @@ test('preserve mode still supports valid homepage captures, while redesign ignor
  assert.match(preserved.pages[0].html,/forge-captured-appearance/);
  assert.deepEqual(applyCapturedAppearance(pages,capture,capture.sourceUrl,'redesign').pages,pages);
 });
+
+
+test('protocol-relative or missing page paths cannot supply a fallback style',()=>{
+ const offsite={...capture,pages:[{...capture.pages[0],path:'//other.example/products'}]};
+ assert.deepEqual(applyCapturedAppearance(pages,offsite,capture.sourceUrl,'inspired').pages,pages);
+ const empty={...capture,pages:[]};
+ assert.deepEqual(applyCapturedAppearance(pages,empty,capture.sourceUrl,'inspired').pages,pages);
+});
