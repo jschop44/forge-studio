@@ -10,14 +10,25 @@ export function runtimeSecrets(env){
  }
  return values;
 }
-export function syncPreviewSecrets(env=process.env,run=spawnSync){
+const sleepSync=ms=>{Atomics.wait(new Int32Array(new SharedArrayBuffer(4)),0,0,ms)};
+export function syncPreviewSecrets(env=process.env,run=spawnSync,pause=sleepSync){
  const values=runtimeSecrets(env),names=Object.keys(values);
  if(!names.length){console.log('No runtime secrets supplied; existing Worker configuration is preserved. Database/auth readiness remains unverified.');return false;}
- // Never include secret values in arguments, errors, logs, or build artifacts.
- const result=run('npx',['wrangler','secret','bulk'],{env,input:JSON.stringify(values),encoding:'utf8',stdio:['pipe','pipe','pipe']});
- if(result.error||result.status!==0)throw Error('Preview secret sync failed; provider output suppressed to protect credentials');
- console.log('Synced runtime secret names: '+names.join(', ')+'. Live readiness must still be checked.');
- return true;
+ // Retrying transient provider failures is bounded to three identical, idempotent sync attempts.
+ // Never include secret values or provider output in arguments, errors, logs, or build artifacts.
+ const delays=[800,1600];
+ for(let attempt=0;attempt<=delays.length;attempt++){
+  const result=run('npx',['wrangler','secret','bulk'],{env,input:JSON.stringify(values),encoding:'utf8',stdio:['pipe','pipe','pipe']});
+  if(!result.error&&result.status===0){
+   console.log('Synced runtime secret names: '+names.join(', ')+'. Live readiness must still be checked.');
+   return true;
+  }
+  if(attempt<delays.length){
+   console.warn('Preview secret sync attempt '+(attempt+1)+' failed; retrying without exposing provider output.');
+   pause(delays[attempt]);
+  }
+ }
+ throw Error('Preview secret sync failed after 3 attempts; provider output suppressed to protect credentials');
 }
 if(process.argv[1]&&import.meta.url===pathToFileURL(process.argv[1]).href){
  try{syncPreviewSecrets()}catch(error){console.error(error.message);process.exitCode=1}
