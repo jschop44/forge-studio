@@ -8,4 +8,6 @@ test('business generator offers a single 3D immersion choice with interactive ob
  assert.doesNotMatch(business,/title:'Interactive 3D objects'/);
  assert.match(business,/experienceStyle==='object-navigation'\?'immersive':context.experienceStyle/);
  assert.match(business,/selectedExperience:WebsiteExperience=experienceStyle==='object-navigation'/);
+ assert.match(business,/setAutoImmersive\(choice.value==='immersive'\)/);
+ assert.doesNotMatch(business,/Enable business-matched immersive 3D where supported/);
 });
