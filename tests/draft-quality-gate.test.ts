@@ -48,3 +48,44 @@ test("does not report diverse photos or duplicate image use within a single page
  const pages=[{slug:"index",title:"Home",html:build(first+first)},{slug:"services",title:"Menu",html:build(second)}];
  assert.ok(!auditGeneratedDraft(pages).warnings.some(w=>w.includes("Repeated content image")));
 });
+
+
+test("valid internal page and fragment destinations remain reviewable",()=>{
+ const wrap=(title:string,body:string)=>'<!doctype html><html><head><title>'+title+'</title><meta name="viewport" content="width=device-width"></head><body><main id="main-content">'+body+'</main></body></html>';
+ const pages=[
+  {slug:"index",title:"Home",html:wrap("Home",'<h1>Welcome</h1><a href="#main-content">Skip to content</a><a href="./services.html#offering-0">Coffee beans</a><a href="/services.html?view=all#offering-1">Mugs</a>')},
+  {slug:"services",title:"Services",html:wrap("Services",'<h1>Services</h1><article id="offering-0">Coffee beans</article><article id="offering-1">Ceramic mugs</article><a href="index.html#main-content">Home</a>')}
+ ];
+ const report=auditGeneratedDraft(pages);
+ assert.equal(report.readyForReview,true,report.errors.join("; "));
+});
+test("missing section anchors and placeholder links prevent a fake working preview",()=>{
+ const wrap=(body:string)=>'<!doctype html><html><head><title>Website</title></head><body><main><h1>Business</h1>'+body+'</main></body></html>';
+ const pages=[
+  {slug:"index",title:"Home",html:wrap('<a href="services.html#offering-7">Missing service</a><a href="#fake">Missing section</a><a href="#">Dead CTA</a>')},
+  {slug:"services",title:"Services",html:wrap('<article id="offering-1">Actual offering</article>')}
+ ];
+ const report=auditGeneratedDraft(pages);
+ assert.equal(report.readyForReview,false);
+ assert.ok(report.errors.some(error=>error.includes("services#offering-7")));
+ assert.ok(report.errors.some(error=>error.includes("index#fake")));
+ assert.ok(report.errors.some(error=>error.includes("nonfunctional")));
+});
+test("unsafe destinations, malformed fragments and data-id decoys are rejected",()=>{
+ const html='<!doctype html><html><head><title>Shop</title></head><body><main><h1>Shop</h1><div data-id="fake"></div><a href="#fake">Missing fragment</a><a href="#bad%XX">Bad encoding</a><a href="javascript:void(0)">No action</a><a href="mailto:hello@example.com">Email</a><a href="https://example.com">External</a></main></body></html>';
+ const report=auditGeneratedDraft([{slug:"index",title:"Home",html}]);
+ assert.equal(report.readyForReview,false);
+ assert.ok(report.errors.some(error=>error.includes("index#fake")));
+ assert.ok(report.errors.some(error=>error.includes("malformed internal link fragment")));
+ assert.ok(report.errors.some(error=>error.includes("nonfunctional or unsafe link")));
+});
+test("actual interactive product navigation still passes static fragment checks",()=>{
+ const website=generateBusinessWebsite({
+  businessName:"Harbor Coffee",industry:"Coffee shop",
+  description:"Roasted coffee beans and ceramic mugs from our neighborhood café.",
+  services:["Coffee beans","Ceramic mugs"],
+  experienceStyle:"object-navigation"
+ });
+ const report=auditGeneratedDraft(website.pages);
+ assert.equal(report.readyForReview,true,report.errors.join("; "));
+});
