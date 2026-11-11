@@ -218,7 +218,7 @@ test('mobile panorama offering links navigate and disappear in reading mode',asy
  await page.getByRole('button',{name:'Read Home page'}).click();
  await expect(page.locator('body')).toHaveClass(/forge-world-reading/);
  await expect(portals).toBeHidden();
- await page.getByRole('button',{name:/Explore immersive world/i}).click();
+ await page.getByRole('button',{name:'Return to environment'}).click();
  await expect(portals).toBeVisible();
  await portals.getByRole('link',{name:/Ceramic mugs/}).click();
  await expect(page).toHaveURL(/services\.html#offering-1$/);
