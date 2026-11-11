@@ -30,13 +30,25 @@ test('mismatched or invalid captures cannot style another company',()=>{
  const poisoned={...sample,sourceUrl:'https://127.0.0.1/'};
  assert.deepEqual(applyCapturedAppearance(pages,poisoned,sample.sourceUrl,'inspired').pages,pages);
 });
-test('rejects stylesheet escapes and fixes observed unreadable color pairs',()=>{
- const attack={...sample,pages:[{...sample.pages[0],designTokens:{backgroundColor:'rgb(254, 254, 254)',textColor:'rgb(250, 250, 250)',fontFamily:'Arial;}</style><script>alert(1)</script>',headingFontFamily:'url(javascript:bad)',headingFontSize:'1000px',baseFontSize:'6px'}}]};
- const out=applyCapturedAppearance(pages,attack,sample.sourceUrl,'inspired').pages[0].html;
- assert.match(out,/--business-paper:#fefefe/);
- assert.match(out,/--business-ink:#000000/);
- assert.doesNotMatch(out,/<script>|javascript:|1000px|font-family:Arial;/);
- const unsafe={...sample,pages:[{...sample.pages[0],designTokens:{backgroundColor:'red;}script{display:block',textColor:'rgb(255, 255, 255)',fontFamily:'sans-serif'}}]};
- const sanitized=applyCapturedAppearance(pages,unsafe,sample.sourceUrl,'inspired').pages[0].html;
- assert.doesNotMatch(sanitized,/script\{|background:red|font-family:"red/);
+test('unrelated page styling is rejected even when the capture shares the same domain',()=>{
+ const otherPage={...sample,pages:[{...sample.pages[0],path:'/unrelated'}]};
+ const result=applyCapturedAppearance(pages,otherPage,sample.sourceUrl,'inspired');
+ assert.deepEqual(result.pages,pages);
+ assert.ok(result.warnings.some(w=>w.includes('inspected source page')));
+ const capturedQuery={...sample,pages:[{...sample.pages[0],path:'/?catalog=1'}]};
+ const withQuery=applyCapturedAppearance(pages,capturedQuery,'https://studio.example/?catalog=1','inspired');
+ assert.match(withQuery.pages[0].html,/forge-captured-appearance/);
+});
+
+test('low-contrast observed text is corrected and invalid CSS tokens are rejected before use',()=>{
+ const valid={...sample,pages:[{...sample.pages[0],designTokens:{...sample.pages[0].designTokens,backgroundColor:'rgb(254, 254, 254)',textColor:'rgb(250, 250, 250)'}}]};
+ const result=applyCapturedAppearance(pages,valid,sample.sourceUrl,'inspired');
+ assert.match(result.pages[0].html,/--business-paper:#fefefe/);
+ assert.match(result.pages[0].html,/--business-ink:#000000/);
+ const attack={...sample,pages:[{...sample.pages[0],designTokens:{...sample.pages[0].designTokens,fontFamily:'Arial;}</style><script>alert(1)</script>',headingFontFamily:'url(javascript:bad)',headingFontSize:'1000px',baseFontSize:'6px'}}]};
+ const rejected=applyCapturedAppearance(pages,attack,sample.sourceUrl,'inspired');
+ assert.deepEqual(rejected.pages,pages,'malformed browser style evidence must not be partially applied');
+ assert.ok(rejected.warnings.some(w=>w.includes('Unverified')));
+ const unsafe={...sample,pages:[{...sample.pages[0],designTokens:{...sample.pages[0].designTokens,backgroundColor:'red;}script{display:block'}}]};
+ assert.deepEqual(applyCapturedAppearance(pages,unsafe,sample.sourceUrl,'inspired').pages,pages);
 });
