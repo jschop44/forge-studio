@@ -12,7 +12,8 @@ export function portableStaticSiteLinks(
  const slugs=new Set(pages.map(page=>page.slug).filter(slug=>/^[a-z0-9-]{1,64}$/i.test(slug)));
  const destination=(href:string):string=>{
   if(!href||href.startsWith('#')||href.startsWith('?')||href.startsWith('//')||/^[a-z][a-z\d+.-]*:/i.test(href))return href;
-  if(href==='/'||href==='./')return slugs.has('index')?'index.html':href;
+  const home=href.match(/^(?:\/|\.\/)(\?[^#]*)?(#.*)?$/);
+  if(home)return slugs.has('index')?'index.html'+(home[1]||'')+(home[2]||''):href;
   const match=href.match(/^(?:\.\/|\/)?([a-z0-9-]+)(?:\.html)?\/?(\?[^#]*)?(#.*)?$/i);
   if(!match||!slugs.has(match[1]))return href;
   return match[1]+'.html'+(match[2]||'')+(match[3]||'');

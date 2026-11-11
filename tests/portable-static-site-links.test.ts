@@ -35,3 +35,17 @@ test('works with the real generated page set and preserves fragment identity',()
  const result=portableStaticSiteLinks('<a data-test="menu" href="/services.html#offering-2">Menu</a>',pages);
  assert.equal(result,'<a data-test="menu" href="services.html#offering-2">Menu</a>');
 });
+
+
+test('root navigation keeps tracking queries and fragments within the exported or hosted site',()=>{
+ for(const href of ['/?from=brand#main-content','/#main-content','./?from=brand#main-content']){
+  const output=portableStaticSiteLinks('<a href="'+href+'">Home</a>',pages);
+  assert.ok(output.includes('href="index.html'));
+  const target=output.match(/href="([^"]+)"/)![1];
+  const resolved=new URL(target,'https://forge.example/business-sites/test-owner/services');
+  assert.equal(resolved.pathname,'/business-sites/test-owner/index.html');
+  assert.equal(resolved.hash,'#main-content');
+  if(href.includes('?'))assert.equal(resolved.search,'?from=brand');
+ }
+ assert.equal(portableStaticSiteLinks('<a href="/?from=brand">Home</a>',[{slug:'services'}]),'<a href="/?from=brand">Home</a>');
+});

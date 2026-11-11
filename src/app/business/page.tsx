@@ -12,7 +12,7 @@ import {enhanceImmersiveWorld} from '../../lib/immersive-world';
 import {createExtractedPages,applyExtractedExperience} from '../../lib/extracted-pages';
 import {applyReferenceAppearance,websiteAddressKey} from '../../lib/reference-appearance';
 import {applyCapturedAppearance} from '../../lib/captured-appearance';
-import {useEffect,useRef,useState} from 'react';
+import {useEffect,useMemo,useRef,useState} from 'react';
 import Link from 'next/link';
 import {generateBusinessWebsite,type GeneratedPage} from '../../lib/business-site';
 import {auditGeneratedDraft} from '../../lib/draft-quality-gate';
@@ -182,8 +182,8 @@ export default function BusinessGenerator(){
   setStatus('Heading updated in the website preview. Review the page before publishing.');
  }
  const current=pages.find(p=>p.slug===active);
- const draftAudit=pages.length?auditGeneratedDraft(pages):null;
- const publicationCheck=pages.length?validateBusinessPublicationRequest({ownerApproved:true,businessName:name.trim(),pages}):null;
+ const draftAudit=useMemo(()=>pages.length?auditGeneratedDraft(pages):null,[pages]);
+ const publicationCheck=useMemo(()=>pages.length?validateBusinessPublicationRequest({ownerApproved:true,businessName:name.trim(),pages}):null,[pages,name]);
  async function downloadWebsiteZip(){
   if(!draftAudit?.readyForReview){setStatus('Website download blocked: '+(draftAudit?.errors.slice(0,3).join('; ')||'Generate and review the pages first.'));return}
   try{

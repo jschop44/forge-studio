@@ -1,5 +1,6 @@
 import {z} from 'zod';
 import {withoutPublicationJsonLd} from './publication-static-html';
+import {portableStaticSiteLinks} from './portable-static-site-links';
 import {auditGeneratedDraft} from './draft-quality-gate';
 import type {GeneratedPage} from './business-site';
 
@@ -31,5 +32,5 @@ export function validateBusinessPublicationRequest(input:unknown):{
     if(/<\s*(svg|math|template|link)\b/i.test(page.html))errors.push(page.slug+': unsupported embedded, stylesheet or foreign HTML elements are not allowed');
     if(/\b(?:srcdoc|formaction|xlink:href)\s*=/i.test(page.html))errors.push(page.slug+': unsafe embedded or action attributes are not allowed');
   }
-  return {valid:errors.length===0,errors,businessName:parsed.data.businessName,pages:parsed.data.pages};
+  return {valid:errors.length===0,errors,businessName:parsed.data.businessName,pages:parsed.data.pages.map(page=>({...page,html:portableStaticSiteLinks(page.html,parsed.data.pages)}))};
 }

@@ -4,7 +4,7 @@
 
 Baseline main/live source remains 9bd3171d2c72e804753357b3a331b51f48611228. Standard generated pages were reproduced as failing publication because their JSON-LD metadata was rejected. The follow-up validates a narrow inert metadata exception, keeps all other protections on the original HTML, aligns builder eligibility with the server, and resolves publication feature switches from Worker runtime bindings. Publishing remains opt-in and has not been enabled.
 
-Local validation: 550/550 TypeScript tests, completed TypeScript validation and production build passed. The local production server passed 16/16 HTTP opt-in, authorization and origin checks without database writes. Browser, full CI and deployment of this follow-up are still required at this checkpoint. Live test-owner persistence, revision/concurrency/rollback, cross-app signing and full visual/3D acceptance remain open.
+Local validation: 552/552 TypeScript tests, completed TypeScript validation and production build passed. The local production server passed 16/16 HTTP opt-in, authorization and origin checks without database writes. Browser, full CI and deployment of this follow-up are still required at this checkpoint. Live test-owner persistence, revision/concurrency/rollback, cross-app signing and full visual/3D acceptance remain open.
 
 
 Updated November 10, 2026 (America/New_York). Source baseline: `7dbf0e83911aa1de3f5fed78ed090a7d4a471d39`.
@@ -75,3 +75,5 @@ Live worker/projects/assets unauthenticated probes returned 401. Disabled busine
 The final live UI check exposed an additional defect: the app's own inline example `Industry: Soccer club; Offerings: ...` polluted the industry with the offerings text and lost the supplied service list. Normalize semicolons only before recognized field labels, share the tested brief parser, and use the normalized brief consistently for explicit-fact precedence. Eleven focused brief/recognition tests and TypeScript validation passed. A new browser regression checks the actual generation request and offering headings. This new correction must pass full CI and a new exact-revision deployment; the preceding deployed release does not prove this correction live.
 
 No overall production-completion percentage is asserted. Full live publishing/rollback/concurrency, source fidelity, actual cross-app delivery, durable six-stage real-model provenance and real-device immersive acceptance remain open. No production flags were enabled and no database rows were changed by this session.
+
+Publishing follow-up additionally normalizes known page destinations before storage; root-relative links must not escape from a published site to the builder root. The shared validator handles new publication and revisions. Draft/eligibility checks are memoized by page content and business name to avoid repeating full-site scans on unrelated UI changes.

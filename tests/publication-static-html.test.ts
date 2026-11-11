@@ -43,3 +43,17 @@ test('data-only exceptions never permit immersive runtimes or bypass approval',(
  assert.equal(validateBusinessPublicationRequest({ownerApproved:true,businessName:brief.businessName,pages}).valid,false);
  assert.equal(validateBusinessPublicationRequest({ownerApproved:false,businessName:brief.businessName,pages:site().pages}).valid,false);
 });
+
+
+test('hosted publication stores sibling navigation rather than escaping to the builder root',()=>{
+ const pages=site().pages;
+ pages[0].html=pages[0].html.replace('href="services.html"','href="/services#offering-0"').replace('href="about.html"','href="/about"');
+ const result=validateBusinessPublicationRequest({ownerApproved:true,businessName:brief.businessName,pages});
+ assert.equal(result.valid,true,result.errors.join('; '));
+ const home=result.pages![0].html;
+ assert.ok(home.includes('href="services.html#offering-0"'));
+ assert.ok(home.includes('href="about.html"'));
+ assert.ok(!home.includes('href="/services'));
+ assert.ok(home.includes('<script type="application/ld+json">'));
+ assert.ok(pages[0].html.includes('href="/services#offering-0"'),'reviewed source remains unchanged in memory');
+});
