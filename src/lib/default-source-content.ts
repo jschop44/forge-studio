@@ -26,7 +26,18 @@ export function defaultSourcePages(evidence:SiteEvidence|null|undefined):Array<{
 /** Retain observed text only. Never import source markup, forms, scripts or behaviors. */
 export function applyDefaultSourceContent(pages:GeneratedPage[],evidence:SiteEvidence|null|undefined,mode:string):{pages:GeneratedPage[];warnings:string[]}{
  if(!['preserve','inspired','redesign'].includes(mode))return {pages,warnings:[]};
- const sources=defaultSourcePages(evidence);let applied=0,omittedFormInstructions=false,omittedExcludedContent=false;
+ const sources=defaultSourcePages(evidence);
+ // Homepage evidence is separately captured and only eligible for the actual root page.
+ // Apply the same root URL policy and copy safeguards as the inspected subpages.
+ if(evidence?.homepageParagraphs?.length){
+  try{
+   const root=new URL(evidence.url);
+   if(publicSourceAsset(root.href,root.href)&&root.pathname==='/'&&!root.search){
+    sources.push({slug:'index',source:root.href,summary:{path:'/',label:'Home',title:evidence.title,description:evidence.description,headings:evidence.headings,paragraphs:evidence.homepageParagraphs}});
+   }
+  }catch{/* Invalid source URLs cannot contribute copied homepage facts. */}
+ }
+ let applied=0,omittedFormInstructions=false,omittedExcludedContent=false;
  const output=pages.map(page=>{
   const source=sources.find(item=>item.slug===page.slug);
   if(!source||!/<\/main>/i.test(page.html))return page;
