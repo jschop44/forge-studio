@@ -40,6 +40,29 @@ export function auditGeneratedDraft(pages: GeneratedPage[]): DraftQualityReport 
       if(!readable&&!hasVisual)errors.push(page.slug+": empty main content");
       else if(readable.length<30&&!hasVisual)warnings.push(page.slug+": very little visible content; review this page for a blank or placeholder layout");
     }
+
+    // A form without a real action looks interactive but silently posts back to
+    // the static preview. Treat it as a broken workflow, not a working contact form.
+    // Even explicit actions still require live backend and delivery verification.
+    for(const match of page.html.matchAll(/<form\b[^>]*>/gi)){
+      const tag=match[0];
+      const action=tag.match(/\saction\s*=\s*(["'])(.*?)\1/i)?.[2]?.trim();
+      if(!action||action==='#'||action.startsWith('#')||/^(?:javascript:|data:|blob:)/i.test(action)){
+        errors.push(page.slug+": form has no functioning submission destination");
+        continue;
+      }
+      if(/^(?:http:|\/\/)/i.test(action)){
+        errors.push(page.slug+": form submits to an insecure destination");
+        continue;
+      }
+      if(/^\w+:/i.test(action)&&!/^https:/i.test(action)){
+        errors.push(page.slug+": form submission scheme is unsupported");
+        continue;
+      }
+      // Code inspection cannot confirm external form delivery, database writes
+      // or consent capture, so leave publishing gated regardless of the action.
+      warnings.push(page.slug+": form submission backend and delivery remain unverified");
+    }
     // Source photographs can differ by crop parameters but still be the same photo.
     // Repeating a company logo is intentional; repeating a content photo is flagged.
     for(const image of page.html.matchAll(/<img\b[^>]*>/gi)){
