@@ -1,3 +1,4 @@
+import {defaultSourcePages} from './default-source-content';
 import {publicSourceAsset} from './website-design-dna';
 import {offeringPhotoCandidates,selectDiversePhoto} from './industry-photos';
 import {businessArtDirection} from './business-art-direction';
@@ -25,7 +26,7 @@ function extractedPageEntries(evidence:SiteEvidence){
 }
 /** Keep source identity separate from exported/published page schemas. */
 export function extractedPageSources(evidence:SiteEvidence|null|undefined):Record<string,string>{
- return evidence?Object.fromEntries(extractedPageEntries(evidence).map(({page,slug})=>[slug,new URL(page.path,evidence.url).href])):{};
+ return evidence?Object.fromEntries([...extractedPageEntries(evidence).map(({page,slug})=>[slug,new URL(page.path,evidence.url).href]),...defaultSourcePages(evidence).map(({slug,source})=>[slug,source])]):{};
 }
 export function createExtractedPages(evidence:SiteEvidence,businessName:string):GeneratedPage[]{
  const entries=extractedPageEntries(evidence);
