@@ -6,12 +6,12 @@ import {enhanceImmersiveWorld,worldTheme} from '../src/lib/immersive-world';
 import {auditGeneratedDraft} from '../src/lib/draft-quality-gate';
 import {createExtractedPages} from '../src/lib/extracted-pages';
 const brief={businessName:'Harbor Coffee',industry:'Coffee shop',description:'An independent cafe offering coffee beans and community workshops.',services:['Coffee beans','Community workshops'],experienceStyle:'immersive'};
-test('full immersion remains distinct from the existing three choices and passes the draft gate',()=>{
+test('full immersion combines business-specific object navigation with page-wide worlds and passes the draft gate',()=>{
  const site=generateBusinessWebsite(brief);
  for(const page of site.pages){
   assert.match(page.html,/forge-immersive-world-controller/);assert.match(page.html,/data-world-theme="coffee"/);
   for(const target of site.pages)assert.ok(page.html.includes('data-world-page="'+target.slug+'"'));
-  assert.ok(!page.html.includes('forge-object-navigation-controller'));assert.ok(!page.html.includes('forge-cinematic-controller'));
+  assert.ok(page.html.includes('forge-object-navigation-controller'));assert.ok(!page.html.includes('forge-cinematic-controller'));
   for(const [tag,source] of page.html.matchAll(/<script(?:\s[^>]*)?>([\s\S]*?)<\/script>/g))if(!tag.includes('application/ld+json'))assert.doesNotThrow(()=>new Script(source));
  }
  const audit=auditGeneratedDraft(site.pages);assert.equal(audit.readyForReview,true,audit.errors.join('; '));

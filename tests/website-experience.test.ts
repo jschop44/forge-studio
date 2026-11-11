@@ -59,3 +59,16 @@ test('soccer uses a soccer-specific model rather than a baseball or unrelated pl
  const site=generateBusinessWebsite({businessName:'Northside Soccer',industry:'Soccer club',description:'A community soccer club offering training and match tickets.',services:['Soccer training','Teamwear','Match tickets'],experienceStyle:'object-navigation'});
  for(const page of site.pages){assert.ok(page.html.includes('"theme":"soccer"'));assert.ok(!page.html.includes('"theme":"baseball"'));assert.ok(page.html.includes('polyhaven.com/a/football'))}
 });
+
+test('immersive sites include business-matched clickable 3D offering objects alongside page-wide worlds',()=>{
+ const coffee=generateBusinessWebsite({...brief,experienceStyle:'immersive'}).pages;
+ for(const page of coffee){
+  assert.ok(page.html.includes('forge-world-start'),page.slug+' has an immersive world');
+  assert.ok(page.html.includes('data-object-navigation'),page.slug+' has an interactive offering object');
+ }
+ assert.ok(coffee[0].html.includes('data-object-part="handle"'));
+ assert.ok(coffee[0].html.includes('services.html#offering-1'));
+ const baseball=generateBusinessWebsite({...brief,industry:'Baseball store',services:['Baseball bats','Baseballs','Gloves'],experienceStyle:'immersive'}).pages;
+ assert.ok(baseball[0].html.includes('"theme":"baseball"'));
+ assert.ok(!baseball[0].html.includes('"theme":"coffee"'));
+});
