@@ -86,7 +86,7 @@ test('interior product photographs are used for corresponding service cards with
  const menu=extractWebsiteDesignDna('<img src="/wings.jpg" alt="Chicken wings"><img src="/pizza.jpg" alt="Pizza"><img src="/salad.jpg" alt="Fruit salad">','https://restaurant.example/menu');
  const siteDna=mergeSourcePageImages(homepage,[{path:'/menu',images:menu.images}]);
  const pages=[
-  {slug:'index',title:'Home',html:wrap('<h1>Welcome to our restaurant</h1>')},
+  {slug:'index',title:'Home',html:wrap('<h1>Welcome to our restaurant</h1><article><h2>Chicken wings</h2></article><article><h2>Pizza</h2></article>')},
   {slug:'services',title:'Menu',html:wrap('<article><h2>Chicken wings</h2><img src="https://stock.example/food.jpg"></article><article><h2>Pizza</h2><img src="https://stock.example/food2.jpg"></article>')},
   {slug:'about',title:'About',html:wrap('<h1>Our story</h1>')}
  ];
@@ -94,6 +94,8 @@ test('interior product photographs are used for corresponding service cards with
  assert.match(result.pages[1].html,/src="https:\/\/restaurant\.example\/wings\.jpg"/);
  assert.match(result.pages[1].html,/src="https:\/\/restaurant\.example\/pizza\.jpg"/);
  assert.doesNotMatch(result.pages[1].html,/src="https:\/\/restaurant\.example\/salad\.jpg"/);
+ assert.doesNotMatch(result.pages[0].html,/src="https:\/\/restaurant\.example\/wings\.jpg"/,'homepage teaser must not consume the menu photo');
+ assert.doesNotMatch(result.pages[0].html,/src="https:\/\/restaurant\.example\/pizza\.jpg"/,'homepage teaser must not consume the menu photo');
  const photos=result.pages.flatMap(page=>[...page.html.matchAll(/data-forge-source-image src="([^"]+)"/g)].map(match=>match[1]).filter(url=>!url.endsWith('/logo.png')));
  assert.equal(new Set(photos).size,photos.length,'non-logo source images must remain unique across pages');
  for(const page of result.pages)assert.match(page.html,/src="https:\/\/restaurant\.example\/logo\.png"/);
