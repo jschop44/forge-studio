@@ -3,8 +3,8 @@
  * Keep the original HTML unchanged for storage and fail closed on all other scripts.
  */
 export function withoutPublicationJsonLd(html:string):string{
- return html.replace(/<script\b([^>]*)>([\s\S]*?)<\/script\s*>/gi,(element,attributes:string,body:string)=>{
-  if(!/^\s+type\s*=\s*(?:"application\/ld\+json"|'application\/ld\+json')\s*$/i.test(attributes)||body.length>64_000)return element;
+ return html.replace(/<script\b([^>]*)>([\s\S]*?)<\/script[ \t\r\n\f]*>/gi,(element,attributes:string,body:string)=>{
+  if(!/^[ \t\r\n\f]+type[ \t\r\n\f]*=[ \t\r\n\f]*(?:"application\/ld\+json"|'application\/ld\+json')[ \t\r\n\f]*$/i.test(attributes)||body.length>64_000)return element;
   try{const data:unknown=JSON.parse(body);return data!==null&&typeof data==='object'?'':element}catch{return element}
  });
 }
