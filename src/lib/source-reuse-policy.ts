@@ -12,3 +12,14 @@ export function usefulSourcePage(page:{path:string;label:string;title?:string;he
  if(/^[a-z0-9_-]{28,}$/i.test(page.label.trim())&&/[a-z]/i.test(page.label)&&/\d/.test(page.label))return false;
  return true;
 }
+
+/** A named, unrelated business is a NEW site, never a relabeled source design.
+ * Explicit preservation/redesign of the same business remains unchanged.
+ * This decision also protects imported logos, email addresses and product data.
+ */
+export function resolveGenerationSourceMode(mode:'new'|'inspired'|'redesign',entered:string,observed:string|null|undefined):{
+ mode:'new'|'inspired'|'redesign';discardUnrelatedSource:boolean
+}{
+ const discardUnrelatedSource=mode!=='new'&&Boolean(observed?.trim()&&entered.trim())&&!matchingSourceBusiness(entered,observed||'');
+ return {mode:discardUnrelatedSource?'new':mode,discardUnrelatedSource};
+}
