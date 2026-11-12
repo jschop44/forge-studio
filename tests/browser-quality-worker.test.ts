@@ -20,7 +20,6 @@ test('worker result cannot delete or rename pages or falsely pass findings',asyn
    globalThis.fetch=async()=>Response.json({pages:[{...pages[0],html}],passed:true,attempts:1,findings:[]});
    assert.equal((await reviewWithBrowserWorker(pages)).browserReview.status,'unavailable');
   }
-  const repaired='<title>Shop</title><img alt="Product" src="data:image/png;base64,AA">';
   const missingTitle=[{...pages[0],html:'<head></head><img alt="Product" src="data:image/png;base64,AA">'}];
   globalThis.fetch=async()=>Response.json({pages:[{...missingTitle[0],html:'<head><title>Shop</title></head><img alt="Product" src="data:image/png;base64,AA">'}],passed:true,attempts:1,findings:[]});
   assert.equal((await reviewWithBrowserWorker(missingTitle)).browserReview.status,'passed');
