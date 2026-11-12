@@ -1,10 +1,10 @@
-import {relevantVisualAssets,nicheTerms,type VisualAsset} from '../visual-assets';
+import {relevantVisualAssets,visualSubjectTerms,type VisualAsset} from '../visual-assets';
 type ResearchState={cache:Map<string,{until:number;assets:VisualAsset[]}>;pending:Map<string,Promise<VisualAsset[]>>};
 const providers=new WeakMap<typeof fetch,ResearchState>();
 const clean=(value:unknown)=>typeof value==='string'?value.replace(/<[^>]*>/g,' ').replace(/&(?:amp|quot|lt|gt);/g,' ').replace(/\s+/g,' ').trim():'';
 /** Free Commons discovery, restricted to image files with a reusable license and niche evidence. */
 export async function discoverBusinessVisuals(industry:string,fetcher:typeof fetch=fetch):Promise<VisualAsset[]>{
- const terms=nicheTerms(industry);if(!terms.length)return [];
+ const terms=visualSubjectTerms(industry);if(!terms.length)return [];
  const query=terms.join(' '),key=query+(process.env.PEXELS_API_KEY?'|pexels':'');
  let state=providers.get(fetcher);if(!state){state={cache:new Map(),pending:new Map()};providers.set(fetcher,state)}
  const {cache,pending}=state,saved=cache.get(key);if(saved&&saved.until>Date.now())return structuredClone(saved.assets);
@@ -38,7 +38,7 @@ async function readBoundedText(response:Response){
 /** Optional free Pexels API. The key stays on the server; subject checks and credits are mandatory. */
 export async function discoverPexelsVisuals(industry:string,fetcher:typeof fetch=fetch):Promise<VisualAsset[]>{
  const key=process.env.PEXELS_API_KEY;if(!key)return [];
- const terms=nicheTerms(industry);if(!terms.length)return [];
+ const terms=visualSubjectTerms(industry);if(!terms.length)return [];
  const url=new URL('https://api.pexels.com/v1/search');url.search=new URLSearchParams({query:terms.join(' '),per_page:'10',orientation:'landscape',size:'large'}).toString();
  try{
   const response=await fetcher(url,{headers:{Authorization:key,Accept:'application/json'},signal:AbortSignal.timeout(4000),redirect:'error'});
