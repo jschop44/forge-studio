@@ -19,3 +19,9 @@ test('soccer sports memorabilia keeps distinct niche photos and product navigati
  }
  assert.equal(seen.size,4);assert.ok(site.pages[0].html.includes('Explore products'));assert.ok(site.pages[0].html.includes('.site-hero>.editorial-photo{grid-row:1'));
 });
+test('one discovered soccer asset does not remove photographs from the remaining pages',()=>{
+ const source='https://upload.wikimedia.org/wikipedia/commons/a/ab/Soccer.jpg';
+ const site=generateBusinessWebsite({businessName:'Soccer',industry:'Soccer sports memorabilia',description:'Soccer memorabilia and equipment for collectors.',services:['Soccer memorabilia'],visualAssets:[{url:source,title:'Soccer sports memorabilia',source:'https://commons.wikimedia.org/wiki/File:Soccer.jpg',credit:'Test photographer',license:'CC BY 4.0'}]});
+ const photos=site.pages.map(p=>p.html.match(/<figure class="editorial-photo"><img src="([^"]+)"/)?.[1]);
+ assert.equal(photos[0],source);assert.equal(new Set(photos.filter(Boolean).map(photoIdentity)).size,4);
+});
