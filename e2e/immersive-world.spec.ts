@@ -125,3 +125,18 @@ for(const width of [390,1440])test('uncommon business scene offers bounded guide
  await expect(page.locator('[data-content-card]:not([inert]) h2')).toContainText('Services');
  await page.getByRole('link',{name:'Open Services',exact:false}).click();await expect(page).toHaveURL(/services\.html$/);
 });
+
+test('mobile world navigation, object links and controls occupy separate rows',async({page})=>{
+ await page.setViewportSize({width:390,height:844});await fixture(page);
+ const world=page.locator('#forge-immersive-world');
+ const rows=['.world-header','.world-copy','.world-destinations','.world-object-portals','.world-tools','.world-credit'];
+ let previousBottom=0;
+ for(const selector of rows){
+  const row=world.locator(selector);if(!await row.isVisible())continue;
+  const box=await row.boundingBox();expect(box).not.toBeNull();
+  expect(box!.y).toBeGreaterThanOrEqual(previousBottom-1);expect(box!.x).toBeGreaterThanOrEqual(0);
+  expect(box!.x+box!.width).toBeLessThanOrEqual(391);previousBottom=box!.y+box!.height;
+ }
+ await expect(world.locator('.world-portals')).toBeHidden();
+ await expect(world).toHaveJSProperty('scrollWidth',390);
+});

@@ -1,4 +1,5 @@
 'use client';
+import {matchingSourceBusiness} from '../../lib/source-reuse-policy';
 import {parseGeneratorEditorState,serializeGeneratorEditorState} from '../../lib/editor-generator-state';
 import {extractWebsiteDesignDna,mergeSourcePageImages,type WebsiteDesignDna,type SourceImage} from '../../lib/website-design-dna';
 import {applySourceDesign} from '../../lib/apply-source-design';
@@ -264,8 +265,9 @@ export default function BusinessGenerator(){
   if(busy||researchBusy)return;
   setBusy(true);
   try{
-   let evidence=inspected;
+   let evidence=designMode==='new'?null:inspected;
    if(designMode!=='new'&&!evidence&&!referenceMarkup.trim()){evidence=await inspectWebsite();if(!evidence)return}
+   if(inspected&&evidence&&name.trim()&&!matchingSourceBusiness(name,extractedName(evidence))){setStatus('The inspected source belongs to '+extractedName(evidence)+', but the business name is '+name.trim()+'. Inspect the correct business website, or choose New Website to start without the source branding and pages.');return}
    const generationEpoch=inspectionEpoch.current;
    const homepageDna=designMode!=='new'?(evidence?.designDna||(referenceMarkup.trim()?extractWebsiteDesignDna(referenceMarkup,websiteAddressKey(siteUrl)||'https://source.invalid/'):undefined)):undefined;
    const sourceDna=homepageDna&&evidence?mergeSourcePageImages(homepageDna,evidence.pageSummaries||[]):homepageDna;
@@ -289,7 +291,7 @@ export default function BusinessGenerator(){
    const explicitIndustry=/(?:^|\n)\s*(?:industry|business type|category)\s*:/i.test(effectiveBrief);
    const explicitOfferings=/(?:^|\n)\s*(?:services|products|offerings|menu)\s*:/i.test(effectiveBrief);
    const intelligence=evidence&&designMode!=='new'?analyzeSiteEvidence(evidence):null;
-   const appearance={...referenceStyle,...evidence?.styleReference,...parseStyleReference(referenceMarkup)};
+   const appearance={...(designMode==='new'?{}:referenceStyle),...evidence?.styleReference,...parseStyleReference(designMode==='new'?'':referenceMarkup)};
    const designDecision=planAdaptiveDesign({businessName:inferred.businessName,industry:inferred.industry,mode:visualDesignMode,patternId:visualDesignMode==='library'?visualPatternId:undefined,immersive3d:autoImmersive});
    const selectedExperience:WebsiteExperience=experienceStyle==='object-navigation'||autoImmersive&&designDecision.immersive3d?'immersive':experienceStyle;
    const input={...inferred,experienceStyle:selectedExperience,visualAssets:[] as VisualAsset[],...(intelligence&&intelligence.confidence!=='low'?{...(!explicitIndustry&&!recognizedActivity?{industry:intelligence.industry}:{}),...(!explicitOfferings&&!recognizedActivity?{services:intelligence.services}:{})}:{}),designMode,...(designMode!=='new'&&evidence?.visualSignals?{visualSignals:evidence.visualSignals}:{}),...(contactEmail.trim()?{contactEmail:contactEmail.trim()}:{}),...(designMode==='inspired'?{styleReference:appearance}:{})};

@@ -1,3 +1,4 @@
+import {usefulSourcePage} from '../../../lib/source-reuse-policy';
 import {NextRequest,NextResponse} from 'next/server';
 import {captureWithBrowserWorker} from '../../../lib/server/browser-capture-worker';
 import {publicResearchPolicy} from '../../../lib/server/public-site-policy';
@@ -53,9 +54,11 @@ export async function POST(req:NextRequest){
  const pageSummaries:{path:string;label:string;title:string;description:string;headings:string[];paragraphs:string[];images:SourceImage[]}[]=[];
  for(const item of navigation.slice(0,4)){
   try{
+   if(!usefulSourcePage(item))continue;
    const pageUrl=new URL(item.path,url);
    const pageResult=await fetchPublicText(pageUrl,{beforeRequest,timeout:4500,maxBytes:180000,maxDownloadBytes:3000000,selectiveHtml:true,accept:'text/html'});
    const pageHtml=pageResult.body;
+   if(!usefulSourcePage({...item,title:clean(pageHtml.match(/<title[^>]*>([\s\S]*?)<\/title>/i)?.[1]||''),headings:[...pageHtml.matchAll(/<h1\b[^>]*>([\s\S]*?)<\/h1>/gi)].map(m=>clean(m[1]))}))continue;
    const pageDna=extractWebsiteDesignDna(pageHtml,pageResult.url.href);
    const mainHtml=pageHtml.match(/<main\b[^>]*>([\s\S]*?)<\/main>/i)?.[1]||pageHtml;
    const paragraphs=[...mainHtml.matchAll(/<p\b[^>]*>([\s\S]*?)<\/p>/gi)].map(m=>clean(m[1])).filter(p=>p.length>=20).filter((p,i,all)=>all.indexOf(p)===i).slice(0,12);
