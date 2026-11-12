@@ -1,3 +1,4 @@
+import {discoverOpenverseVisuals} from './openverse-visuals';
 import {licensedBusinessVisualAssets,relevantVisualAssets,specificVisualOfferings,visualSubjectTerms,type VisualAsset} from '../visual-assets';
 type ResearchState={cache:Map<string,{until:number;assets:VisualAsset[]}>;pending:Map<string,Promise<VisualAsset[]>>};
 const providers=new WeakMap<typeof fetch,ResearchState>();
@@ -59,6 +60,12 @@ export async function discoverPexelsVisuals(industry:string,fetcher:typeof fetch
  */
 export async function discoverBusinessVisualsForOfferings(industry:string,offerings:string[],fetcher:typeof fetch=fetch):Promise<VisualAsset[]>{
  const requested=specificVisualOfferings(offerings);
- const results=await Promise.all([industry,...requested].map(subject=>discoverBusinessVisuals(subject,fetcher)));
- return licensedBusinessVisualAssets(industry,requested,results.flat()).slice(0,24);
+ // Search Commons and Openverse concurrently: browser lookup has a 5.5-second limit.
+ // Openverse provides anonymous CC0/public-domain subjects missing in the old fixed library.
+ const subjects=[industry,...requested];
+ const [commons,openverse]=await Promise.all([
+  Promise.all(subjects.map(subject=>discoverBusinessVisuals(subject,fetcher))),
+  Promise.all(subjects.map(subject=>discoverOpenverseVisuals(subject,fetcher)))
+ ]);
+ return licensedBusinessVisualAssets(industry,requested,[...commons.flat(),...openverse.flat()]).slice(0,24);
 }
