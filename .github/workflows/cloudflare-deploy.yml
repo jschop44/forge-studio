@@ -1,5 +1,7 @@
 name: Cloudflare alternative deployment
 on:
+  push:
+    branches: [main]
   workflow_dispatch:
     inputs:
       publish:
@@ -55,7 +57,7 @@ jobs:
           if-no-files-found: ignore
           retention-days: 1
       - name: Verify Cloudflare credentials exist
-        if: ${{ inputs.publish }}
+        if: ${{ github.event_name == 'push' || inputs.publish }}
         env:
           CF_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CF_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
@@ -63,14 +65,14 @@ jobs:
           test -n "$CF_API_TOKEN" || { echo "::error::CLOUDFLARE_API_TOKEN secret is missing"; exit 1; }
           test -n "$CF_ACCOUNT_ID" || { echo "::error::CLOUDFLARE_ACCOUNT_ID secret is missing"; exit 1; }
       - name: Deploy isolated preview Worker
-        if: ${{ inputs.publish }}
+        if: ${{ github.event_name == 'push' || inputs.publish }}
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
         run: npm run deploy:cloudflare
 
       - name: Smoke test deployed Cloudflare preview
-        if: ${{ inputs.publish }}
+        if: ${{ github.event_name == 'push' || inputs.publish }}
         env:
           PREVIEW_URL: https://forge-studio-preview.stands-old-3h.workers.dev
         run: |
@@ -93,7 +95,7 @@ jobs:
           curl --silent --show-error --max-time 20 --output /tmp/forge-ai.json --write-out 'AI status HTTP code: %{http_code}\\n' "$PREVIEW_URL/api/ai/status" || true
           if test -s /tmp/forge-ai.json; then head -c 500 /tmp/forge-ai.json; echo; fi
       - name: Verify real AI website generation
-        if: ${{ inputs.publish }}
+        if: ${{ github.event_name == 'push' || inputs.publish }}
         env:
           PREVIEW_URL: https://forge-studio-preview.stands-old-3h.workers.dev
         run: |
