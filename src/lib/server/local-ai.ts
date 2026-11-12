@@ -1,14 +1,15 @@
 import {normalizeBusinessOfferings} from '../business-brief';
 import {designAdvice,notifyGeneration} from './workflow-adapters';
 import {randomUUID} from 'node:crypto';
-import {discoverBusinessVisuals} from './business-visuals';
-import type {VisualAsset} from '../visual-assets';
+import {discoverBusinessVisualsForOfferings} from './business-visuals';
+import {licensedBusinessVisualAssets,type VisualAsset} from '../visual-assets';
 import {summarizeAiError} from './ai-error';
 import {z} from 'zod';
 import type {WebsiteExperience} from '../website-experience';
 import {generateWorkersComposition,type WorkersAiBinding} from './workers-ai-composition';
 import {DesignSchema,parseAiComposition,compositionAppearance,compositionInstruction,compositionJsonSchema} from '../ai-composition';
 import {generateBusinessWebsite} from '../business-site';
+import {ensurePagePhotography} from '../ensure-page-photography';
 const CopySchema=z.object({description:z.string().trim().min(15).max(1800)});
 const DraftSchema=z.object({businessName:z.string().min(2).max(100),industry:z.string().min(2).max(80),description:z.string().min(15).max(1800),services:z.array(z.string().min(2).max(100)).min(1).max(12),design:DesignSchema.optional()});
 export type AiDraft=z.infer<typeof DraftSchema>;
@@ -109,8 +110,8 @@ export async function generateWithLocalAi(input:{businessName:string;industry:st
   services:input.services.map(service=>service.trim())
  };
  const validated=DraftSchema.parse(verifiedDraft);
- const selectedVisuals=visualAssets?.length?visualAssets:await discoverBusinessVisuals(input.industry);
- const pages=generateBusinessWebsite({...validated,...compositionAppearance(design),...(designLayout?{layout:designLayout}:{}),visualAssets:selectedVisuals,contactEmail:input.contactEmail,experienceStyle:input.experienceStyle||'standard'}).pages;
+ const selectedVisuals=visualAssets?.length?licensedBusinessVisualAssets(input.industry,input.services,visualAssets):await discoverBusinessVisualsForOfferings(input.industry,input.services);
+ const pages=ensurePagePhotography(generateBusinessWebsite({...validated,...compositionAppearance(design),...(designLayout?{layout:designLayout}:{}),visualAssets:selectedVisuals,contactEmail:input.contactEmail,experienceStyle:input.experienceStyle||'standard'}).pages,input.industry,selectedVisuals,input.services);
  await notifyGeneration({id:eventId,type:'draft.generated',provider,pageCount:pages.length});
  return {draft:validated,provider,pages};
  } catch(error){await notifyGeneration({id:eventId,type:'draft.failed'});throw error} finally {activeGenerations--}

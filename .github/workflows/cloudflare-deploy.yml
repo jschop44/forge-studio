@@ -94,27 +94,47 @@ jobs:
           echo "Checking AI inference status (diagnostic only; does not imply generation works)"
           curl --silent --show-error --max-time 20 --output /tmp/forge-ai.json --write-out 'AI status HTTP code: %{http_code}\\n' "$PREVIEW_URL/api/ai/status" || true
           if test -s /tmp/forge-ai.json; then head -c 500 /tmp/forge-ai.json; echo; fi
-      - name: Verify real AI website generation
+      - name: Verify full AI business website generation (customer path)
         if: ${{ github.event_name == 'push' || inputs.publish }}
         env:
           PREVIEW_URL: https://forge-studio-preview.stands-old-3h.workers.dev
         run: |
           set -euo pipefail
-          echo "Running one end-to-end AI generation request"
-          status=$(curl --silent --show-error --max-time 100 --output /tmp/forge-generated.json --write-out '%{http_code}' \
+          echo "Running one real four-page business website request against the deployed AI endpoint"
+          status=$(curl --silent --show-error --max-time 120 --output /tmp/forge-business-generated.json --write-out '%{http_code}' \
             --header 'Content-Type: application/json' \
             --header "Origin: $PREVIEW_URL" \
-            --data '{"name":"Cedar Studio","description":"A small creative studio providing professional website design services for local businesses.","template":"minimal","industry":"Design","services":["Website design"]}' \
-            "$PREVIEW_URL/api/generate")
-          echo "Generation HTTP status: $status"
+            --data '{"businessName":"Cedar Coffee","industry":"Coffee shop","description":"A neighborhood coffee shop offering espresso, roasted coffee beans and fresh pastries to local customers.","services":["Espresso drinks","Whole bean coffee","Fresh pastries"],"experienceStyle":"standard"}' \
+            "$PREVIEW_URL/api/ai/business")
+          echo "Business generation HTTP status: $status"
           if test "$status" != 200; then
-            head -c 600 /tmp/forge-generated.json || true
-            echo "::error::Mandatory AI generation failed with HTTP $status"
+            head -c 600 /tmp/forge-business-generated.json || true
+            echo "::error::Customer-facing website generation failed with HTTP $status"
             exit 1
           fi
-          node -e 'const fs=require("node:fs");const r=JSON.parse(fs.readFileSync("/tmp/forge-generated.json","utf8"));if(r.site?.name!=="Cedar Studio"||typeof r.site.description!=="string"||r.site.description.length<15||!Array.isArray(r.site.sections)||r.site.sections.length<1){console.error("::error::Generated website failed schema checks");process.exit(1)}console.log("Verified AI-generated website:",r.site.name)'
-          echo "- AI website generation: passed live request and response checks" >> "$GITHUB_STEP_SUMMARY"
-          echo "Generation response validated against business identity and section requirements"
+          node <<'NODE'
+          const fs=require('node:fs');
+          const payload=JSON.parse(fs.readFileSync('/tmp/forge-business-generated.json','utf8'));
+          const pages=payload.pages||[];
+          const slugs=new Set(pages.map(page=>page.slug));
+          const expected=['index','services','about','contact'];
+          if(payload.draft?.businessName!=='Cedar Coffee'||pages.length!==4||!expected.every(slug=>slugs.has(slug))||payload.quality?.readyForReview!==true){
+            console.error('::error::AI site did not return a complete, structurally reviewed four-page business website');
+            process.exit(1);
+          }
+          const photos=new Set();
+          for(const page of pages){
+            if(!/<main\b/i.test(page.html)||!/<title\b/i.test(page.html)){
+              console.error('::error::Missing page structure for',page.slug);process.exit(1);
+            }
+            const photo=page.html.match(/<figure class="editorial-photo"><img src="([^"]+)"/);
+            if(!photo){console.error('::error::Missing niche photo for',page.slug);process.exit(1);}
+            photos.add(photo[1].split('?')[0]);
+          }
+          if(photos.size!==4){console.error('::error::Duplicate or missing main-page images');process.exit(1);}
+          console.log('Verified AI-generated site:',payload.draft.businessName,'with',pages.length,'pages and',photos.size,'distinct photographs');
+          NODE
+          echo "- Live customer AI website generation: passed four-page structure and niche-photo checks" >> "$GITHUB_STEP_SUMMARY"
       - name: Pipeline timing summary
         if: always()
         run: |

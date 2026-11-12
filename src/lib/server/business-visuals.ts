@@ -1,4 +1,4 @@
-import {relevantVisualAssets,visualSubjectTerms,type VisualAsset} from '../visual-assets';
+import {licensedBusinessVisualAssets,relevantVisualAssets,specificVisualOfferings,visualSubjectTerms,type VisualAsset} from '../visual-assets';
 type ResearchState={cache:Map<string,{until:number;assets:VisualAsset[]}>;pending:Map<string,Promise<VisualAsset[]>>};
 const providers=new WeakMap<typeof fetch,ResearchState>();
 const clean=(value:unknown)=>typeof value==='string'?value.replace(/<[^>]*>/g,' ').replace(/&(?:amp|quot|lt|gt);/g,' ').replace(/\s+/g,' ').trim():'';
@@ -52,4 +52,13 @@ export async function discoverPexelsVisuals(industry:string,fetcher:typeof fetch
   if(!Array.isArray(data.photos))return [];
   return relevantVisualAssets(industry,data.photos.filter(photo=>photo.width>=1920&&photo.height>=1080).map(photo=>({url:photo.src?.large2x,title:clean(photo.alt).slice(0,350),credit:clean(photo.photographer).slice(0,250)+' on Pexels',source:photo.url,license:'Pexels License'})));
  }catch{return []}
+}
+
+/** Shared resolver for UI and API callers: bounded, concurrent, subject-specific research.
+ * CC BY/SA and provider results without positive niche evidence are never returned.
+ */
+export async function discoverBusinessVisualsForOfferings(industry:string,offerings:string[],fetcher:typeof fetch=fetch):Promise<VisualAsset[]>{
+ const requested=specificVisualOfferings(offerings);
+ const results=await Promise.all([industry,...requested].map(subject=>discoverBusinessVisuals(subject,fetcher)));
+ return licensedBusinessVisualAssets(industry,requested,results.flat()).slice(0,24);
 }
