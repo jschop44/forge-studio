@@ -155,3 +155,18 @@ jobs:
             test-results/
           if-no-files-found: ignore
           retention-days: 7
+
+  generated_site_quality:
+    name: Generated site quality worker
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: npm ci --prefer-offline --no-audit --no-fund
+      - run: npm ci --prefix workers/quality --no-audit --no-fund
+      - run: npm --prefix workers/quality run typecheck
+      - run: npx playwright install chromium
+      - run: npm --prefix workers/quality test

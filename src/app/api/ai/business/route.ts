@@ -1,3 +1,4 @@
+import {reviewWithBrowserWorker} from '../../../../lib/server/browser-quality-worker';
 import {limitedRequestBody,RequestBodyTooLarge} from '../../../../lib/server/limited-request-body';
 import {BUSINESS_GENERATION_MAX_BYTES} from '../../../../lib/business-generation-payload';
 import {VisualAssetSchema} from '../../../../lib/visual-assets';
@@ -26,10 +27,12 @@ export async function POST(req:NextRequest){
  const pattern=DESIGN_PATTERNS.find(item=>item.id===design.patternId);
  const designLayout=pattern?.layout==='showcase'||pattern?.layout==='catalog'?'image-led':'editorial';
  const result=await generateWithLocalAi({...generationInput,experienceStyle,...(visualDesignMode?{designLayout}: {})});
- const response=businessGenerationResponse(result);
+ const reviewed=await reviewWithBrowserWorker(result.pages);
+ const response=businessGenerationResponse({...result,pages:reviewed.pages});
  if(!response.ok)return response;
  const payload=await response.json();
- return NextResponse.json({...payload,designDecision:design},{headers:{'Cache-Control':'no-store'}});
+ if(reviewed.browserReview.status==='failed'||reviewed.browserReview.status==='unavailable')return NextResponse.json({error:'Website browser inspection requires attention. Retry generation before publishing.',browserReview:reviewed.browserReview},{status:422,headers:{'Cache-Control':'no-store'}});
+ return NextResponse.json({...payload,browserReview:reviewed.browserReview,designDecision:design},{headers:{'Cache-Control':'no-store'}});
  }catch(error){
   if(error instanceof RequestBodyTooLarge)return NextResponse.json({error:'Website brief exceeds the 64 KB limit. Shorten the description or remove extra image references.'},{status:413});
   const detail=error instanceof Error?error.message:'';

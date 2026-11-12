@@ -1,0 +1,80 @@
+/** Optional self-hosted Node service. Browsers never run in Cloudflare Workers. */
+import {createServer} from 'node:http';
+import {timingSafeEqual} from 'node:crypto';
+import {chromium} from '@playwright/test';
+import {Annotation,StateGraph,START,END} from '@langchain/langgraph';
+import {z} from 'zod';
+import axe from 'axe-core';
+import {pathToFileURL} from 'node:url';
+import {collectBrowserQualityEvidence} from '../../src/lib/browser-quality-evidence';
+import {inspectGeneratedPages,type PageEvidence,type QualityFinding} from '../../src/lib/auto-correction';
+
+const Input=z.object({pages:z.array(z.object({slug:z.string().regex(/^[a-z0-9-]+$/).max(64),title:z.string().min(1).max(200),html:z.string().min(1).max(250000)})).min(1).max(12)});
+type SitePage=PageEvidence&{title:string};
+const State=Annotation.Root({pages:Annotation<SitePage[]>(),findings:Annotation<QualityFinding[]>(),attempts:Annotation<number>()});
+export const qualityGraph=new StateGraph(State)
+ .addNode('inspect',async state=>{
+  const browser=await chromium.launch({headless:true,timeout:10000});
+  const started=Date.now();const accessibility:QualityFinding[]=[];
+  try{
+   const pages:SitePage[]=[];
+   for(const page of state.pages){
+    if(Date.now()-started>30000)throw Error('Inspection time budget exceeded');
+    // Render inert markup: no scripts, network, service workers or credentials.
+    // External photo reachability is deliberately not asserted in this isolated worker.
+    const context=await browser.newContext({javaScriptEnabled:false,serviceWorkers:'block'});
+    await context.route('**/*',route=>route.abort());
+    try{
+     const tab=await context.newPage();
+     const observed={brokenImages:[] as string[],brokenLinks:[] as string[],overflowPx:0};
+     for(const width of [1280,390]){
+      await tab.setViewportSize({width,height:900});
+      await tab.setContent(page.html,{waitUntil:'domcontentloaded',timeout:4000});
+      const evidence=await tab.evaluate(collectBrowserQualityEvidence);
+      await tab.evaluate(source=>(0,eval)(source),axe.source);
+      const violations=await tab.evaluate(async()=>{const result=await (window as unknown as {axe:{run:(root:Document,options:unknown)=>Promise<{violations:{id:string;impact:string|null}[]}>}}).axe.run(document,{runOnly:{type:'tag',values:['wcag2a','wcag2aa']}});return result.violations.filter(v=>v.impact==='critical'||v.impact==='serious').map(v=>v.id)});
+      accessibility.push(...violations.map(id=>({slug:page.slug,kind:'accessibility' as const,detail:id+' at '+width+'px'})));
+      // Network requests are blocked; only embedded images can be tested here.
+      observed.brokenImages.push(...evidence.brokenImages.filter(src=>src.startsWith('data:')));
+      observed.brokenLinks.push(...evidence.brokenLinks);
+      observed.overflowPx=Math.max(observed.overflowPx,evidence.overflowPx);
+     }
+     pages.push({...page,...observed,brokenLinks:[...new Set(observed.brokenLinks)]});
+    }finally{await context.close()}
+   }
+   return {pages,findings:[...inspectGeneratedPages(pages),...accessibility]};
+  }finally{await browser.close()}
+ })
+ .addNode('repair',state=>({attempts:state.attempts+1,pages:state.pages.map(page=>{
+  let html=page.html;
+  // Only fix metadata; preserve branding, links, content, and interaction scripts.
+  if(state.findings.some(f=>f.slug===page.slug&&f.kind==='missing-title')){
+   const title=page.title.replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]!));
+   html=/<title\b[^>]*>[\s\S]*?<\/title>/i.test(html)?html.replace(/<title\b[^>]*>[\s\S]*?<\/title>/i,'<title>'+title+'</title>'):html.replace(/<head\b[^>]*>/i,head=>head+'<title>'+title+'</title>');
+  }
+  return {...page,html};
+ })}))
+ .addEdge(START,'inspect')
+ .addConditionalEdges('inspect',s=>s.findings.some(f=>f.kind==='missing-title')&&s.attempts<2?'repair':END)
+ .addEdge('repair','inspect').compile();
+export function startQualityServer(){
+let active=false;
+const secret=process.env.FORGE_QUALITY_WORKER_SECRET;
+if(!secret||secret.length<32)throw Error('Set FORGE_QUALITY_WORKER_SECRET to at least 32 characters');
+createServer(async(req,res)=>{
+ res.setHeader('Content-Type','application/json');res.setHeader('Cache-Control','no-store');
+ const token=Buffer.from(req.headers.authorization||''),expected=Buffer.from('Bearer '+secret);
+ if(req.method!=='POST'||req.url!=='/review'||token.length!==expected.length||!timingSafeEqual(token,expected)){res.writeHead(403).end('{"error":"Forbidden"}');return}
+ if(active){res.writeHead(429).end('{"error":"Worker busy"}');return}
+ active=true;
+ try{
+  let raw='';for await(const chunk of req){raw+=chunk;if(Buffer.byteLength(raw)>1100000)throw Error('Payload too large')}
+  const input=Input.parse(JSON.parse(raw));
+  if(new Set(input.pages.map(p=>p.slug)).size!==input.pages.length)throw Error('Duplicate pages');
+  const result=await qualityGraph.invoke({pages:input.pages,findings:[],attempts:0},{recursionLimit:8});
+  res.end(JSON.stringify({pages:result.pages.map(({slug,title,html})=>({slug,title,html})),passed:result.findings.length===0,attempts:result.attempts,findings:result.findings.slice(0,200)}));
+ }catch{res.writeHead(422).end('{"error":"Inspection failed"}')}
+ finally{active=false}
+}).listen(Number(process.env.PORT||8788),'127.0.0.1');
+}
+if(process.argv[1]&&import.meta.url===pathToFileURL(process.argv[1]).href)startQualityServer();
