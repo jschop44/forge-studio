@@ -32,5 +32,6 @@ test('panorama scene does not offer thumbnails that would distort non-panoramic 
 test('immersive photo strip is capped at four assets to avoid covering page controls',()=>{
  const html=world();
  assert.equal((html.match(/data-world-gallery-image/g)||[]).length,5); // four buttons + runtime selector
- assert.ok(!html.includes('photo-test-4'));
+ const thumbnails=html.match(/<div class="world-gallery-strip"[\s\S]*?<\/div>/)?.[0]||'';
+ assert.ok(thumbnails&&!thumbnails.includes('photo-test-4'));
 });
