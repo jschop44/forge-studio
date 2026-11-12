@@ -95,8 +95,7 @@ jobs:
         env:
           FORGE_EXPECTED_REVISION: ${{ github.event.workflow_run.head_sha }}
         run: |
-          curl --fail --silent --show-error --retry 3 --retry-delay 3 --max-time 30 https://forge-studio-preview.stands-old-3h.workers.dev/api/health -o /tmp/forge-health.json
-          node scripts/verify-deployed-revision.mjs /tmp/forge-health.json
+          node scripts/wait-deployed-revision.mjs
           curl --silent --show-error --max-time 20 https://forge-studio-preview.stands-old-3h.workers.dev/api/health/ready -o /tmp/forge-ready.json
           node --input-type=module <<'JS'
           import {readFileSync,appendFileSync} from 'node:fs';
