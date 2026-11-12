@@ -19,7 +19,7 @@ export async function reviewWithBrowserWorker(pages:GeneratedPage[]):Promise<{pa
   if(result.pages.length!==pages.length||result.pages.some((page,i)=>page.slug!==pages[i].slug||page.title!==pages[i].title))throw Error('Quality worker changed page identities');
   // The isolated quality graph may repair title metadata only. Never accept rewritten
   // page content, links, scripts, styling or assets from an optional worker.
-  const withoutTitles=(html:string)=>html.replace(/<title\\b[^>]*>[\\s\\S]*?<\\/title>/gi,'');
+  const withoutTitles=(html:string)=>html.replace(/<title\b[^>]*>[\s\S]*?<\/title>/gi,'');
   const titleMarkup=(title:string)=>'<title>'+title.replace(/[&<>"']/g,char=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[char]!))+'</title>';
   for(let i=0;i<pages.length;i++){
    const before=pages[i].html,after=result.pages[i].html;
