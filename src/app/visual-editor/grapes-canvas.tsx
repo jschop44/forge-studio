@@ -5,8 +5,8 @@ import './grapes-canvas.css';
 import type {Editor} from 'grapesjs';
 import ComponentInspector from './component-inspector';
 import type {GeneratedPage} from '../../lib/business-site';
-type Props={html:string;css:string;pages:GeneratedPage[];bodyAttributes:Record<string,string>;onChange:(html:string,css:string)=>void};
-export default function GrapesVisualCanvas({html,css,onChange,pages,bodyAttributes}:Props){
+type Props={html:string;css:string;pages:GeneratedPage[];bodyAttributes:Record<string,string>;onChange:(html:string,css:string)=>void;onReady?:()=>void};
+export default function GrapesVisualCanvas({html,css,onChange,onReady,pages,bodyAttributes}:Props){
  const mount=useRef<HTMLDivElement>(null);
  const editorRef=useRef<Editor|null>(null);
  const dropAreaRef=useRef<HTMLDivElement>(null);
@@ -100,6 +100,7 @@ export default function GrapesVisualCanvas({html,css,onChange,pages,bodyAttribut
    resizeObserver.observe(mount.current);
    setReady(true);
    instance.on('update',()=>latest.current(instance.getHtml(),instance.getCss()||''));
+   onReady?.();
   }).catch((error:unknown)=>{if(active)setLoadError(error instanceof Error?error.message:'Unknown editor loading error')});
   return ()=>{active=false;resizeObserver?.disconnect();editorRef.current=null;editor?.destroy()};
  // The editor owns the initial snapshot. Parent updates come from its change callback.

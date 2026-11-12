@@ -12,6 +12,7 @@ import './visual-editor.css';
 const GrapesVisualCanvas=dynamic(()=>import('./grapes-canvas'),{ssr:false});
 export default function VisualEditor(){
  const rawDirty=useRef(false),canvasEpoch=useRef(0);
+ const rawSource=useRef<{body:string;css:string}|null>(null);
  const rebuildCanvas=()=>{canvasEpoch.current++;setCanvasVersion(canvasEpoch.current)};
  const refreshRaw=()=>{if(rawDirty.current){rawDirty.current=false;rebuildCanvas()}};
  const [page,setPage]=useState<GeneratedPage|null>(null),[site,setSite]=useState<GeneratedPage[]>([]);
@@ -22,6 +23,7 @@ export default function VisualEditor(){
  function openPage(candidate:GeneratedPage,keepCanvas=false){
   const document=prepareVisualEditorDocument(candidate);
   if(!document.bodyHtml){setMessage(document.warnings.join(' ')||'Unable to open this page safely.');return false}
+  rawSource.current=null;rawDirty.current=false;
   if(!keepCanvas)setCanvasOpen(true);
   rebuildCanvas();setPage(candidate);setBody(document.bodyHtml);setCss(document.css);setAttributes(document.bodyAttributes);
   const text=(tag:string)=>{const match=document.bodyHtml.match(new RegExp('<'+tag+'\\b[^>]*>([^<]*)</'+tag+'>','i'));if(!match)return '';const parsed=new DOMParser().parseFromString(match[1],'text/html');return parsed.body.textContent||''};
@@ -49,7 +51,7 @@ export default function VisualEditor(){
  }
  function currentPages(){
   if(!page)throw Error('Open a page first.');
-  const check=serializeEditorDraft(page,body,css,attributes);
+  const check=serializeEditorDraft(page,rawSource.current?.body??body,rawSource.current?.css??css,attributes);
   if(!check.html)throw Error(check.warnings.join(' '));
   return replaceEditorPage(site,{...page,html:check.html});
  }
@@ -64,6 +66,7 @@ export default function VisualEditor(){
   return pages;
  }
  function applyVisualText(){
+  rawSource.current=null;rawDirty.current=false;
   let updated=body;
   if(/<h1\b[^>]*>[^<]*<\/h1>/i.test(updated))updated=updated.replace(/(<h1\b[^>]*>)[^<]*(<\/h1>)/i,(_,open:string,close:string)=>open+escapeHtml(visualHeadline)+close);
   if(/<p\b[^>]*>[^<]*<\/p>/i.test(updated))updated=updated.replace(/(<p\b[^>]*>)[^<]*(<\/p>)/i,(_,open:string,close:string)=>open+escapeHtml(visualParagraph)+close);
@@ -76,7 +79,7 @@ export default function VisualEditor(){
  }
  function save(){
   if(!page)return;
-  const check=serializeEditorDraft(page,body,css,attributes);
+  const check=serializeEditorDraft(page,rawSource.current?.body??body,rawSource.current?.css??css,attributes);
   if(!check.html){setMessage('Export blocked: '+check.warnings.join(' '));return}
   downloadText(page.slug+'.edited.html',check.html,'text/html');setMessage('Edited HTML downloaded. Publishing requires separate review and approval.');
  }
@@ -98,15 +101,15 @@ export default function VisualEditor(){
   {page&&<>
    <label className="forge-page-switcher">Website page<select aria-label="Website page" value={page.slug} onChange={event=>switchPage(event.target.value)}>{site.map(item=><option key={item.slug} value={item.slug}>{item.title}</option>)}</select></label>
    <button type="button" onClick={()=>setCanvasOpen(value=>!value)}>{canvasOpen?'Hide visual canvas':'Show visual canvas'}</button>
-   {canvasOpen&&<GrapesVisualCanvas key={canvasVersion} html={body} css={css} pages={site} bodyAttributes={attributes} onChange={(nextBody,nextCss)=>{if(rawDirty.current||canvasEpoch.current!==canvasVersion)return;const check=serializeEditorDraft(page,nextBody,nextCss,attributes);if(check.html){setBody(nextBody);setCss(nextCss)}else setMessage('Designer update blocked: '+check.warnings.join(' '))}}/>}
+   {canvasOpen&&<GrapesVisualCanvas key={canvasVersion} html={body} css={css} pages={site} bodyAttributes={attributes} onReady={()=>{if(canvasEpoch.current===canvasVersion&&rawSource.current?.body===body&&rawSource.current?.css===css)rawSource.current=null}} onChange={(nextBody,nextCss)=>{if(rawSource.current||rawDirty.current||canvasEpoch.current!==canvasVersion)return;const check=serializeEditorDraft(page,nextBody,nextCss,attributes);if(check.html){setBody(nextBody);setCss(nextCss)}else setMessage('Designer update blocked: '+check.warnings.join(' '))}}/>}
    <section aria-label="Visual text editing" className="forge-quick-text"><h2>Quick visual text editing</h2><p>Edit the main headline and first plain-text paragraph, or select any element in the designer.</p>
     <label>Main headline <input aria-label="Visual main headline" value={visualHeadline} onChange={event=>setVisualHeadline(event.target.value)}/></label>
     <label>First paragraph <textarea aria-label="Visual first paragraph" value={visualParagraph} onChange={event=>setVisualParagraph(event.target.value)} rows={3}/></label>
     <button type="button" onClick={applyVisualText}>Apply visual text changes</button>
    </section>
    <details className="forge-code-editor"><summary>Advanced HTML and CSS</summary><div className="forge-code-grid">
-    <label>HTML body<textarea aria-label="HTML body" value={body} onChange={event=>{rawDirty.current=true;setBody(event.target.value)}} onBlur={refreshRaw} rows={18}/></label>
-    <label>CSS<textarea aria-label="CSS" value={css} onChange={event=>{rawDirty.current=true;setCss(event.target.value)}} onBlur={refreshRaw} rows={18}/></label>
+    <label>HTML body<textarea aria-label="HTML body" value={body} onChange={event=>{rawDirty.current=true;rawSource.current={body:event.target.value,css:rawSource.current?.css??css};setBody(event.target.value)}} onBlur={refreshRaw} rows={18}/></label>
+    <label>CSS<textarea aria-label="CSS" value={css} onChange={event=>{rawDirty.current=true;rawSource.current={body:rawSource.current?.body??body,css:event.target.value};setCss(event.target.value)}} onBlur={refreshRaw} rows={18}/></label>
    </div></details>
    <div className="forge-editor-actions"><button type="button" onClick={save}>Validate and download edited page</button><button type="button" onClick={()=>void saveSite()}>Validate and download website ZIP</button><button type="button" onClick={returnToGenerator}>Return edited page to generator</button></div>
    <h2>Isolated preview</h2>{!preview&&<p role="alert">Preview blocked: potentially unsafe HTML or CSS. Remove active content before exporting.</p>}
