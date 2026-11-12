@@ -17,6 +17,16 @@ export async function reviewWithBrowserWorker(pages:GeneratedPage[]):Promise<{pa
   const raw=await response.text();if(raw.length>1500000)throw Error('Quality result too large');
   const result=Result.parse(JSON.parse(raw));
   if(result.pages.length!==pages.length||result.pages.some((page,i)=>page.slug!==pages[i].slug||page.title!==pages[i].title))throw Error('Quality worker changed page identities');
+  // The isolated quality graph may repair title metadata only. Never accept rewritten
+  // page content, links, scripts, styling or assets from an optional worker.
+  const withoutTitles=(html:string)=>html.replace(/<title\\b[^>]*>[\\s\\S]*?<\\/title>/gi,'');
+  const titleMarkup=(title:string)=>'<title>'+title.replace(/[&<>"']/g,char=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[char]!))+'</title>';
+  for(let i=0;i<pages.length;i++){
+   const before=pages[i].html,after=result.pages[i].html;
+   if(after===before)continue;
+   if(withoutTitles(after)!==withoutTitles(before))throw Error('Worker changed page content');
+   if(!after.includes(titleMarkup(pages[i].title)))throw Error('Worker supplied invalid title repair');
+  }
   if(result.passed&&result.findings.length)throw Error('Inconsistent quality result');
   return {pages:result.pages,browserReview:{scope:'inert-render' as const,status:result.passed?'passed' as const:'failed' as const,attempts:result.attempts,findings:result.findings}};
  }catch{return fallback('unavailable')}
