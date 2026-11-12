@@ -15,16 +15,21 @@ export async function discoverBusinessVisuals(industry:string,fetcher:typeof fet
  try{return structuredClone(await operation)}finally{pending.delete(key)}
  async function research():Promise<VisualAsset[]>{
  const remember=(assets:VisualAsset[],ttl:number)=>{if(cache.size>=100)cache.delete(cache.keys().next().value!);cache.set(key,{until:Date.now()+ttl,assets});return assets};
- const photography=process.env.PEXELS_API_KEY?await discoverPexelsVisuals(industry,fetcher):[];
- if(photography.length>=4)return remember(photography,3600000);
- const url=new URL('https://commons.wikimedia.org/w/api.php');url.search=new URLSearchParams({action:'query',generator:'search',gsrnamespace:'6',gsrsearch:query+' filetype:bitmap -filetype:svg',gsrlimit:'10',prop:'imageinfo',iiprop:'url|size|extmetadata|mime',iiurlwidth:'3840',format:'json'}).toString();
- try{
-  const response=await fetcher(url,{headers:{'User-Agent':'ForgeStudio/1.0 (business visual research; https://forge-studio-preview.stands-old-3h.workers.dev)','Accept':'application/json'},signal:AbortSignal.timeout(4500),redirect:'error'});
-  if(!response.ok){await response.body?.cancel();return remember(photography,30000);}const raw=await readBoundedText(response);
-  const data=JSON.parse(raw) as {query?:{pages?:Record<string,{title?:string;imageinfo?:{mime?:string;width?:number;height?:number;thumburl?:string;url?:string;descriptionurl?:string;extmetadata?:Record<string,{value?:string}>}[]}>}};
-  const candidates=Object.values(data.query?.pages||{}).flatMap(page=>{const info=page.imageinfo?.[0],meta=info?.extmetadata;if(!info||!/^image\/(jpeg|png|webp)$/.test(info.mime||''))return [];const width=Number(info.width)||0,height=Number(info.height)||0;if(Math.max(width,height)<3840||Math.min(width,height)<2160)return [];return [{url:info.thumburl||info.url,title:(clean(page.title?.replace(/^File:/,''))+' '+clean(meta?.ImageDescription?.value)).trim().slice(0,350),credit:clean(meta?.Artist?.value).slice(0,250),source:info.descriptionurl,license:clean(meta?.LicenseShortName?.value)}]});
-  return remember(relevantVisualAssets(industry,[...photography,...candidates]),3600000);
- }catch{return remember(photography,30000)}
+ const commons=async():Promise<VisualAsset[]>=>{
+  const url=new URL('https://commons.wikimedia.org/w/api.php');url.search=new URLSearchParams({action:'query',generator:'search',gsrnamespace:'6',gsrsearch:query+' filetype:bitmap -filetype:svg',gsrlimit:'10',prop:'imageinfo',iiprop:'url|size|extmetadata|mime',iiurlwidth:'3840',format:'json'}).toString();
+  try{
+   const response=await fetcher(url,{headers:{'User-Agent':'ForgeStudio/1.0 (business visual research; https://forge-studio-preview.stands-old-3h.workers.dev)','Accept':'application/json'},signal:AbortSignal.timeout(4500),redirect:'error'});
+   if(!response.ok){await response.body?.cancel();return []}const raw=await readBoundedText(response);
+   const data=JSON.parse(raw) as {query?:{pages?:Record<string,{title?:string;imageinfo?:{mime?:string;width?:number;height?:number;thumburl?:string;url?:string;descriptionurl?:string;extmetadata?:Record<string,{value?:string}>}[]}>}};
+   const candidates=Object.values(data.query?.pages||{}).flatMap(page=>{const info=page.imageinfo?.[0],meta=info?.extmetadata;if(!info||!/^image\/(jpeg|png|webp)$/.test(info.mime||''))return [];const width=Number(info.width)||0,height=Number(info.height)||0;if(Math.max(width,height)<3840||Math.min(width,height)<2160)return [];return [{url:info.thumburl||info.url,title:(clean(page.title?.replace(/^File:/,''))+' '+clean(meta?.ImageDescription?.value)).trim().slice(0,350),credit:clean(meta?.Artist?.value).slice(0,250),source:info.descriptionurl,license:clean(meta?.LicenseShortName?.value)}]});
+   return relevantVisualAssets(industry,candidates);
+  }catch{return []}
+ };
+ // The free Pexels and Commons searches run concurrently so a slow provider
+ // does not double the user-facing image lookup time.
+ const [photography,commonsPhotos]=await Promise.all([process.env.PEXELS_API_KEY?discoverPexelsVisuals(industry,fetcher):Promise.resolve([]),commons()]);
+ const results=relevantVisualAssets(industry,[...photography,...commonsPhotos]);
+ return remember(results,results.length?3600000:30000);
  }
 }
 
