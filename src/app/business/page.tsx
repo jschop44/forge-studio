@@ -309,9 +309,9 @@ export default function BusinessGenerator(){
    // A new website must never inherit an unrelated brand or empty AI layout.
    // Recover using the deterministic, niche-specific generator instead of showing
    // scraped third-party pages, mystery URLs or a text-only storefront.
-   const foreignBrand=combined.some(page=>/disney(?:\\.com|\\s+live|\\s+logo|\\s+exit|\\s+world)|you are now leaving disney/i.test(page.html))&&!/disney/i.test(input.businessName+' '+input.industry);
-   const hasPhotographs=combined.some(page=>/<img\\b[^>]*\\bsrc=|<picture\\b/i.test(page.html));
-   const expectsPhotographs=industryPhotos(input.industry).length>0||input.visualAssets.length>0;
+   const foreignBrand=combined.some(page=>/disney(?:\.com|\s+live|\s+logo|\s+exit|\s+world)|you are now leaving disney/i.test(page.html))&&!/disney/i.test(input.businessName+' '+input.industry);
+   const hasPhotographs=combined.some(page=>/<img\b[^>]*\bsrc=|<picture\b/i.test(page.html));
+      const expectsPhotographs=industryPhotos(input.industry).length>0||input.visualAssets.length>0;
    const needsRecovery=designMode==='new'&&(foreignBrand||expectsPhotographs&&!hasPhotographs);
    const safePages=needsRecovery?generateBusinessWebsite(input).pages:combined;
    const generated=selectedExperience==='immersive'&&!needsRecovery?enhanceImmersiveWorld(safePages,input):safePages;
