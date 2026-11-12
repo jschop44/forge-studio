@@ -1,3 +1,5 @@
+import {designAdvice,notifyGeneration} from './workflow-adapters';
+import {randomUUID} from 'node:crypto';
 import {discoverBusinessVisuals} from './business-visuals';
 import type {VisualAsset} from '../visual-assets';
 import {summarizeAiError} from './ai-error';
@@ -68,8 +70,11 @@ export function localAiCapacity(){return {active:activeGenerations,capacity:MAX_
 export async function generateWithLocalAi(input:{businessName:string;industry:string;description:string;services:string[];contactEmail?:string;visualAssets?:VisualAsset[];experienceStyle?:WebsiteExperience;designLayout?:'editorial'|'image-led'}):Promise<AiGenerationResult>{
  if(activeGenerations>=MAX_ACTIVE_GENERATIONS)throw Error('Local AI capacity exceeded');
  activeGenerations++;
+ const eventId=randomUUID();
  try {
  const {visualAssets,...businessInput}=input;
+ const advice=input.designLayout?{status:'not-configured' as const}:await designAdvice({industry:input.industry,services:input.services});
+ const designLayout=input.designLayout||advice.layout;
  let description!:string;
  let design!:z.infer<typeof DesignSchema>;
  let provider:'ollama'|'cloudflare'='ollama';
@@ -103,8 +108,10 @@ export async function generateWithLocalAi(input:{businessName:string;industry:st
  };
  const validated=DraftSchema.parse(verifiedDraft);
  const selectedVisuals=visualAssets?.length?visualAssets:await discoverBusinessVisuals(input.industry);
- return {draft:validated,provider,pages:generateBusinessWebsite({...validated,...compositionAppearance(design),...(input.designLayout?{layout:input.designLayout}:{}),visualAssets:selectedVisuals,contactEmail:input.contactEmail,experienceStyle:input.experienceStyle||'standard'}).pages};
- } finally {activeGenerations--}
+ const pages=generateBusinessWebsite({...validated,...compositionAppearance(design),...(designLayout?{layout:designLayout}:{}),visualAssets:selectedVisuals,contactEmail:input.contactEmail,experienceStyle:input.experienceStyle||'standard'}).pages;
+ await notifyGeneration({id:eventId,type:'draft.generated',provider,pageCount:pages.length});
+ return {draft:validated,provider,pages};
+ } catch(error){await notifyGeneration({id:eventId,type:'draft.failed'});throw error} finally {activeGenerations--}
 }
 
 /** Open-vocabulary recognition uses the same free, bounded providers as generation. */

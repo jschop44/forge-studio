@@ -82,6 +82,13 @@ jobs:
           FORGE_QUALITY_WORKER_URL: ${{ secrets.FORGE_QUALITY_WORKER_URL }}
           FORGE_QUALITY_WORKER_SECRET: ${{ secrets.FORGE_QUALITY_WORKER_SECRET }}
           PEXELS_API_KEY: ${{ secrets.PEXELS_API_KEY }}
+          FORGE_DESIGN_ADVISOR: ${{ secrets.FORGE_DESIGN_ADVISOR }}
+          DIFY_WORKFLOW_URL: ${{ secrets.DIFY_WORKFLOW_URL }}
+          DIFY_API_KEY: ${{ secrets.DIFY_API_KEY }}
+          FLOWISE_PREDICTION_URL: ${{ secrets.FLOWISE_PREDICTION_URL }}
+          FLOWISE_API_KEY: ${{ secrets.FLOWISE_API_KEY }}
+          ACTIVEPIECES_WEBHOOK_URL: ${{ secrets.ACTIVEPIECES_WEBHOOK_URL }}
+          ACTIVEPIECES_WEBHOOK_TOKEN: ${{ secrets.ACTIVEPIECES_WEBHOOK_TOKEN }}
         run: node scripts/sync-preview-secrets.mjs
       - name: Verify preview health and report database readiness
         if: steps.publish.outputs.current == 'true'

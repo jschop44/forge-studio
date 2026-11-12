@@ -12,8 +12,8 @@ Implementation and deployment are separate. This table describes source capabili
 | Unsplash / Commons | Existing source references and Commons metadata discovery | Existing photography fallback; no new Unsplash API app registration |
 | GrapesJS / Three.js / React Three Fiber / Lucide | Existing application dependencies preserved | Broader editor persistence and business-specific immersive acceptance still required |
 | GSAP | Evaluated; not added | Standard license is not an open-source license and restricts competing visual animation builders. Existing reduced-motion-aware CSS remains in use. Source: https://webflow.com/legal/product-terms section 9 |
-| Dify / Flowise | Not activated | Would duplicate queue/orchestration for current generation path; only add an adapter for a concrete unique workflow |
-| Activepieces | Not activated | Existing GitHub Actions already cover build/deploy notifications; no external workflow target supplied |
+| Dify / Flowise | Optional exclusive design-knowledge adapters connected to shared generation; bounded layout-only outputs | Owner-hosted endpoints, credentials and workflow configuration; live acceptance pending |
+| Activepieces | Optional status-only draft lifecycle webhook connected to interactive and queued generation | Owner webhook URL/optional token and receiving flow; live delivery pending |
 | ComfyUI / Sharp | Authenticated optional image generation endpoint; bounded owner workflow and metadata-free WebP optimization | Available compute, licensed model/workflow, persistent asset delivery and visual acceptance; not live |
 | Crawlee / Lighthouse | Authenticated bounded capture endpoint and owned-deployment performance audit endpoint | Worker hosting/ingress and actual capture/performance acceptance remain outstanding |
 
