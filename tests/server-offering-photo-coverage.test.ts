@@ -22,6 +22,7 @@ test('server image research fetches each specific offering and filters unrelated
  };
  const fetcher=(async(input:RequestInfo|URL)=>{
   const url=new URL(String(input));
+  if(url.hostname==='api.openverse.org')return new Response(JSON.stringify({results:[]}));
   assert.equal(url.hostname,'commons.wikimedia.org');
   const search=(url.searchParams.get('gsrsearch')||'').split(' filetype:')[0].toLowerCase();
   queried.push(search);
