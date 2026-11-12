@@ -9,6 +9,7 @@ import {BusinessRecognitionSchema,literalBusinessActivity} from '../../lib/busin
 import {businessPreviewHtml} from '../../lib/business-preview';
 import {industryPhotos,offeringPhotoCandidates} from '../../lib/industry-photos';
 import {ensurePagePhotography} from '../../lib/ensure-page-photography';
+import {enrichGeneratedBusinessPages} from '../../lib/premium-page-composition';
 import {VisualAssetSchema,specificVisualOfferings,type VisualAsset} from '../../lib/visual-assets';
 import {enhanceImmersiveWorld} from '../../lib/immersive-world';
 import {createExtractedPages,applyExtractedExperience,extractedPageSources} from '../../lib/extracted-pages';
@@ -326,7 +327,9 @@ export default function BusinessGenerator(){
    const themed=automaticallyApplyBrand(contentApplied.pages,appearance);
    const sourceApplied=sourceDna?applySourceDesign(themed,sourceDna,designMode):{pages:themed,warnings:[]};
    const captured=applyCapturedAppearance(sourceApplied.pages,evidence?.browserEvidence||workerEvidence,evidence?.url||websiteAddressKey(siteUrl)||'',designMode,extractedPageSources(evidence));
-   const finalPages=automaticallyOptimizeMetadata(ensurePagePhotography(captured.pages,input.industry,input.visualAssets,input.services));
+   const photoRepaired=ensurePagePhotography(captured.pages,input.industry,input.visualAssets,input.services);
+    const editorialPages=designMode==='inspired'?photoRepaired:enrichGeneratedBusinessPages(photoRepaired,input);
+    const finalPages=automaticallyOptimizeMetadata(editorialPages);
    const validation=auditGeneratedDraft(finalPages);
    if(!validation.readyForReview)throw Error('The generated website did not pass its content and navigation checks. Please retry or review the business details.');
    revealGeneratedPreview.current=true;setPages(finalPages);setActive('index');setStatus('Website draft generated for '+input.industry+'. Review its content and design before publishing.'+visualNotice+(contentApplied.warnings.length?' '+contentApplied.warnings.join(' '):'')+(sourceApplied.warnings.length?' '+sourceApplied.warnings.join(' '):'')+(captured.warnings.length?' '+captured.warnings.join(' '):''));
