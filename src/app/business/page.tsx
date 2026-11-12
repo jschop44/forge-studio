@@ -1,5 +1,5 @@
 'use client';
-import {matchingSourceBusiness} from '../../lib/source-reuse-policy';
+import {matchingSourceBusiness,resolveGenerationSourceMode} from '../../lib/source-reuse-policy';
 import {parseGeneratorEditorState,serializeGeneratorEditorState} from '../../lib/editor-generator-state';
 import {extractWebsiteDesignDna,mergeSourcePageImages,type WebsiteDesignDna,type SourceImage} from '../../lib/website-design-dna';
 import {applySourceDesign} from '../../lib/apply-source-design';
@@ -269,8 +269,8 @@ export default function BusinessGenerator(){
    setStatus('Review-only four-page draft generated from inspected metadata and your confirmed facts. No screenshot reconstruction or publication was performed.');
   }catch{setStatus('Unable to create the reviewed draft. Check the source and supplied business facts.')}
  }
- function additionalPages(evidence:Inspection|null=inspected){
-  return designMode==='new'||!evidence?[]:createExtractedPages(evidence,name.trim()||extractedName(evidence));
+ function additionalPages(evidence:Inspection|null=inspected,mode:'new'|'inspired'|'redesign'=designMode){
+  return mode==='new'||!evidence?[]:createExtractedPages(evidence,name.trim()||extractedName(evidence));
  }
  function automaticallyOptimizeMetadata(generated:GeneratedPage[]):GeneratedPage[]{
   return generated.map(page=>{
@@ -285,8 +285,8 @@ export default function BusinessGenerator(){
    return {...page,html:'<!doctype html>\n'+doc.documentElement.outerHTML};
   });
  }
- function automaticallyApplyBrand(pagesToStyle:GeneratedPage[],appearance:StyleReference=referenceStyle):GeneratedPage[]{
-  return designMode==='inspired'?applyReferenceAppearance(pagesToStyle,appearance):pagesToStyle;
+ function automaticallyApplyBrand(pagesToStyle:GeneratedPage[],appearance:StyleReference=referenceStyle,mode:'new'|'inspired'|'redesign'=designMode):GeneratedPage[]{
+  return mode==='inspired'?applyReferenceAppearance(pagesToStyle,appearance):pagesToStyle;
  }
  async function generate(){
   if(busy||researchBusy)return;
@@ -294,15 +294,33 @@ export default function BusinessGenerator(){
   try{
    let evidence=designMode==='new'?null:inspected;
    if(designMode!=='new'&&!evidence&&!referenceMarkup.trim()){evidence=await inspectWebsite();if(!evidence)return}
-   if(inspected&&evidence&&name.trim()&&!matchingSourceBusiness(name,extractedName(evidence))){setStatus('The inspected source belongs to '+extractedName(evidence)+', but the business name is '+name.trim()+'. Inspect the correct business website, or choose New Website to start without the source branding and pages.');return}
+   const sourceDecision=resolveGenerationSourceMode(designMode,name.trim(),evidence?extractedName(evidence):null);
+   const generationMode=sourceDecision.mode;
+   const discardedSourceName=sourceDecision.discardUnrelatedSource&&evidence?extractedName(evidence):'';
+   const sourceDefaultBrief=evidence?[evidence.description,...evidence.headings.slice(0,3)].filter(Boolean).join('. ').slice(0,1600):'';
+   const sourceContactEmail=evidence?.designDna?.contact.emails[0]?.trim()||'';
+   const generationBrief=discardedSourceName&&brief.trim()===sourceDefaultBrief.trim()?name.trim():brief.trim();
+   const generationContactEmail=discardedSourceName&&sourceContactEmail.toLowerCase()===contactEmail.trim().toLowerCase()?'':contactEmail.trim();
+   if(discardedSourceName){
+    // The user has supplied a different business. Keep the new name and brief,
+    // but never import unrelated source style, logos, navigation or contact.
+    inspectionEpoch.current++;inspectionController.current?.abort();
+    evidence=null;siteAddressRef.current='';
+    setDesignMode('new');setInspected(null);setSiteUrl('');setReferenceMarkup('');
+    setReferenceStyle({});setWorkerEvidence(null);setWorkerEvidenceText('');
+    setReviewApproved(false);setReviewIndustry('');setReviewServices('');
+    setInspectionError('');setPages([]);
+    if(generationBrief!==brief.trim())setBrief(generationBrief);
+    if(generationContactEmail!==contactEmail.trim())setContactEmail(generationContactEmail);
+   }
    const generationEpoch=inspectionEpoch.current;
-   const homepageDna=designMode!=='new'?(evidence?.designDna||(referenceMarkup.trim()?extractWebsiteDesignDna(referenceMarkup,websiteAddressKey(siteUrl)||'https://source.invalid/'):undefined)):undefined;
+   const homepageDna=generationMode!=='new'?(evidence?.designDna||(referenceMarkup.trim()?extractWebsiteDesignDna(referenceMarkup,websiteAddressKey(siteUrl)||'https://source.invalid/'):undefined)):undefined;
    const sourceDna=homepageDna&&evidence?mergeSourcePageImages(homepageDna,evidence.pageSummaries||[]):homepageDna;
    const generationName=!inspected&&evidence?extractedName(evidence):name.trim()||(evidence?extractedName(evidence):'');
    if(generationName.length<2){setStatus('Enter your business name to get started.');return}
    setStatus('Building your website and choosing its design automatically…');
-   const sourceBrief=designMode!=='new'&&evidence?[evidence.url,evidence.title,evidence.description,...evidence.headings.slice(0,3),...(evidence.pageSummaries||[]).flatMap(page=>[page.description,...page.headings.slice(0,2)])].filter(Boolean).join('. ').slice(0,1500):'';
-   const effectiveBrief=normalizeBusinessBrief(!inspected&&evidence?sourceBrief:brief.trim()||sourceBrief);
+   const sourceBrief=generationMode!=='new'&&evidence?[evidence.url,evidence.title,evidence.description,...evidence.headings.slice(0,3),...(evidence.pageSummaries||[]).flatMap(page=>[page.description,...page.headings.slice(0,2)])].filter(Boolean).join('. ').slice(0,1500):'';
+   const effectiveBrief=normalizeBusinessBrief(!inspected&&evidence?sourceBrief:generationBrief||sourceBrief);
    const inferred=infer(generationName,effectiveBrief);let recognizedActivity=false;
    if(!/(?:^|\n)\s*(?:industry|business type|category)\s*:/i.test(effectiveBrief)){
     setStatus('Understanding your business and its specific niche…');
@@ -318,11 +336,11 @@ export default function BusinessGenerator(){
    inferred.services=normalizeBusinessOfferings(inferred.industry,inferred.services);
    const explicitIndustry=/(?:^|\n)\s*(?:industry|business type|category)\s*:/i.test(effectiveBrief);
    const explicitOfferings=/(?:^|\n)\s*(?:services|products|offerings|menu)\s*:/i.test(effectiveBrief);
-   const intelligence=evidence&&designMode!=='new'?analyzeSiteEvidence(evidence):null;
-   const appearance={...(designMode==='new'?{}:referenceStyle),...evidence?.styleReference,...parseStyleReference(designMode==='new'?'':referenceMarkup)};
+   const intelligence=evidence&&generationMode!=='new'?analyzeSiteEvidence(evidence):null;
+   const appearance={...(generationMode==='new'?{}:referenceStyle),...evidence?.styleReference,...parseStyleReference(generationMode==='new'?'':referenceMarkup)};
    const designDecision=planAdaptiveDesign({businessName:inferred.businessName,industry:inferred.industry,mode:visualDesignMode,patternId:visualDesignMode==='library'?visualPatternId:undefined,immersive3d:autoImmersive});
    const selectedExperience:WebsiteExperience=experienceStyle==='object-navigation'||autoImmersive&&designDecision.immersive3d?'immersive':experienceStyle;
-   const input={...inferred,experienceStyle:selectedExperience,visualAssets:[] as VisualAsset[],...(intelligence&&intelligence.confidence!=='low'?{...(!explicitIndustry&&!recognizedActivity?{industry:intelligence.industry}:{}),...(!explicitOfferings&&!recognizedActivity?{services:intelligence.services}:{})}:{}),designMode,...(designMode!=='new'&&evidence?.visualSignals?{visualSignals:evidence.visualSignals}:{}),...(contactEmail.trim()?{contactEmail:contactEmail.trim()}:{}),...(designMode==='inspired'?{styleReference:appearance}:{})};
+   const input={...inferred,experienceStyle:selectedExperience,visualAssets:[] as VisualAsset[],...(intelligence&&intelligence.confidence!=='low'?{...(!explicitIndustry&&!recognizedActivity?{industry:intelligence.industry}:{}),...(!explicitOfferings&&!recognizedActivity?{services:intelligence.services}:{})}:{}),designMode:generationMode,...(generationMode!=='new'&&evidence?.visualSignals?{visualSignals:evidence.visualSignals}:{}),...(generationContactEmail?{contactEmail:generationContactEmail}:{}),...(generationMode==='inspired'?{styleReference:appearance}:{})};
    input.services=normalizeBusinessOfferings(input.industry,input.services);
    let visualNotice='';
    const missingOfferings=specificVisualOfferings(input.services.filter(service=>!offeringPhotoCandidates(service,input.industry).length));
@@ -337,27 +355,27 @@ export default function BusinessGenerator(){
    const response=await fetch('/api/ai/business',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(generationPayload),signal:AbortSignal.timeout(75000)});
    if(response.status===429){const retrySeconds=Math.min(30,Math.max(1,Number(response.headers.get('retry-after'))||5));setStatus('AI is processing other websites. Please retry in about '+retrySeconds+' seconds.');return}
    if(!response.ok){const failure=await response.json();throw Error(response.status===503?'Website generation is temporarily unavailable. Please try again.':failure.error||'AI generation unavailable')}
-   const result=await response.json();if(generationEpoch!==inspectionEpoch.current){setStatus('Website address changed during generation. Generate again using the current website.');return}const extractedPages=additionalPages(evidence);const extras=applyExtractedExperience(extractedPages,selectedExperience,input);const combined=[...result.pages,...extras];
+   const result=await response.json();if(generationEpoch!==inspectionEpoch.current){setStatus('Website address changed during generation. Generate again using the current website.');return}const extractedPages=additionalPages(evidence,generationMode);const extras=applyExtractedExperience(extractedPages,selectedExperience,input);const combined=[...result.pages,...extras];
    // A new website must never inherit an unrelated brand or empty AI layout.
    // Recover using the deterministic, niche-specific generator instead of showing
    // scraped third-party pages, mystery URLs or a text-only storefront.
    const foreignBrand=combined.some(page=>/disney(?:\.com|\s+live|\s+logo|\s+exit|\s+world)|you are now leaving disney/i.test(page.html))&&!/disney/i.test(input.businessName+' '+input.industry);
    const hasPhotographs=combined.some(page=>/<img\b[^>]*\bsrc=|<picture\b/i.test(page.html));
       const expectsPhotographs=industryPhotos(input.industry).length>0||input.visualAssets.length>0;
-   const needsRecovery=designMode==='new'&&(foreignBrand||expectsPhotographs&&!hasPhotographs);
+   const needsRecovery=generationMode==='new'&&(foreignBrand||expectsPhotographs&&!hasPhotographs);
    const safePages=needsRecovery?generateBusinessWebsite(input).pages:combined;
    const generated=selectedExperience==='immersive'&&!needsRecovery?enhanceImmersiveWorld(safePages,input):safePages;
    if(needsRecovery)visualNotice+=' Rebuilt the draft using verified business-specific imagery after the AI output failed the brand or image quality check.';
-   const contentApplied=applyDefaultSourceContent(generated,evidence,designMode);
-   const themed=automaticallyApplyBrand(contentApplied.pages,appearance);
-   const sourceApplied=sourceDna?applySourceDesign(themed,sourceDna,designMode):{pages:themed,warnings:[]};
-   const captured=applyCapturedAppearance(sourceApplied.pages,evidence?.browserEvidence||workerEvidence,evidence?.url||websiteAddressKey(siteUrl)||'',designMode,extractedPageSources(evidence));
+   const contentApplied=applyDefaultSourceContent(generated,evidence,generationMode);
+   const themed=automaticallyApplyBrand(contentApplied.pages,appearance,generationMode);
+   const sourceApplied=sourceDna?applySourceDesign(themed,sourceDna,generationMode):{pages:themed,warnings:[]};
+   const captured=applyCapturedAppearance(sourceApplied.pages,evidence?.browserEvidence||(discardedSourceName?null:workerEvidence),generationMode==='new'?'':evidence?.url||websiteAddressKey(siteUrl)||'',generationMode,extractedPageSources(evidence));
    const photoRepaired=ensurePagePhotography(captured.pages,input.industry,input.visualAssets,input.services);
-    const editorialPages=designMode==='inspired'?photoRepaired:enrichGeneratedBusinessPages(photoRepaired,input);
+    const editorialPages=generationMode==='inspired'?photoRepaired:enrichGeneratedBusinessPages(photoRepaired,input);
     const finalPages=automaticallyOptimizeMetadata(editorialPages);
    const validation=auditGeneratedDraft(finalPages);
    if(!validation.readyForReview)throw Error('The generated website did not pass its content and navigation checks. Please retry or review the business details.');
-   revealGeneratedPreview.current=true;setPages(finalPages);setActive('index');setStatus('Website draft generated for '+input.industry+'. Review its content and design before publishing.'+visualNotice+(contentApplied.warnings.length?' '+contentApplied.warnings.join(' '):'')+(sourceApplied.warnings.length?' '+sourceApplied.warnings.join(' '):'')+(captured.warnings.length?' '+captured.warnings.join(' '):''));
+   revealGeneratedPreview.current=true;setPages(finalPages);setActive('index');setStatus('Website draft generated for '+input.industry+'. Review its content and design before publishing.'+visualNotice+(contentApplied.warnings.length?' '+contentApplied.warnings.join(' '):'')+(sourceApplied.warnings.length?' '+sourceApplied.warnings.join(' '):'')+(captured.warnings.length?' '+captured.warnings.join(' '):'')+(discardedSourceName?' A previous inspection of '+discardedSourceName+' was excluded; this is a new business website.':''));
   }catch(error){setStatus(error instanceof Error?error.message:'Website generation is temporarily unavailable.')}finally{setBusy(false)}
  }
  return <div className="business-generator forge-auto">
@@ -368,7 +386,7 @@ export default function BusinessGenerator(){
  <fieldset style={{border:'1px solid #99999966',borderRadius:14,padding:14,margin:'12px 0'}}><legend>Visual design direction</legend><label>Design selection<select value={visualDesignMode} disabled={busy||researchBusy} onChange={e=>{setVisualDesignMode(e.target.value as 'auto'|'library');setPages([])}}><option value="auto">AI Auto-Design (recommended)</option><option value="library">Choose from design library</option></select></label>{visualDesignMode==='library'&&<label>Design pattern<select value={visualPatternId} disabled={busy||researchBusy} onChange={e=>{setVisualPatternId(e.target.value);setPages([])}}>{DESIGN_PATTERNS.map(pattern=><option key={pattern.id} value={pattern.id}>{pattern.label}</option>)}</select></label>}</fieldset>
  <label>Design approach<select disabled={busy||researchBusy} value={designMode} onChange={e=>{setDesignMode(e.target.value as 'new'|'inspired'|'redesign');setWorkerEvidence(null);setWorkerEvidenceText('');setPages([])}}><option value="new">Create a completely new website</option><option value="inspired">Preserve an existing site's visual style</option><option value="redesign">Fully redesign an existing site</option></select></label>
  {designMode!=='new'&&<><label>Existing website address<input type="url" value={siteUrl} onChange={e=>{updateWebsiteAddress(e.target.value)}} placeholder="e.g. disney.com"/></label><button type="button" disabled={researchBusy||busy} onClick={()=>void inspectWebsite()}>{researchBusy?'Inspecting website…':designMode==='inspired'?'Extract website appearance':'Extract website details for redesign'}</button><details className="forge-auto-advanced"><summary>Optional: paste existing HTML/CSS instead</summary><textarea rows={4} value={referenceMarkup} onChange={e=>setReferenceMarkup(e.target.value)} placeholder="Paste saved HTML with embedded CSS"/></details><p className="forge-auto-note">Forge extracts public content, design details and image references. Use only designs and assets you are authorized to reuse. Review the draft against the original before publishing.</p></>}
- {designMode!=='new'&&inspected&&<p className="forge-auto-note" role="status">Website extracted: {new URL(inspected.url).hostname}. Ready to generate; you do not need to extract it again.</p>}
+ {designMode!=='new'&&inspected&&name.trim()&&!matchingSourceBusiness(name,extractedName(inspected))?<p className="forge-auto-note" role="status">This is a different business from {extractedName(inspected)}. Generate will automatically create a fresh website without reusing that source's branding, pages or contact details.</p>:designMode!=='new'&&inspected&&<p className="forge-auto-note" role="status">Website extracted: {new URL(inspected.url).hostname}. Ready to generate; you do not need to extract it again.</p>}
  {designMode!=='new'&&inspectionError&&<p className="forge-auto-note" role="alert">{inspectionError}</p>}
 
  {inspected&&designMode!=='new'&&<details className="forge-auto-advanced"><summary>Review evidence-grounded website proposal</summary>{(()=>{try{const evidence=inspectionToBrowserEvidence(inspected);const proposal=proposeBusinessSiteFromCapture(evidence);return <div className="forge-auto-note"><p><strong>Proposed business name:</strong> {proposal.businessName}</p><p><strong>Observed headings:</strong> {proposal.observedHeadings.join(' · ')||'None'}</p><p><strong>Verified business facts required:</strong> {proposal.missingRequiredFields.join(', ')}</p><p><strong>Captured navigation:</strong> {proposal.navigation.length} unverified links</p><p><strong>Publishing:</strong> blocked until owner review and approval</p><p>{proposal.warnings.join(' ')}</p></div>}catch{return <p className="forge-auto-note">This inspection cannot be converted into a trusted evidence proposal. Verify the source URL and try again.</p>}})()}</details>}
@@ -376,7 +394,7 @@ export default function BusinessGenerator(){
  {designMode!=='new'&&<details className="forge-auto-advanced"><summary>Import optional browser-verification evidence</summary><p>Paste the JSON evidence from an authorized Forge browser-capture worker. The captured layout remains review-only. In Preserve Original Style mode, safe computed colors and typography from matching website evidence may also be applied to a generated draft. Publication and exact visual reconstruction remain unverified.</p><textarea rows={4} aria-label="Browser verification JSON" value={workerEvidenceText} onChange={e=>{setWorkerEvidenceText(e.target.value);setWorkerEvidence(null);setCapturePreview([]);setWorkerEvidenceError('')}} placeholder='{"version":1,"sourceUrl":"https://example.com",...}'/><button type="button" onClick={()=>{try{const parsed:unknown=JSON.parse(workerEvidenceText);if(!validateBrowserEvidence(parsed))throw Error('Invalid or unsupported browser evidence');if(siteUrl.trim()){const expected=new URL(siteUrl.startsWith('http')?siteUrl:'https://'+siteUrl);if(new URL(parsed.sourceUrl).hostname!==expected.hostname)throw Error('Evidence host must match the inspected website host');}setWorkerEvidence(parsed);setCapturePreview([]);setWorkerEvidenceError('')}catch(error){setWorkerEvidence(null);setCapturePreview([]);setWorkerEvidenceError(error instanceof Error?error.message:'Invalid JSON')}}}>Review browser evidence</button>{workerEvidenceError&&<p role="alert">{workerEvidenceError}</p>}{workerEvidence&&<button type="button" onClick={()=>{try{setCapturePreview(capturePreviewPages(workerEvidence));setCapturePreviewIndex(0)}catch(error){setWorkerEvidenceError(error instanceof Error?error.message:'Preview unavailable')}}}>Preview captured layout (review only)</button>}{capturePreview.length>0&&<div><p>Unverified layout preview. This does not change the generated pages or authorize publication.</p>{capturePreview.length>1&&<label>Captured page <select value={capturePreviewIndex} onChange={e=>setCapturePreviewIndex(Number(e.target.value))}>{capturePreview.map((page,index)=><option key={page.slug} value={index}>{page.title}</option>)}</select></label>}<iframe title="Captured website layout preview" sandbox="" srcDoc={capturePreview[capturePreviewIndex]?.html||''} style={{width:'100%',height:460,border:'1px solid #aaa'}}/></div>}{workerEvidence&&<div role="status"><strong>Browser navigation checks:</strong> {navigationQualityRecommendations(workerEvidence).inspected} inspected. <strong>Status:</strong> {navigationQualityRecommendations(workerEvidence).status}. {navigationQualityRecommendations(workerEvidence).recommendations.map((item,index)=><p key={index}>{item.finding}. {item.action}</p>)}<p>Source-site navigation only. Form submissions, button behavior and generated pages remain unverified.</p></div>}</details>}
  {inspected&&designMode!=='new'&&<details className="forge-auto-advanced"><summary>Website verification coverage</summary><p><strong>Inspected metadata:</strong> {inspected.pageSummaries?.length||0} linked pages with extracted summaries.</p><p><strong>Browser navigation:</strong> Not tested in this inspection. Link discovery does not establish that a destination works.</p><p><strong>Buttons and forms:</strong> Not tested. Submissions, authentication, payments and other interactive functions require separate verification.</p><p><strong>Visual reconstruction:</strong> Not verified against browser screenshots.</p><p>Generate a review-only draft, then verify its links, content and behavior before publication.</p></details>}
  {inspected&&designMode!=='new'&&<details className="forge-auto-advanced"><summary>View extracted website research (optional)</summary><div className="forge-auto-note"><strong>Extracted from {inspected.url}</strong><p>Title: {inspected.title||'Unavailable'}</p><p>Description: {inspected.description||'Unavailable'}</p><p>Headings: {inspected.headings.slice(0,3).join(' · ')||'Unavailable'}</p><p>Discovered page links: {inspected.navigation?.length||0}. {inspected.navigation?.slice(0,5).map(item=>item.label).join(' · ')||'None identified'}. Successfully inspected: {inspected.pageSummaries?.length||0}. Intelligence: {analyzeSiteEvidence(inspected).industry} ({analyzeSiteEvidence(inspected).confidence} confidence). Coverage: {inspectionCoverage(inspected).internalPages} internal pages; browser-rendered visuals not yet inspected. Pages have not yet been reconstructed.</p>{inspected.pageSummaries?.map(page=><p key={page.path}><strong>{page.label}:</strong> {page.title} — {page.description||page.headings.slice(0,2).join(' · ')||'No readable summary'}</p>)}<p>Visual style: {referenceStyle.background||'No background detected'} / {referenceStyle.accent||'No accent detected'}. Stylesheets inspected: {inspected.stylesheetsRead}. {inspected.visualSignals&&<span> Structure: {inspected.visualSignals.sectionCount} sections, {inspected.visualSignals.imageCount} images, {inspected.visualSignals.buttonCount} buttons, {inspected.visualSignals.heroSections} hero markers.</span>}</p></div></details>}
- <label>Business name<input autoFocus value={name} onChange={e=>setName(e.target.value)} placeholder="e.g. Northstar Coffee"/></label>
+ <label>Business name<input autoFocus value={name} onChange={e=>{setName(e.target.value);setStatus('')}} placeholder="e.g. Northstar Coffee"/></label>
  <label>What does your business do? <span className="optional">(needed when the name is unclear)</span><textarea rows={5} value={brief} onChange={e=>setBrief(e.target.value)} placeholder="Describe what you offer, who you serve and what makes you different."/></label>
  <details className="forge-auto-advanced"><summary>Add contact information (recommended before publishing)</summary><label>Business email<input type="email" value={contactEmail} onChange={e=>setContactEmail(e.target.value)} placeholder="hello@yourbusiness.com"/></label></details>
  <button className="forge-auto-cta" onClick={()=>void generate()} disabled={busy||researchBusy}>{researchBusy?'Reading website…':busy?'Creating your website…':'✦ Generate my website'}</button>
