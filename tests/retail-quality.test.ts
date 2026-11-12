@@ -27,3 +27,8 @@ test('visual search removes business-role words while retaining actual niche spe
  assert.deepEqual(visualSubjectTerms('Toy retail'),['toy']);assert.deepEqual(visualSubjectTerms('Pediatric healthcare'),['pediatric','healthcare']);
  assert.equal(relevantVisualAssets('Toy retail',[{url:'https://upload.wikimedia.org/wikipedia/commons/a/ab/Toy.jpg',title:'Wooden toy blocks',credit:'Photographer',source:'https://commons.wikimedia.org/wiki/File:Toy.jpg',license:'CC BY 4.0'}]).length,1);
 });
+
+test('broader toy discovery still rejects explicit adult image metadata',()=>{
+ const source={url:'https://upload.wikimedia.org/wikipedia/commons/a/ab/Toy.jpg',credit:'Photographer',source:'https://commons.wikimedia.org/wiki/File:Toy.jpg',license:'CC BY 4.0'};
+ for(const title of ['Sex_toy','Toy dildo','Toy with nude model'])assert.equal(relevantVisualAssets('Toy retail',[{...source,title}]).length,0);
+});
