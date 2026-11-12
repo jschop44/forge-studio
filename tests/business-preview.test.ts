@@ -16,4 +16,9 @@ test('preview bridge is valid JavaScript and installed before business controlle
  const script=html.match(/<script id="forge-preview-navigation">([\s\S]*?)<\/script>/)![1];
  assert.doesNotThrow(()=>new Script(script));assert.ok(!script.includes('__name('));assert.ok(html.indexOf('forge-preview-navigation')<html.indexOf('id="controller"'));
  assert.equal(businessPreviewHtml(undefined,[]),'');
+ assert.match(script,/forge-preview-height/);
+ assert.match(script,/ResizeObserver/);
+ assert.match(script,/data-forge-experience/);
+ assert.match(script,/getAttribute\('data-forge-experience'\)!=='standard'/);
+ assert.match(script,/parent\.postMessage/);
 });
