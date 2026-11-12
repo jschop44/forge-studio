@@ -25,7 +25,7 @@ export function generateBusinessWebsite(input:unknown):{name:string;pages:Genera
  const b=BriefSchema.parse(input),s=escapeHtml;
  b.industry=retainExplicitBusinessNiche(b.industry,{businessName:b.businessName,brief:b.description});
  b.services=normalizeBusinessOfferings(b.industry,b.services);
- const objectPlan=(b.experienceStyle==='object-navigation'||b.experienceStyle==='immersive')?objectNavigationPlan({...b,images:relevantVisualAssets(b.industry,b.visualAssets||[]).map(asset=>asset.url)}):null;
+ const objectPlan=(b.experienceStyle==='object-navigation'||b.experienceStyle==='immersive')?objectNavigationPlan({...b,images:licensedBusinessVisualAssets(b.industry,b.services,b.visualAssets||[]).map(asset=>asset.url)}):null;
  if(b.experienceStyle==='object-navigation'&&!objectPlan)throw Error('Object navigation needs a supported business niche and matching offerings. Choose standard or cinematic for this brief.');
  const objectMarkup=objectPlan?objectNavigationMarkup(objectPlan):'';
  const explicitCinematic=(input as {experienceStyle?:unknown}).experienceStyle==='cinematic';
