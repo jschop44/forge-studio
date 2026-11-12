@@ -130,6 +130,8 @@ jobs:
             const photo=page.html.match(/<figure class="editorial-photo"><img src="([^"]+)"/);
             if(!photo){console.error('::error::Missing niche photo for',page.slug);process.exit(1);}
             photos.add(photo[1].split('?')[0]);
+            const pagePhotos=[...page.html.matchAll(/<img\b[^>]*\bsrc="([^"]+)"/g)].map(hit=>hit[1].split('?')[0]);
+            if(new Set(pagePhotos).size<3){console.error('::error::Too few distinct photographs on',page.slug);process.exit(1);}
           }
           if(photos.size!==4){console.error('::error::Duplicate or missing main-page images');process.exit(1);}
           console.log('Verified AI-generated site:',payload.draft.businessName,'with',pages.length,'pages and',photos.size,'distinct photographs');
@@ -148,7 +150,8 @@ jobs:
           const pages=payload.pages||[];
           const slugs=pages.map(page=>page.slug);
           const photos=pages.map(page=>page.html.match(/<figure class="editorial-photo"><img src="([^"]+)"/)?.[1]);
-          if(pages.length!==4||!['index','services','about','contact'].every(slug=>slugs.includes(slug))||photos.some(photo=>!photo)||new Set(photos.map(photo=>photo.split('?')[0])).size!==4||pages.some(page=>!page.html.includes('forge-immersive-world'))){
+          const perPagePhotos=pages.map(page=>new Set([...page.html.matchAll(/<img\b[^>]*\bsrc="([^"]+)"/g)].map(hit=>hit[1].split('?')[0])).size);
+          if(pages.length!==4||!['index','services','about','contact'].every(slug=>slugs.includes(slug))||photos.some(photo=>!photo)||new Set(photos.map(photo=>photo.split('?')[0])).size!==4||perPagePhotos.some(count=>count<3)||pages.some(page=>!page.html.includes('forge-immersive-world'))){
             console.error('::error::Fruit stand still has blank photos or lacks an immersive world');process.exit(1);
           }
           console.log('Verified Fruit stand fresh:',pages.length,'immersive pages and four distinct fruit photos');
