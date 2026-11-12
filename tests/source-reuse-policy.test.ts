@@ -1,6 +1,6 @@
 import {test} from 'node:test';
 import assert from 'node:assert/strict';
-import {matchingSourceBusiness,usefulSourcePage} from '../src/lib/source-reuse-policy';
+import {matchingSourceBusiness,resolveGenerationSourceMode,usefulSourcePage} from '../src/lib/source-reuse-policy';
 import {createExtractedPages} from '../src/lib/extracted-pages';
 test('unrelated business identities cannot reuse source branding',()=>{
  assert.equal(matchingSourceBusiness('Baseball','Disney'),false);
@@ -16,4 +16,16 @@ test('opaque identifiers and exit interstitials never become extracted site page
  const pages=createExtractedPages({url:'https://example.com',title:'Baseball',description:'Equipment',headings:[],pageSummaries:summaries},'Baseball');
  assert.deepEqual(pages.map(p=>p.slug),['products']);
  assert.ok(!pages[0].html.includes('6RDVS'));
+});
+
+test('an unrelated inspected business switches to clean creation instead of blocking a user',()=>{
+ for(const mode of ['inspired','redesign'] as const){
+  for(const business of ['Fruit stand','Baseball']){
+   assert.deepEqual(resolveGenerationSourceMode(mode,business,'Disney Home'),{mode:'new',discardUnrelatedSource:true});
+  }
+  assert.deepEqual(resolveGenerationSourceMode(mode,'Disney Home','Disney Home'),{mode,discardUnrelatedSource:false});
+  assert.deepEqual(resolveGenerationSourceMode(mode,'Northstar Coffee LLC','Northstar Coffee | Official Website'),{mode,discardUnrelatedSource:false});
+ }
+ assert.deepEqual(resolveGenerationSourceMode('new','Fruit stand','Disney Home'),{mode:'new',discardUnrelatedSource:false});
+ assert.deepEqual(resolveGenerationSourceMode('redesign','','Disney Home'),{mode:'redesign',discardUnrelatedSource:false});
 });
