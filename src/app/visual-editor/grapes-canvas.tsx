@@ -65,7 +65,7 @@ export default function GrapesVisualCanvas({html,css,onChange,pages,bodyAttribut
    if(!active||!mount.current)return;
    const instance=grapesjs.init({
     container:mount.current,
-    height:'620px',
+    height:'min(78vh,960px)',
     width:'auto',
     storageManager:false,
     // Floating toolbars can cover nearby links on a fitted viewport. Actions live in the inspector.
@@ -106,11 +106,11 @@ export default function GrapesVisualCanvas({html,css,onChange,pages,bodyAttribut
  // eslint-disable-next-line react-hooks/exhaustive-deps
  },[]);
  return <section aria-label="Drag and drop page designer" style={{marginTop:24}}>
-  <h2>Drag-and-drop page designer</h2>
+  <h2>Visual canvas</h2>
   {!ready&&!loadError&&<p role="status">Loading visual designer…</p>}
   {loadError&&<p role="alert">The visual designer could not load: {loadError}. Your HTML and CSS remain available below.</p>}
   {insertMessage&&<p aria-live="polite">{insertMessage}</p>}
-  <p>Select text or images on the canvas to edit them. Select a container to add blocks inside it, or drag blocks directly onto the canvas. Changes synchronize to the HTML and CSS fields below.</p>
+  <p>Click text, images or sections to edit them. Drag new blocks into the page, or use Add on mobile. Your changes are kept in sync automatically.</p>
   <div role="toolbar" aria-label="Canvas history" style={{display:'flex',gap:8,flexWrap:'wrap',marginBottom:12}}><button type="button" disabled={!ready} onClick={()=>applyHistory('undo')}>Undo canvas edit</button><button type="button" disabled={!ready} onClick={()=>applyHistory('redo')}>Redo canvas edit</button></div>
   <div role="toolbar" aria-label="Website preview devices" className="forge-device-toolbar">{['Desktop','Tablet','Mobile'].map(name=><button type="button" key={name} disabled={!ready} aria-label={name+' canvas preview'} aria-pressed={device===name} onClick={()=>previewDevice(name)}>{name}</button>)}<span aria-live="polite">{device==='Desktop'?'1280 px viewport':device==='Tablet'?'768 px viewport':'390 px viewport'}</span></div>
   <div className="forge-grapes-layout">
