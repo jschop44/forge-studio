@@ -82,3 +82,29 @@ test('changing only the name also removes the previous extracted description and
  await page.getByText('Add contact information (recommended before publishing)').click();
  await expect(page.getByPlaceholder('hello@yourbusiness.com')).toHaveValue('');
 });
+
+for(const [businessName,industry] of [
+ ['Fruit stand','Fresh produce retail'],
+ ['Baseball','Baseball and sporting goods']
+] as const){
+ test('a short '+businessName+' name still generates when optional niche recognition needs context',async({page})=>{
+  let generated:Record<string,unknown>|null=null;
+  await page.route('**/api/business/recognize',route=>route.fulfill({status:200,json:{status:'needs-context',industry:'Unclear',services:[],evidence:[]}}));
+  await page.route('**/api/business/visuals',route=>route.fulfill({status:200,json:{assets:[]}}));
+  await page.route('**/api/ai/business',route=>{
+   generated=route.request().postDataJSON();
+   return route.fulfill({status:200,json:{pages:generateBusinessWebsite(generated!).pages}});
+  });
+  await page.goto('/business');
+  await page.getByRole('textbox',{name:'Business name',exact:true}).fill(businessName);
+  await page.getByRole('textbox',{name:/What does your business do/}).fill(businessName);
+  await page.getByRole('button',{name:/generate my website/i}).click();
+  await expect(page.getByRole('navigation',{name:'Website pages'})).toBeVisible();
+  expect(generated).not.toBeNull();
+  expect(generated!.businessName).toBe(businessName);
+  expect(generated!.industry).toBe(industry);
+  const home=page.frameLocator('iframe[title="Website preview: Home"]');
+  await expect(home.locator('main h1')).toContainText(businessName);
+  await expect(home.locator('main img').first()).toHaveAttribute('src',/^https:\/\//);
+ });
+}
