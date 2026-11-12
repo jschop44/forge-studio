@@ -26,14 +26,14 @@ export const qualityGraph=new StateGraph(State)
     if(Date.now()-started>30000)throw Error('Inspection time budget exceeded');
     // Render inert markup: no scripts, network, service workers or credentials.
     // External photo reachability is deliberately not asserted in this isolated worker.
-    const context=await browser.newContext({javaScriptEnabled:false,serviceWorkers:'block'});
+    const context=await browser.newContext({javaScriptEnabled:true,serviceWorkers:'block'});
     await context.route('**/*',route=>route.abort());
     try{
      const tab=await context.newPage();
      const observed={brokenImages:[] as string[],brokenLinks:[] as string[],overflowPx:0};
      for(const width of [1280,390]){
       await tab.setViewportSize({width,height:900});
-      await tab.setContent(page.html,{waitUntil:'domcontentloaded',timeout:4000});
+      await tab.setContent('<!doctype html><meta http-equiv="Content-Security-Policy" content="script-src &#39;none&#39;; object-src &#39;none&#39;; frame-src &#39;none&#39;; connect-src &#39;none&#39;">'+page.html,{waitUntil:'domcontentloaded',timeout:4000});
       const evidence=await tab.evaluate(collectBrowserQualityEvidence);
       await tab.evaluate(source=>(0,eval)(source),axe.source);
       const violations=await bounded(tab.evaluate(async()=>{const result=await (window as unknown as {axe:{run:(root:Document,options:unknown)=>Promise<{violations:{id:string;impact:string|null}[]}>}}).axe.run(document,{runOnly:{type:'tag',values:['wcag2a','wcag2aa']}});return result.violations.filter(v=>v.impact==='critical'||v.impact==='serious').map(v=>v.id)}),5000);

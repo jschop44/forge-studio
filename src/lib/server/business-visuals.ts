@@ -15,7 +15,7 @@ export async function discoverBusinessVisuals(industry:string,fetcher:typeof fet
  try{return structuredClone(await operation)}finally{pending.delete(key)}
  async function research():Promise<VisualAsset[]>{
  const remember=(assets:VisualAsset[],ttl:number)=>{if(cache.size>=100)cache.delete(cache.keys().next().value!);cache.set(key,{until:Date.now()+ttl,assets});return assets};
- const photography=await discoverPexelsVisuals(industry,fetcher);
+ const photography=process.env.PEXELS_API_KEY?await discoverPexelsVisuals(industry,fetcher):[];
  if(photography.length>=4)return remember(photography,3600000);
  const url=new URL('https://commons.wikimedia.org/w/api.php');url.search=new URLSearchParams({action:'query',generator:'search',gsrnamespace:'6',gsrsearch:query+' filetype:bitmap -filetype:svg',gsrlimit:'10',prop:'imageinfo',iiprop:'url|size|extmetadata|mime',iiurlwidth:'3840',format:'json'}).toString();
  try{
