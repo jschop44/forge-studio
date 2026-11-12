@@ -34,7 +34,7 @@ for(const [businessName,industry,services] of [
   await page.getByRole('combobox',{name:/^Design approach/}).selectOption(mode);
   await page.getByPlaceholder('e.g. disney.com').fill('disney.example');
   await page.getByRole('button',{name:mode==='inspired'?'Extract website appearance':'Extract website details for redesign'}).click();
-  await expect(page.getByText(/Website extracted: disney.example/)).toBeVisible();
+  await expect(page.locator('p.forge-auto-note').filter({hasText:/^Website extracted: disney\.example/})).toBeVisible();
   await expect(page.getByRole('textbox',{name:'Business name',exact:true})).toHaveValue('Disney Home');
   await page.getByRole('textbox',{name:'Business name',exact:true}).fill(businessName);
   await page.getByRole('textbox',{name:/What does your business do/}).fill(businessName);
