@@ -1,3 +1,4 @@
+import {discoverBusinessVisuals} from './business-visuals';
 import type {VisualAsset} from '../visual-assets';
 import {summarizeAiError} from './ai-error';
 import {z} from 'zod';
@@ -101,7 +102,8 @@ export async function generateWithLocalAi(input:{businessName:string;industry:st
   services:input.services.map(service=>service.trim())
  };
  const validated=DraftSchema.parse(verifiedDraft);
- return {draft:validated,provider,pages:generateBusinessWebsite({...validated,...compositionAppearance(design),...(input.designLayout?{layout:input.designLayout}:{}),visualAssets:input.visualAssets,contactEmail:input.contactEmail,experienceStyle:input.experienceStyle||'standard'}).pages};
+ const selectedVisuals=visualAssets?.length?visualAssets:await discoverBusinessVisuals(input.industry);
+ return {draft:validated,provider,pages:generateBusinessWebsite({...validated,...compositionAppearance(design),...(input.designLayout?{layout:input.designLayout}:{}),visualAssets:selectedVisuals,contactEmail:input.contactEmail,experienceStyle:input.experienceStyle||'standard'}).pages};
  } finally {activeGenerations--}
 }
 

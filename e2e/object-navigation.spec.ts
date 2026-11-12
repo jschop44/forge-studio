@@ -237,3 +237,13 @@ test('baseball collection pages retain relevant product photography alongside in
  await expect(images.first()).toHaveAttribute('src',/images\.unsplash\.com\/photo-/);
  await expect(images.first()).toHaveAttribute('alt',/Baseball/);
 });
+
+test('baseball offering destinations remain available when graphics cannot initialize',async({page})=>{
+ await page.evaluate(()=>Object.defineProperty(HTMLCanvasElement.prototype,'getContext',{value:()=>null}));
+ const pages=generateBusinessWebsite({...coffee,businessName:'Baseball Supply',industry:'Baseball store',services:['Baseball bats','Baseballs','Gloves'],experienceStyle:'immersive'}).pages;
+ await page.setContent(pages[0].html,{waitUntil:'domcontentloaded'});
+ const portals=page.getByRole('navigation',{name:'Interactive object parts'});
+ await expect(portals.getByRole('link',{name:/Baseball bats/})).toBeVisible();
+ await expect(portals.getByRole('link',{name:/Baseball bats/})).toHaveAttribute('href','services.html#offering-0');
+ await expect(portals.getByRole('link',{name:/Gloves/})).toHaveAttribute('href','services.html#offering-2');
+});

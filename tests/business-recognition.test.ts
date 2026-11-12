@@ -54,3 +54,13 @@ test('a matching panorama supplies a projected photographic hero when regular ph
 });
 
 test('unreviewed specialties cannot inherit broad stock imagery',()=>{for(const niche of ['Japanese restaurant','Nail salon','Weightlifting gym','Affordable housing real estate','Electric vehicle dealership'])assert.deepEqual(industryPhotos(niche),[],niche)});
+
+test('broad model classification cannot discard an explicit baseball niche',()=>{
+ const input={businessName:'Northstar Baseball',brief:'A baseball equipment and memorabilia shop offering baseball gloves and bats.'};
+ const identity=parseBusinessRecognition({status:'identified',industry:'Sports Equipment Retail',services:[],evidence:['baseball equipment']},input);
+ assert.equal(identity.industry,'Baseball Sports Equipment Retail');
+ const site=generateBusinessWebsite({...input,description:input.brief,industry:'Sports Equipment Retail',services:['Baseball gloves'],experienceStyle:'standard'});
+ assert.ok(site.pages.every(page=>/<img\b/.test(page.html)));
+ assert.match(site.pages[0].html,/data-forge-business="baseball"/);
+ assert.doesNotMatch(site.pages[0].html,/class="coffee-cup"/);
+});

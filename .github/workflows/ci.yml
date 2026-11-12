@@ -167,6 +167,7 @@ jobs:
           node-version: '22'
       - run: npm ci --prefer-offline --no-audit --no-fund
       - run: npm ci --prefix workers/quality --no-audit --no-fund
+      - run: npm audit --prefix workers/quality --omit=dev --audit-level=moderate
       - run: npm --prefix workers/quality run typecheck
       - run: npx playwright install chromium
       - run: npm --prefix workers/quality test
