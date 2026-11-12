@@ -327,7 +327,7 @@ export default function BusinessGenerator(){
     let identified=false,recognitionAnswered=false;
     try{
      const response=await fetch('/api/business/recognize',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({businessName:generationName,brief:effectiveBrief.slice(0,1800)}),signal:AbortSignal.timeout(35000)});
-     if(response.ok){recognitionAnswered=true;const recognized=BusinessRecognitionSchema.parse(await response.json().then(({provider,...identity})=>identity));if(recognized.status==='identified'){identified=true;recognizedActivity=true;inferred.industry=recognized.industry;if(recognized.services.length&&!/(?:^|\n)\s*(?:services|products|offerings|menu)\s*:/i.test(effectiveBrief))inferred.services=recognized.services}else{inferred.industry='Professional services'}}
+     if(response.ok){recognitionAnswered=true;const recognized=BusinessRecognitionSchema.parse(await response.json().then(({provider,...identity})=>identity));if(recognized.status==='identified'){identified=true;recognizedActivity=true;inferred.industry=recognized.industry;if(recognized.services.length&&!/(?:^|\n)\s*(?:services|products|offerings|menu)\s*:/i.test(effectiveBrief))inferred.services=recognized.services}}
     }catch{}
     if(!identified&&!recognitionAnswered&&inferBusinessIndustry(generationName,'')==='Professional services'){const activity=literalBusinessActivity(effectiveBrief);if(activity){inferred.industry=activity;if(!/(?:^|\n)\s*(?:services|products|offerings|menu)\s*:/i.test(effectiveBrief))inferred.services=['Explore '+activity.slice(0,60).toLowerCase(),'About our business','Contact the team']}}
    }
