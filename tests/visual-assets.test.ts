@@ -1,6 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {relevantVisualAssets} from '../src/lib/visual-assets';
+import {generateBusinessWebsite} from '../src/lib/business-site';
 import {discoverBusinessVisuals} from '../src/lib/server/business-visuals';
 import {businessArtDirection} from '../src/lib/business-art-direction';
 import {businessEnvironment} from '../src/lib/business-environments';
@@ -27,3 +28,13 @@ test('free discovery discards unrelated file results and retains attribution evi
 });
 
 test('specialized niches never borrow broad stock imagery',()=>{for(const niche of ['Construction','Jewelry','Spa','Motorcycle','Auto repair','Software','Sushi restaurant','Vegan restaurant'])assert.deepEqual(industryPhotos(niche),[],niche);assert.equal(servicePhoto('Software development','Software'),null);assert.equal(servicePhoto('Gym training','Fitness'),null);assert.ok(!photoLibrary.entertainment.includes('photo-1500534623283-312aade485b7' as never))});
+
+test('generated sites use CC0 photos but never expose attribution-required discovered images',()=>{
+ const publicDomain={...asset('Dental practice treatment room'),license:'CC0'};
+ const credited={...asset('Dental practice treatment room'),url:'https://upload.wikimedia.org/wikipedia/commons/b/bb/credited.jpg',license:'CC BY 4.0'};
+ const site=generateBusinessWebsite({businessName:'Dental Care',industry:'Dental practice',description:'Friendly dental practice with comprehensive dental services.',services:['Dental treatment'],visualAssets:[credited,publicDomain]});
+ const html=site.pages.map(page=>page.html).join('\n');
+ assert.ok(html.includes(publicDomain.url));
+ assert.ok(!html.includes(credited.url));
+ assert.ok(!html.includes('Example photographer'));
+});
