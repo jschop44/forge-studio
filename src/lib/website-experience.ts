@@ -30,7 +30,8 @@ export function inferBusinessIndustry(name:string,brief:string):string{
  const categories:[RegExp,string][]=[
   [/\b(disney|theme park|entertainment|movies?|cinema|streaming)\b/i,'Entertainment, media and theme parks'],
   [/\b(soccer|association football|football club)\b/i,'Soccer club and equipment'],
-  [/\b(baseball|softball|batting|sports? equipment|sporting goods)\b/i,'Baseball and sporting goods'],
+  [/\b(fruit stand|fruit market|fresh produce|farmers? market|greengrocer|produce shop|produce store|farm stand)\b/i,'Fresh produce retail'],
+   [/\b(baseball|softball|batting|sports? equipment|sporting goods)\b/i,'Baseball and sporting goods'],
   [/\b(coffee|espresso|roast(?:er|ery)?|barista|caf[eé])\b/i,'Coffee shop and cafe'],
   [/\b(bakery|patisserie|baker)\b/i,'Bakery and patisserie'],
   [/\b(dental|dentist)\b/i,'Dental practice'],
