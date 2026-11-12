@@ -4,7 +4,7 @@ import {pathToFileURL} from 'node:url';
 // Missing values must never erase an existing Worker secret.
 export function runtimeSecrets(env){
  const values={};
- for(const name of ['DATABASE_URL','AUTH_SECRET','FORGE_WORKER_SECRET','FORGE_INTEGRATION_SECRET']){
+ for(const name of ['DATABASE_URL','AUTH_SECRET','FORGE_WORKER_SECRET','FORGE_INTEGRATION_SECRET','FORGE_QUALITY_WORKER_URL','FORGE_QUALITY_WORKER_SECRET','PEXELS_API_KEY']){
   const value=env[name];
   if(typeof value==='string'&&value.trim()){if(name==='FORGE_INTEGRATION_SECRET'&&value.trim().length<32)throw Error('FORGE_INTEGRATION_SECRET must contain at least 32 characters');values[name]=value;}
  }

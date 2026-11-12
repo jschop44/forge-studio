@@ -1,4 +1,5 @@
 import {NextRequest,NextResponse} from 'next/server';
+import {captureWithBrowserWorker} from '../../../lib/server/browser-capture-worker';
 import {publicResearchPolicy} from '../../../lib/server/public-site-policy';
 import {sameOrigin} from '../../../lib/server/request-security';
 import {extractWebsiteDesignDna,mergeSourcePageImages,type SourceImage} from '../../../lib/website-design-dna';
@@ -16,6 +17,7 @@ export async function POST(req:NextRequest){
  const beforeRequest=publicResearchPolicy();
  const homepage=await fetchPublicText(publicSiteUrl(value.trim()),{beforeRequest,timeout:8000,maxBytes:450000,maxDownloadBytes:8000000,selectiveHtml:true,accept:'text/html',redirects:3});
  const url=homepage.url,html=homepage.body;
+ const browserCapture=captureWithBrowserWorker(url.href);
  const homepageParagraphs=homepageSourceParagraphs(html);
  const warnings:string[]=[];
  if(homepage.extraction?.truncated)warnings.push('Homepage extraction reached its bounded size limit. Some content or assets may be missing; provide authorized source files for a complete reconstruction.');
@@ -63,6 +65,7 @@ export async function POST(req:NextRequest){
  }
  const designDna=mergeSourcePageImages(homepageDesignDna,pageSummaries);
  const headings=[...html.matchAll(/<h([1-3])\b[^>]*>([\s\S]*?)<\/h\1>/gi)].slice(0,25).map(m=>clean(m[2])).filter(Boolean).filter((heading,index,all)=>all.findIndex(other=>other.toLowerCase()===heading.toLowerCase())===index).slice(0,12);
- return NextResponse.json({url:url.href,title,description,headings,navigation,pageSummaries,homepageParagraphs,styleReference:{background,accent,fontFamily},styleFound:Boolean(background||accent||fontFamily),stylesheetsRead:externalCss.length,visualSignals,designDna,warnings,extraction:{partial:homepage.extraction?.truncated||warnings.length>0,downloadedBytes:homepage.extraction?.downloadedBytes,scriptsOmitted:homepage.extraction?.scriptsOmitted,warnings},notice:'Public homepage metadata, embedded CSS and a limited number of same-host stylesheets. Scripts were omitted. Image references and bounded page text were retained for authorized reuse.'},{headers:{'Cache-Control':'no-store'}});
+ const browserEvidence=await browserCapture;
+ return NextResponse.json({browserEvidence,url:url.href,title,description,headings,navigation,pageSummaries,homepageParagraphs,styleReference:{background,accent,fontFamily},styleFound:Boolean(background||accent||fontFamily),stylesheetsRead:externalCss.length,visualSignals,designDna,warnings,extraction:{partial:homepage.extraction?.truncated||warnings.length>0,downloadedBytes:homepage.extraction?.downloadedBytes,scriptsOmitted:homepage.extraction?.scriptsOmitted,warnings},notice:'Public homepage metadata, embedded CSS and a limited number of same-host stylesheets. Scripts were omitted. Image references and bounded page text were retained for authorized reuse.'},{headers:{'Cache-Control':'no-store'}});
  }catch(error){return NextResponse.json({error:error instanceof Error?error.message:'Unable to inspect website'},{status:422})}
 }
