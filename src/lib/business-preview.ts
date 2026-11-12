@@ -23,7 +23,26 @@ function previewRuntime(slugs:string[],current:string,anchor:string,resolve:type
   if(destination.slug===current&&destination.hash){document.getElementById(destination.hash.slice(1))?.scrollIntoView();return}
   parent.postMessage({type:'forge-preview-navigate',...destination},'*');
  },true);
- addEventListener('DOMContentLoaded',()=>{if(anchor)requestAnimationFrame(()=>document.getElementById(anchor.slice(1))?.scrollIntoView())},{once:true});
+ // For ordinary mobile pages, size the parent preview to fit its full content.
+ // The srcdoc iframe has an opaque origin, so resizing must use postMessage.
+ // Fixed immersive WebGL experiences keep a bounded viewport instead.
+ let lastHeight=0;
+ const reportHeight=()=>{
+  if(document.body?.getAttribute('data-forge-experience')!=='standard')return;
+  const height=Math.ceil(Math.max(document.body.scrollHeight,document.documentElement.scrollHeight));
+  if(!Number.isFinite(height)||height<300||Math.abs(height-lastHeight)<8)return;
+  lastHeight=height;
+  parent.postMessage({type:'forge-preview-height',slug:current,height},'*');
+ };
+ addEventListener('DOMContentLoaded',()=>{
+  if(anchor)requestAnimationFrame(()=>document.getElementById(anchor.slice(1))?.scrollIntoView());
+  if(typeof ResizeObserver==='function'){
+   const observer=new ResizeObserver(()=>requestAnimationFrame(reportHeight));
+   observer.observe(document.body);
+  }
+  requestAnimationFrame(reportHeight);
+ },{once:true});
+ addEventListener('load',reportHeight,{once:true});
 }
 export function businessPreviewHtml(page:GeneratedPage|undefined,pages:GeneratedPage[],anchor=''):string{
  if(!page)return '';
