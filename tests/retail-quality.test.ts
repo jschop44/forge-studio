@@ -21,7 +21,7 @@ test('toy retail has four distinct photos and useful product headings without in
  assert.equal(industryPhotos('Toy medical equipment').length,0);
  const site=generateBusinessWebsite({businessName:'Toys',industry:'Toy retail',description:'Kids toys and merchandise for browsing.',services:['Explore services','Discuss your project','Contact the team'],accent:'#e3c89e'});
  const used=site.pages.map(p=>p.html.match(/<figure class="editorial-photo"><img src="([^"]+)"/)?.[1]);assert.equal(new Set(used.filter((url):url is string=>Boolean(url)).map(photoIdentity)).size,4);
- const products=site.pages.find(p=>p.slug==='services')!;assert.ok(products.html.includes('<h2>Toys</h2>'));assert.ok(!products.html.includes('Explore Explore'));assert.ok(!products.html.includes('<h2>Explore services</h2>'));assert.ok(products.html.includes('Susan Holt Simpson'));
+ const products=site.pages.find(p=>p.slug==='services')!;assert.ok(products.html.includes('<h2>Toys</h2>'));assert.ok(!products.html.includes('Explore Explore'));assert.ok(!products.html.includes('<h2>Explore services</h2>'));assert.ok(!products.html.includes('Susan Holt Simpson'));assert.ok(!products.html.includes('Photo:'));
 });
 test('visual search removes business-role words while retaining actual niche specificity',()=>{
  assert.deepEqual(visualSubjectTerms('Toy retail'),['toy']);assert.deepEqual(visualSubjectTerms('Pediatric healthcare'),['pediatric','healthcare']);
