@@ -23,7 +23,7 @@ test('multiple pages retain independent edits, export a complete ZIP, and return
  await page.getByRole('navigation',{name:'Website pages'}).getByRole('button',{name:'Contact',exact:true}).click();await expect(page.frameLocator('iframe[title="Website preview: Contact"]').locator('h1')).toHaveText('Edited contact');
 });
 test('selected image, link, typography, layout and placement controls work without HTML editing',async({page})=>{
- await open(page);await page.getByRole('button',{name:'Open drag-and-drop designer',exact:true}).click();
+ await open(page);await expect(page.getByRole('region',{name:'Drag and drop page designer'})).toBeVisible();
  const frame=page.frameLocator('.gjs-cv-canvas iframe'),inspector=page.getByRole('region',{name:'Selected element controls',exact:true});
  await frame.locator('img').click();await inspector.getByRole('textbox',{name:'Selected image URL',exact:true}).fill('https://images.example.com/new.jpg');await inspector.getByRole('textbox',{name:'Selected image description',exact:true}).fill('New product photograph');await inspector.getByRole('button',{name:'Apply element content',exact:true}).click();
  await expect(frame.locator('img')).toHaveAttribute('src','https://images.example.com/new.jpg');await expect(frame.locator('img')).toHaveAttribute('alt','New product photograph');await expect(page.locator('.gjs-toolbar:visible')).toHaveCount(0);
