@@ -11,8 +11,9 @@ import type {GeneratedPage} from '../../lib/business-site';
 import './visual-editor.css';
 const GrapesVisualCanvas=dynamic(()=>import('./grapes-canvas'),{ssr:false});
 export default function VisualEditor(){
- const rawDirty=useRef(false);
- const refreshRaw=()=>{if(rawDirty.current){rawDirty.current=false;setCanvasVersion(v=>v+1)}};
+ const rawDirty=useRef(false),canvasEpoch=useRef(0);
+ const rebuildCanvas=()=>{canvasEpoch.current++;setCanvasVersion(canvasEpoch.current)};
+ const refreshRaw=()=>{if(rawDirty.current){rawDirty.current=false;rebuildCanvas()}};
  const [page,setPage]=useState<GeneratedPage|null>(null),[site,setSite]=useState<GeneratedPage[]>([]);
  const [body,setBody]=useState(''),[css,setCss]=useState('');
  const [attributes,setAttributes]=useState<Record<string,string>>({});
@@ -22,7 +23,7 @@ export default function VisualEditor(){
   const document=prepareVisualEditorDocument(candidate);
   if(!document.bodyHtml){setMessage(document.warnings.join(' ')||'Unable to open this page safely.');return false}
   if(!keepCanvas)setCanvasOpen(true);
-  setCanvasVersion(v=>v+1);setPage(candidate);setBody(document.bodyHtml);setCss(document.css);setAttributes(document.bodyAttributes);
+  rebuildCanvas();setPage(candidate);setBody(document.bodyHtml);setCss(document.css);setAttributes(document.bodyAttributes);
   const text=(tag:string)=>{const match=document.bodyHtml.match(new RegExp('<'+tag+'\\b[^>]*>([^<]*)</'+tag+'>','i'));if(!match)return '';const parsed=new DOMParser().parseFromString(match[1],'text/html');return parsed.body.textContent||''};
   setVisualHeadline(text('h1'));setVisualParagraph(text('p'));
   return true;
@@ -66,7 +67,7 @@ export default function VisualEditor(){
   let updated=body;
   if(/<h1\b[^>]*>[^<]*<\/h1>/i.test(updated))updated=updated.replace(/(<h1\b[^>]*>)[^<]*(<\/h1>)/i,(_,open:string,close:string)=>open+escapeHtml(visualHeadline)+close);
   if(/<p\b[^>]*>[^<]*<\/p>/i.test(updated))updated=updated.replace(/(<p\b[^>]*>)[^<]*(<\/p>)/i,(_,open:string,close:string)=>open+escapeHtml(visualParagraph)+close);
-  setBody(updated);setCanvasVersion(v=>v+1);setMessage('Visual text changes applied. Review the preview before exporting.');
+  setBody(updated);rebuildCanvas();setMessage('Visual text changes applied. Review the preview before exporting.');
  }
  function returnToGenerator(){
   if(!page)return;
@@ -97,7 +98,7 @@ export default function VisualEditor(){
   {page&&<>
    <label className="forge-page-switcher">Website page<select aria-label="Website page" value={page.slug} onChange={event=>switchPage(event.target.value)}>{site.map(item=><option key={item.slug} value={item.slug}>{item.title}</option>)}</select></label>
    <button type="button" onClick={()=>setCanvasOpen(value=>!value)}>{canvasOpen?'Hide visual canvas':'Show visual canvas'}</button>
-   {canvasOpen&&<GrapesVisualCanvas key={canvasVersion} html={body} css={css} pages={site} bodyAttributes={attributes} onChange={(nextBody,nextCss)=>{const check=serializeEditorDraft(page,nextBody,nextCss,attributes);if(check.html){setBody(nextBody);setCss(nextCss)}else setMessage('Designer update blocked: '+check.warnings.join(' '))}}/>}
+   {canvasOpen&&<GrapesVisualCanvas key={canvasVersion} html={body} css={css} pages={site} bodyAttributes={attributes} onChange={(nextBody,nextCss)=>{if(rawDirty.current||canvasEpoch.current!==canvasVersion)return;const check=serializeEditorDraft(page,nextBody,nextCss,attributes);if(check.html){setBody(nextBody);setCss(nextCss)}else setMessage('Designer update blocked: '+check.warnings.join(' '))}}/>}
    <section aria-label="Visual text editing" className="forge-quick-text"><h2>Quick visual text editing</h2><p>Edit the main headline and first plain-text paragraph, or select any element in the designer.</p>
     <label>Main headline <input aria-label="Visual main headline" value={visualHeadline} onChange={event=>setVisualHeadline(event.target.value)}/></label>
     <label>First paragraph <textarea aria-label="Visual first paragraph" value={visualParagraph} onChange={event=>setVisualParagraph(event.target.value)} rows={3}/></label>

@@ -1,3 +1,4 @@
+import {retainExplicitBusinessNiche} from './business-recognition';
 import {VisualAssetSchema,relevantVisualAssets} from './visual-assets';
 import {findBusinessPanorama} from './environment-catalog';
 import {panoramaPhotoMarkup} from '../../workers/immersive-world.mjs';
@@ -20,6 +21,7 @@ export function isExcludedBusiness(input:{businessName:string;industry:string;de
 export type GeneratedPage={slug:string;title:string;html:string};
 export function generateBusinessWebsite(input:unknown):{name:string;pages:GeneratedPage[]}{
  const b=BriefSchema.parse(input),s=escapeHtml;
+ b.industry=retainExplicitBusinessNiche(b.industry,{businessName:b.businessName,brief:b.description});
  const objectPlan=(b.experienceStyle==='object-navigation'||b.experienceStyle==='immersive')?objectNavigationPlan({...b,images:relevantVisualAssets(b.industry,b.visualAssets||[]).map(asset=>asset.url)}):null;
  if(b.experienceStyle==='object-navigation'&&!objectPlan)throw Error('Object navigation needs a supported business niche and matching offerings. Choose standard or cinematic for this brief.');
  const objectMarkup=objectPlan?objectNavigationMarkup(objectPlan):'';

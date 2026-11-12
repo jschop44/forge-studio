@@ -13,10 +13,29 @@ export function parseBusinessRecognition(value:unknown,input:{businessName:strin
  const stem=(term:string)=>term.replace(/s$/,'').replace(/(?:ation|ing)$/,'').replace(/e$/,'');
  const evidenceWords=new Set(nicheTerms(input.businessName+' '+input.brief).map(stem));
  result.services=result.services.filter(service=>{const terms=nicheTerms(service).filter(term=>!['menu','details','contact'].includes(term));return terms.length>0&&terms.every(term=>evidenceWords.has(stem(term)))});
+ if(result.status==='identified')result.industry=retainExplicitBusinessNiche(result.industry,input);
  return result.status==='needs-context'?{status:'needs-context',industry:'Unclear',services:[],evidence:[]}:result;
 }
 /** Preserve unclassified descriptive input when inference is temporarily unavailable. Never replace it with an office category. */
 export function literalBusinessActivity(brief:string):string|null{
  const activity=brief.replace(/^(?:we|i|our business|the business)\s+(?:are|is|provide|provides|offer|offers|specialize in|specialises in)\s+/i,'').split(/[\n.!?]/)[0].replace(/\s+/g,' ').trim();
  return activity.length>=15?activity.slice(0,80):null;
+}
+
+/** Keep explicit specialties when a model returns only their broad parent activity. */
+export function retainExplicitBusinessNiche(industry:string,input:{businessName:string;brief:string}):string{
+ const source=input.businessName+' '+input.brief;
+ const rules:[RegExp,RegExp,string][]=[
+  [/\bbaseball\b/i,/sport|retail|equipment|memorabilia/i,'Baseball'],
+  [/\bsoftball\b/i,/sport|retail|equipment/i,'Softball'],
+  [/\bsoccer\b/i,/sport|retail|equipment|club|training/i,'Soccer'],
+  [/\bvegan\b/i,/restaurant|food|dining|catering/i,'Vegan'],
+  [/\bsushi\b/i,/restaurant|food|dining|catering/i,'Sushi'],
+  [/\bpediatric\b/i,/health|medical|clinic|hospital/i,'Pediatric'],
+  [/\bdental\b/i,/health|medical|clinic/i,'Dental'],
+  [/\bplumbing\b/i,/trade|home|contractor|repair/i,'Plumbing'],
+  [/\broofing\b/i,/trade|home|contractor|construction/i,'Roofing']
+ ];
+ for(const [stated,parent,niche] of rules){if(stated.test(source)&&parent.test(industry)&&!stated.test(industry))return (niche+' '+industry).slice(0,80)}
+ return industry;
 }
