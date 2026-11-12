@@ -1,13 +1,11 @@
 import type {GeneratedPage} from './business-site';
 import {escapeHtml} from './export';
 import {industryPhotos,photoIdentity} from './industry-photos';
-import {relevantVisualAssets,type VisualAsset} from './visual-assets';
+import {licensedBusinessVisualAssets,type VisualAsset} from './visual-assets';
 
 /** Attribution-free photos only. An image title matching the industry is not permission to reuse it. */
-function verifiedPhotos(industry:string,assets:VisualAsset[]):string[]{
- return relevantVisualAssets(industry,assets)
-  .filter(asset=>/^(?:CC0(?:\s|$)|public domain(?:\s|$)|Pexels License$|Unsplash License$)/i.test(asset.license))
-  .map(asset=>asset.url);
+function verifiedPhotos(industry:string,assets:VisualAsset[],offerings:string[]):string[]{
+ return licensedBusinessVisualAssets(industry,offerings,assets).map(asset=>asset.url);
 }
 
 /** Logos, icons and tracking pixels are not substitutes for real page photography. */
@@ -41,8 +39,8 @@ function usedPhotoIds(pages:GeneratedPage[]):Set<string>{
  * Never replace real source photos, invent a license, or reuse a photo elsewhere
  * in the site. The repair deliberately leaves unfamiliar niches text-led.
  */
-export function ensurePagePhotography(pages:GeneratedPage[],industry:string,assets:VisualAsset[]=[]):GeneratedPage[]{
- const candidates=[...verifiedPhotos(industry,assets),...industryPhotos(industry)];
+export function ensurePagePhotography(pages:GeneratedPage[],industry:string,assets:VisualAsset[]=[],offerings:string[]=[]):GeneratedPage[]{
+ const candidates=[...verifiedPhotos(industry,assets,offerings),...industryPhotos(industry)];
  const seen=new Set<string>(),pool=candidates.filter(url=>{const id=photoIdentity(url);if(seen.has(id))return false;seen.add(id);return true});
  if(!pool.length)return pages;
  const used=usedPhotoIds(pages);

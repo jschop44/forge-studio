@@ -7,9 +7,9 @@ import {businessGenerationPayload} from '../../lib/business-generation-payload';
 import {DESIGN_PATTERNS,planAdaptiveDesign} from '../../lib/design-engine';
 import {BusinessRecognitionSchema,literalBusinessActivity} from '../../lib/business-recognition';
 import {businessPreviewHtml} from '../../lib/business-preview';
-import {industryPhotos} from '../../lib/industry-photos';
+import {industryPhotos,offeringPhotoCandidates} from '../../lib/industry-photos';
 import {ensurePagePhotography} from '../../lib/ensure-page-photography';
-import {VisualAssetSchema,type VisualAsset} from '../../lib/visual-assets';
+import {VisualAssetSchema,specificVisualOfferings,type VisualAsset} from '../../lib/visual-assets';
 import {enhanceImmersiveWorld} from '../../lib/immersive-world';
 import {createExtractedPages,applyExtractedExperience,extractedPageSources} from '../../lib/extracted-pages';
 import {applyReferenceAppearance,websiteAddressKey} from '../../lib/reference-appearance';
@@ -299,10 +299,11 @@ export default function BusinessGenerator(){
    const input={...inferred,experienceStyle:selectedExperience,visualAssets:[] as VisualAsset[],...(intelligence&&intelligence.confidence!=='low'?{...(!explicitIndustry&&!recognizedActivity?{industry:intelligence.industry}:{}),...(!explicitOfferings&&!recognizedActivity?{services:intelligence.services}:{})}:{}),designMode,...(designMode!=='new'&&evidence?.visualSignals?{visualSignals:evidence.visualSignals}:{}),...(contactEmail.trim()?{contactEmail:contactEmail.trim()}:{}),...(designMode==='inspired'?{styleReference:appearance}:{})};
    input.services=normalizeBusinessOfferings(input.industry,input.services);
    let visualNotice='';
-   if(!industryPhotos(input.industry).length){
-    setStatus('Finding images that match '+input.industry+'…');
-    try{const response=await fetch('/api/business/visuals',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({industry:input.industry}),signal:AbortSignal.timeout(5500)});if(response.ok){const research=await response.json();input.visualAssets=(research.assets||[]).flatMap((asset:unknown)=>{const parsed=VisualAssetSchema.safeParse(asset);return parsed.success?[parsed.data]:[]}).slice(0,10)}}catch{}
-    if(!input.visualAssets.length)visualNotice=' No relevant stock images could be verified for this niche; add business imagery rather than an unrelated substitute.';
+   const missingOfferings=specificVisualOfferings(input.services.filter(service=>!offeringPhotoCandidates(service,input.industry).length));
+   if(industryPhotos(input.industry).length<4||missingOfferings.length){
+    setStatus('Finding photos for '+input.industry+' and its offerings…');
+    try{const response=await fetch('/api/business/visuals',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({industry:input.industry,offerings:missingOfferings}),signal:AbortSignal.timeout(5500)});if(response.ok){const research=await response.json();input.visualAssets=(research.assets||[]).flatMap((asset:unknown)=>{const parsed=VisualAssetSchema.safeParse(asset);return parsed.success?[parsed.data]:[]}).slice(0,24)}}catch{}
+    if(!input.visualAssets.length&&!industryPhotos(input.industry).length)visualNotice=' No attribution-free photographs could be verified for this niche; add business imagery rather than an unrelated substitute.';
    }
    if(generationEpoch!==inspectionEpoch.current){setStatus('Website address changed during generation. Generate again using the current website.');return}
    const generationPayload={...businessGenerationPayload(input),visualDesignMode,designPatternId:visualDesignMode==='library'?visualPatternId:undefined,immersive3d:autoImmersive};
@@ -325,7 +326,7 @@ export default function BusinessGenerator(){
    const themed=automaticallyApplyBrand(contentApplied.pages,appearance);
    const sourceApplied=sourceDna?applySourceDesign(themed,sourceDna,designMode):{pages:themed,warnings:[]};
    const captured=applyCapturedAppearance(sourceApplied.pages,evidence?.browserEvidence||workerEvidence,evidence?.url||websiteAddressKey(siteUrl)||'',designMode,extractedPageSources(evidence));
-   const finalPages=automaticallyOptimizeMetadata(ensurePagePhotography(captured.pages,input.industry,input.visualAssets));
+   const finalPages=automaticallyOptimizeMetadata(ensurePagePhotography(captured.pages,input.industry,input.visualAssets,input.services));
    const validation=auditGeneratedDraft(finalPages);
    if(!validation.readyForReview)throw Error('The generated website did not pass its content and navigation checks. Please retry or review the business details.');
    revealGeneratedPreview.current=true;setPages(finalPages);setActive('index');setStatus('Website draft generated for '+input.industry+'. Review its content and design before publishing.'+visualNotice+(contentApplied.warnings.length?' '+contentApplied.warnings.join(' '):'')+(sourceApplied.warnings.length?' '+sourceApplied.warnings.join(' '):'')+(captured.warnings.length?' '+captured.warnings.join(' '):''));
