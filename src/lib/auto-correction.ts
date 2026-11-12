@@ -3,7 +3,7 @@
  * Browser/Playwright visual evidence can be supplied by a separate worker.
  */
 export type PageEvidence={slug:string;html:string;brokenImages?:string[];brokenLinks?:string[];overflowPx?:number};
-export type QualityFinding={slug:string;kind:'missing-image'|'broken-image'|'broken-link'|'horizontal-overflow'|'missing-title';detail:string};
+export type QualityFinding={slug:string;kind:'missing-image'|'broken-image'|'broken-link'|'horizontal-overflow'|'missing-title'|'accessibility';detail:string};
 export type CorrectionResult={pages:PageEvidence[];findings:QualityFinding[];attempts:number;passed:boolean};
 const localHref=(href:string)=>!href.startsWith('#')&&!/^(?:https?:|mailto:|tel:|data:|javascript:)/i.test(href);
 const destination=(href:string)=>href.split(/[?#]/)[0].replace(/^\.\//,'').replace(/^\//,'')||'index.html';

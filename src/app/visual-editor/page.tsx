@@ -93,7 +93,7 @@ export default function VisualEditor(){
   <Link href="/business">← Website generator</Link><h1>Forge Studio Designer</h1>
   <p>Edit pages visually with GrapesJS. Select any element to customize it, switch between desktop and mobile, and export your complete website. Interactive 3D scripts remain protected during editing.</p>
   <label>Import HTML page <input type="file" accept=".html,.htm,text/html" onChange={event=>{const file=event.target.files?.[0];if(file)void load(file);event.target.value=''}}/></label>
-  {message&&<p role="status">{message}</p>}
+  {message&&<p role="status" aria-label="Editor status">{message}</p>}
   {page&&<>
    <label className="forge-page-switcher">Website page<select aria-label="Website page" value={page.slug} onChange={event=>switchPage(event.target.value)}>{site.map(item=><option key={item.slug} value={item.slug}>{item.title}</option>)}</select></label>
    <button type="button" onClick={()=>setCanvasOpen(value=>!value)}>{canvasOpen?'Hide visual canvas':'Show visual canvas'}</button>
