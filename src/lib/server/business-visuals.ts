@@ -1,3 +1,4 @@
+import {discoverOpenverseVisuals} from './openverse-visuals';
 import {licensedBusinessVisualAssets,relevantVisualAssets,specificVisualOfferings,visualSubjectTerms,type VisualAsset} from '../visual-assets';
 type ResearchState={cache:Map<string,{until:number;assets:VisualAsset[]}>;pending:Map<string,Promise<VisualAsset[]>>};
 const providers=new WeakMap<typeof fetch,ResearchState>();
@@ -21,7 +22,7 @@ export async function discoverBusinessVisuals(industry:string,fetcher:typeof fet
    const response=await fetcher(url,{headers:{'User-Agent':'ForgeStudio/1.0 (business visual research; https://forge-studio-preview.stands-old-3h.workers.dev)','Accept':'application/json'},signal:AbortSignal.timeout(4500),redirect:'error'});
    if(!response.ok){await response.body?.cancel();return []}const raw=await readBoundedText(response);
    const data=JSON.parse(raw) as {query?:{pages?:Record<string,{title?:string;imageinfo?:{mime?:string;width?:number;height?:number;thumburl?:string;url?:string;descriptionurl?:string;extmetadata?:Record<string,{value?:string}>}[]}>}};
-   const candidates=Object.values(data.query?.pages||{}).flatMap(page=>{const info=page.imageinfo?.[0],meta=info?.extmetadata;if(!info||!/^image\/(jpeg|png|webp)$/.test(info.mime||''))return [];const width=Number(info.width)||0,height=Number(info.height)||0;if(Math.max(width,height)<3840||Math.min(width,height)<2160)return [];return [{url:info.thumburl||info.url,title:(clean(page.title?.replace(/^File:/,''))+' '+clean(meta?.ImageDescription?.value)).trim().slice(0,350),credit:clean(meta?.Artist?.value).slice(0,250),source:info.descriptionurl,license:clean(meta?.LicenseShortName?.value)}]});
+   const candidates=Object.values(data.query?.pages||{}).flatMap(page=>{const info=page.imageinfo?.[0],meta=info?.extmetadata;if(!info||!/^image\/(jpeg|png|webp)$/.test(info.mime||''))return [];const width=Number(info.width)||0,height=Number(info.height)||0;if(Math.max(width,height)<1920||Math.min(width,height)<1080)return [];return [{url:info.thumburl||info.url,title:(clean(page.title?.replace(/^File:/,''))+' '+clean(meta?.ImageDescription?.value)).trim().slice(0,350),credit:clean(meta?.Artist?.value).slice(0,250),source:info.descriptionurl,license:clean(meta?.LicenseShortName?.value)}]});
    return relevantVisualAssets(industry,candidates);
   }catch{return []}
  };
@@ -59,6 +60,12 @@ export async function discoverPexelsVisuals(industry:string,fetcher:typeof fetch
  */
 export async function discoverBusinessVisualsForOfferings(industry:string,offerings:string[],fetcher:typeof fetch=fetch):Promise<VisualAsset[]>{
  const requested=specificVisualOfferings(offerings);
- const results=await Promise.all([industry,...requested].map(subject=>discoverBusinessVisuals(subject,fetcher)));
- return licensedBusinessVisualAssets(industry,requested,results.flat()).slice(0,24);
+ // Search Commons and Openverse concurrently: browser lookup has a 5.5-second limit.
+ // Openverse provides anonymous CC0/public-domain subjects missing in the old fixed library.
+ const subjects=[industry,...requested];
+ const [commons,openverse]=await Promise.all([
+  Promise.all(subjects.map(subject=>discoverBusinessVisuals(subject,fetcher))),
+  Promise.all(subjects.map(subject=>discoverOpenverseVisuals(subject,fetcher)))
+ ]);
+ return licensedBusinessVisualAssets(industry,requested,[...commons.flat(),...openverse.flat()]).slice(0,24);
 }

@@ -135,6 +135,25 @@ jobs:
           console.log('Verified AI-generated site:',payload.draft.businessName,'with',pages.length,'pages and',photos.size,'distinct photographs');
           NODE
           echo "- Live customer AI website generation: passed four-page structure and niche-photo checks" >> "$GITHUB_STEP_SUMMARY"
+          echo "Checking reported fruit-stand image failure against real immersive generation"
+          fruit_status=$(curl --silent --show-error --max-time 120 --output /tmp/forge-fruit-generated.json --write-out '%{http_code}' \
+            --header 'Content-Type: application/json' \
+            --header "Origin: $PREVIEW_URL" \
+            --data '{"businessName":"Fruit stand fresh","industry":"Fresh produce retail","description":"Locally grown fresh fruit and fruit baskets for customers to browse and inquire about availability.","services":["Locally grown fruit","Fruit baskets"],"experienceStyle":"immersive"}' \
+            "$PREVIEW_URL/api/ai/business")
+          test "$fruit_status" = 200 || { head -c 600 /tmp/forge-fruit-generated.json; echo "::error::Fruit stand immersive generation failed"; exit 1; }
+          node <<'NODE'
+          const fs=require('node:fs');
+          const payload=JSON.parse(fs.readFileSync('/tmp/forge-fruit-generated.json','utf8'));
+          const pages=payload.pages||[];
+          const slugs=pages.map(page=>page.slug);
+          const photos=pages.map(page=>page.html.match(/<figure class="editorial-photo"><img src="([^"]+)"/)?.[1]);
+          if(pages.length!==4||!['index','services','about','contact'].every(slug=>slugs.includes(slug))||photos.some(photo=>!photo)||new Set(photos.map(photo=>photo.split('?')[0])).size!==4||pages.some(page=>!page.html.includes('forge-immersive-world'))){
+            console.error('::error::Fruit stand still has blank photos or lacks an immersive world');process.exit(1);
+          }
+          console.log('Verified Fruit stand fresh:',pages.length,'immersive pages and four distinct fruit photos');
+          NODE
+          echo "- Fruit stand immersive generation: passed photo and pages checks" >> "$GITHUB_STEP_SUMMARY"
       - name: Pipeline timing summary
         if: always()
         run: |

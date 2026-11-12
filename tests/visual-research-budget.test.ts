@@ -25,8 +25,8 @@ test('concurrent identical searches share one request and callers cannot mutate 
  assert.equal(calls,1);
 });
 
-test('native dimensions are required; low-resolution sources cannot masquerade as 4K thumbnails',async()=>{
- for(const [width,height,expected] of [[1920,1080,0],[0,0,0],[3840,2160,1],[2160,3840,1]]){
+test('native image dimensions reject thumbnails but allow useful HD and 4K sources',async()=>{
+ for(const [width,height,expected] of [[1280,720,0],[0,0,0],[1920,1080,1],[3840,2160,1],[2160,3840,1]]){
   const assets=await discoverBusinessVisuals('Japanese restaurant',async()=>response(width,height));
   assert.equal(assets.length,expected,width+'x'+height);
  }
