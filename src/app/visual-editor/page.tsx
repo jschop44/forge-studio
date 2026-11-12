@@ -16,12 +16,12 @@ export default function VisualEditor(){
  const [page,setPage]=useState<GeneratedPage|null>(null),[site,setSite]=useState<GeneratedPage[]>([]);
  const [body,setBody]=useState(''),[css,setCss]=useState('');
  const [attributes,setAttributes]=useState<Record<string,string>>({});
- const [message,setMessage]=useState(''),[canvasOpen,setCanvasOpen]=useState(false),[canvasVersion,setCanvasVersion]=useState(0);
+ const [message,setMessage]=useState(''),[canvasOpen,setCanvasOpen]=useState(true),[canvasVersion,setCanvasVersion]=useState(0);
  const [visualHeadline,setVisualHeadline]=useState(''),[visualParagraph,setVisualParagraph]=useState('');
  function openPage(candidate:GeneratedPage,keepCanvas=false){
   const document=prepareVisualEditorDocument(candidate);
   if(!document.bodyHtml){setMessage(document.warnings.join(' ')||'Unable to open this page safely.');return false}
-  if(!keepCanvas)setCanvasOpen(false);
+  if(!keepCanvas)setCanvasOpen(true);
   setCanvasVersion(v=>v+1);setPage(candidate);setBody(document.bodyHtml);setCss(document.css);setAttributes(document.bodyAttributes);
   const text=(tag:string)=>{const match=document.bodyHtml.match(new RegExp('<'+tag+'\\b[^>]*>([^<]*)</'+tag+'>','i'));if(!match)return '';const parsed=new DOMParser().parseFromString(match[1],'text/html');return parsed.body.textContent||''};
   setVisualHeadline(text('h1'));setVisualParagraph(text('p'));
@@ -36,7 +36,7 @@ export default function VisualEditor(){
    if(!validated.length){setMessage('Invalid or oversized transferred website page.');return}
    const pages=parseEditorSite(sessionStorage.getItem('forge:visual-editor:site'));
    setSite(pages.some(item=>item.slug===candidate.slug)?pages:validated);
-   if(openPage(candidate))setMessage('Generated page loaded. Choose a page to edit, or open the drag-and-drop designer. '+prepareVisualEditorDocument(candidate).warnings.join(' '));
+   if(openPage(candidate))setMessage('Generated page loaded. Choose a page to edit in the drag-and-drop designer. '+prepareVisualEditorDocument(candidate).warnings.join(' '));
   }catch{setMessage('Unable to load transferred page.')}
  // Initial handoff is consumed once; document changes remain local to this editor.
  // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -89,21 +89,21 @@ export default function VisualEditor(){
   }catch(error){setMessage('Website export blocked: '+(error instanceof Error?error.message:'Invalid website.'))}
  }
  const preview=page?serializeEditorDraft(page,body,css,attributes).html:'';
- return <main className="forge-visual-editor" style={{maxWidth:1400,margin:'auto',fontFamily:'system-ui'}}>
-  <Link href="/business">← Website generator</Link><h1>Website visual editor</h1>
-  <p>Edit your website pages, text, images, links and layout without writing code. Imported scripts stay disabled. Review every page before publishing.</p>
+ return <main className="forge-visual-editor" style={{width:'100%',maxWidth:'none',minHeight:'100vh',margin:'auto',fontFamily:'system-ui'}}>
+  <Link href="/business">← Website generator</Link><h1>Forge Studio Designer</h1>
+  <p>Edit pages visually with GrapesJS. Select any element to customize it, switch between desktop and mobile, and export your complete website. Interactive 3D scripts remain protected during editing.</p>
   <label>Import HTML page <input type="file" accept=".html,.htm,text/html" onChange={event=>{const file=event.target.files?.[0];if(file)void load(file);event.target.value=''}}/></label>
   {message&&<p role="status">{message}</p>}
   {page&&<>
    <label className="forge-page-switcher">Website page<select aria-label="Website page" value={page.slug} onChange={event=>switchPage(event.target.value)}>{site.map(item=><option key={item.slug} value={item.slug}>{item.title}</option>)}</select></label>
-   <button type="button" onClick={()=>setCanvasOpen(value=>!value)}>{canvasOpen?'Close drag-and-drop designer':'Open drag-and-drop designer'}</button>
+   <button type="button" onClick={()=>setCanvasOpen(value=>!value)}>{canvasOpen?'Hide visual canvas':'Show visual canvas'}</button>
    {canvasOpen&&<GrapesVisualCanvas key={canvasVersion} html={body} css={css} pages={site} bodyAttributes={attributes} onChange={(nextBody,nextCss)=>{const check=serializeEditorDraft(page,nextBody,nextCss,attributes);if(check.html){setBody(nextBody);setCss(nextCss)}else setMessage('Designer update blocked: '+check.warnings.join(' '))}}/>}
    <section aria-label="Visual text editing" className="forge-quick-text"><h2>Quick visual text editing</h2><p>Edit the main headline and first plain-text paragraph, or select any element in the designer.</p>
     <label>Main headline <input aria-label="Visual main headline" value={visualHeadline} onChange={event=>setVisualHeadline(event.target.value)}/></label>
     <label>First paragraph <textarea aria-label="Visual first paragraph" value={visualParagraph} onChange={event=>setVisualParagraph(event.target.value)} rows={3}/></label>
     <button type="button" onClick={applyVisualText}>Apply visual text changes</button>
    </section>
-   <details className="forge-code-editor" open><summary>Advanced HTML and CSS</summary><div className="forge-code-grid">
+   <details className="forge-code-editor"><summary>Advanced HTML and CSS</summary><div className="forge-code-grid">
     <label>HTML body<textarea aria-label="HTML body" value={body} onChange={event=>{rawDirty.current=true;setBody(event.target.value)}} onBlur={refreshRaw} rows={18}/></label>
     <label>CSS<textarea aria-label="CSS" value={css} onChange={event=>{rawDirty.current=true;setCss(event.target.value)}} onBlur={refreshRaw} rows={18}/></label>
    </div></details>
