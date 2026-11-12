@@ -19,3 +19,8 @@ export function collectBrowserQualityEvidence():BrowserQualityEvidence{
   headingCount:document.querySelectorAll('h1').length
  };
 }
+
+/** Merge browser observations into the existing bounded correction engine's input. */
+export function attachBrowserQualityEvidence<T extends {slug:string;html:string}>(page:T,evidence:BrowserQualityEvidence){
+ return {...page,brokenImages:evidence.brokenImages,brokenLinks:evidence.brokenLinks,overflowPx:evidence.overflowPx};
+}
