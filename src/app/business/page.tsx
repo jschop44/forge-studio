@@ -305,7 +305,17 @@ export default function BusinessGenerator(){
    const response=await fetch('/api/ai/business',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(generationPayload),signal:AbortSignal.timeout(75000)});
    if(response.status===429){const retrySeconds=Math.min(30,Math.max(1,Number(response.headers.get('retry-after'))||5));setStatus('AI is processing other websites. Please retry in about '+retrySeconds+' seconds.');return}
    if(!response.ok){const failure=await response.json();throw Error(response.status===503?'Website generation is temporarily unavailable. Please try again.':failure.error||'AI generation unavailable')}
-   const result=await response.json();if(generationEpoch!==inspectionEpoch.current){setStatus('Website address changed during generation. Generate again using the current website.');return}const extractedPages=additionalPages(evidence);const extras=applyExtractedExperience(extractedPages,selectedExperience,input);const combined=[...result.pages,...extras];const generated=selectedExperience==='immersive'?enhanceImmersiveWorld(combined,input):combined;
+   const result=await response.json();if(generationEpoch!==inspectionEpoch.current){setStatus('Website address changed during generation. Generate again using the current website.');return}const extractedPages=additionalPages(evidence);const extras=applyExtractedExperience(extractedPages,selectedExperience,input);const combined=[...result.pages,...extras];
+   // A new website must never inherit an unrelated brand or empty AI layout.
+   // Recover using the deterministic, niche-specific generator instead of showing
+   // scraped third-party pages, mystery URLs or a text-only storefront.
+   const foreignBrand=combined.some(page=>/disney(?:\.com|\s+live|\s+logo|\s+exit|\s+world)|you are now leaving disney/i.test(page.html))&&!/disney/i.test(input.businessName+' '+input.industry);
+   const hasPhotographs=combined.some(page=>/<img\b[^>]*\bsrc=|<picture\b/i.test(page.html));
+      const expectsPhotographs=industryPhotos(input.industry).length>0||input.visualAssets.length>0;
+   const needsRecovery=designMode==='new'&&(foreignBrand||expectsPhotographs&&!hasPhotographs);
+   const safePages=needsRecovery?generateBusinessWebsite(input).pages:combined;
+   const generated=selectedExperience==='immersive'&&!needsRecovery?enhanceImmersiveWorld(safePages,input):safePages;
+   if(needsRecovery)visualNotice+=' Rebuilt the draft using verified business-specific imagery after the AI output failed the brand or image quality check.';
    const contentApplied=applyDefaultSourceContent(generated,evidence,designMode);
    const themed=automaticallyApplyBrand(contentApplied.pages,appearance);
    const sourceApplied=sourceDna?applySourceDesign(themed,sourceDna,designMode):{pages:themed,warnings:[]};
