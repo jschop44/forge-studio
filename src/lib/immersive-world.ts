@@ -18,7 +18,7 @@ export function worldTheme(industry:string):'coffee'|'dining'|'baseball'|'proper
 /** One consistent scene and camera identity across every core and extracted page. */
 export function enhanceImmersiveWorld<T extends GeneratedPage>(pages:T[],business:{businessName:string;industry:string;description?:string;services?:string[];visualAssets?:VisualAsset[]}):T[]{
  const targets=pages.map(page=>({slug:page.slug,title:page.title,description:page.slug==='services'&&business.services?.length?business.services.join(' · ').slice(0,220):page.html.match(/<main[^>]*>[\s\S]*?<p>([\s\S]*?)<\/p>/i)?.[1]?.replace(/<[^>]*>/g,' ').replace(/\s+/g,' ').trim().slice(0,220)}));
- const direction=businessArtDirection(business.industry,business.businessName);const environment=businessEnvironment(business.industry,business.visualAssets);
+ const direction=businessArtDirection(business.industry,business.businessName);const environment=businessEnvironment(business.industry,business.visualAssets,business.services||[]);
  return pages.map(page=>{
   const html=page.html.replace(/<!--forge-world-start-->[\s\S]*?<!--forge-world-end-->/g,'');
   const markup=immersiveWorldMarkup({environment,palette:direction,industry:business.industry,sceneTitle:page.slug==='index'?business.businessName:page.title,businessName:business.businessName,theme:worldTheme(business.industry),intro:page.slug==='index'?business.description?.slice(0,240):undefined,pageTitle:page.title,targets:targets.map(target=>({...target,active:target.slug===page.slug}))});
