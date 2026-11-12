@@ -43,7 +43,7 @@ function parseStyleReference(source:string):StyleReference{
  const fontFamily=text.match(/font-family\s*:\s*['"]?(Georgia|Arial|Verdana|Tahoma|Trebuchet MS|Times New Roman|system-ui|sans-serif|serif)/i)?.[1];
  return {background,accent,fontFamily};
 }
-type Inspection={url:string;title:string;description:string;headings:string[];homepageParagraphs?:string[];navigation?:{label:string;path:string}[];pageSummaries?:{path:string;label:string;title:string;description:string;headings:string[];paragraphs?:string[];images?:SourceImage[]}[];stylesheetsRead:number;visualSignals?:{navigationLinks:number;heroSections:number;imageCount:number;sectionCount:number;buttonCount:number;hasVideo:boolean;hasCanvas:boolean}} & {styleReference?:StyleReference;designDna?:WebsiteDesignDna;warnings?:string[]};
+type Inspection={url:string;title:string;description:string;headings:string[];homepageParagraphs?:string[];navigation?:{label:string;path:string}[];pageSummaries?:{path:string;label:string;title:string;description:string;headings:string[];paragraphs?:string[];images?:SourceImage[]}[];stylesheetsRead:number;visualSignals?:{navigationLinks:number;heroSections:number;imageCount:number;sectionCount:number;buttonCount:number;hasVideo:boolean;hasCanvas:boolean}} & {styleReference?:StyleReference;designDna?:WebsiteDesignDna;warnings?:string[];browserEvidence?:BrowserEvidence};
 export default function BusinessGenerator(){
  const [inspected,setInspected]=useState<Inspection|null>(null),[siteUrl,setSiteUrl]=useState(''),[researchBusy,setResearchBusy]=useState(false),[referenceStyle,setReferenceStyle]=useState<StyleReference>({}),[name,setName]=useState(''),[designMode,setDesignMode]=useState<'new'|'inspired'|'redesign'>('new'),[referenceMarkup,setReferenceMarkup]=useState(''),[brief,setBrief]=useState(''),[contactEmail,setContactEmail]=useState(''),[busy,setBusy]=useState(false),[status,setStatus]=useState(''),[pages,setPages]=useState<GeneratedPage[]>([]),[active,setActive]=useState('index'),[mobile,setMobile]=useState(false);
  const [inspectionError,setInspectionError]=useState('');
@@ -219,7 +219,7 @@ export default function BusinessGenerator(){
    const data=await response.json();if(!response.ok)throw Error(data.error||'Unable to read this website');
    if(epoch!==inspectionEpoch.current)return null;
    if(!data.title&&!data.description&&!(data.headings||[]).length)throw Error('The website returned no readable business information. Try its main homepage or provide a description manually.');
-   const evidence:Inspection={url:new URL(data.url||websiteAddressKey(requested)!).href,title:data.title||'',description:data.description||'',headings:data.headings||[],navigation:data.navigation||[],pageSummaries:data.pageSummaries||[],stylesheetsRead:data.stylesheetsRead||0,visualSignals:data.visualSignals,styleReference:data.styleReference||{},designDna:data.designDna,warnings:data.warnings||data.extraction?.warnings||[]};
+   const evidence:Inspection={browserEvidence:validateBrowserEvidence(data.browserEvidence)?data.browserEvidence:undefined,url:new URL(data.url||websiteAddressKey(requested)!).href,title:data.title||'',description:data.description||'',headings:data.headings||[],navigation:data.navigation||[],pageSummaries:data.pageSummaries||[],stylesheetsRead:data.stylesheetsRead||0,visualSignals:data.visualSignals,styleReference:data.styleReference||{},designDna:data.designDna,warnings:data.warnings||data.extraction?.warnings||[]};
    setInspected(evidence);setReferenceStyle(evidence.styleReference||{});setReferenceMarkup('');setUndoPages(null);setPages([]);setName(extractedName(evidence));setBrief([evidence.description,...evidence.headings.slice(0,3)].filter(Boolean).join('. ').slice(0,1600));
    if(!contactEmail.trim()&&evidence.designDna?.contact.emails[0])setContactEmail(evidence.designDna.contact.emails[0]);
    setStatus('Website extracted: '+new URL(evidence.url).hostname+'. '+(data.styleFound?'Appearance tokens found. ':'No reusable appearance tokens found; your draft will use a new theme. ')+'Review the extracted details, then generate. '+(evidence.warnings||[]).join(' '));
@@ -319,7 +319,7 @@ export default function BusinessGenerator(){
    const contentApplied=applyDefaultSourceContent(generated,evidence,designMode);
    const themed=automaticallyApplyBrand(contentApplied.pages,appearance);
    const sourceApplied=sourceDna?applySourceDesign(themed,sourceDna,designMode):{pages:themed,warnings:[]};
-   const captured=applyCapturedAppearance(sourceApplied.pages,workerEvidence,evidence?.url||websiteAddressKey(siteUrl)||'',designMode,extractedPageSources(evidence));
+   const captured=applyCapturedAppearance(sourceApplied.pages,evidence?.browserEvidence||workerEvidence,evidence?.url||websiteAddressKey(siteUrl)||'',designMode,extractedPageSources(evidence));
    const finalPages=automaticallyOptimizeMetadata(captured.pages);
    const validation=auditGeneratedDraft(finalPages);
    if(!validation.readyForReview)throw Error('The generated website did not pass its content and navigation checks. Please retry or review the business details.');
