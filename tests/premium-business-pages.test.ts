@@ -6,6 +6,9 @@ import {photoIdentity} from '../src/lib/industry-photos';
 import {inspectGeneratedPages} from '../src/lib/auto-correction';
 
 const images=(html:string)=>[...html.matchAll(/<img\b[^>]*\bsrc="([^"]+)"/gi)].map(x=>x[1]);
+// Thumbnail selectors intentionally preview the same asset as the WebGL scene;
+// assess repeated *editorial* imagery without counting the scene's controls.
+const editorialImages=(html:string)=>images(html.replace(/<div class="world-gallery-strip"[\s\S]*?<\/div>/g,''));
 const brief=(industry:string)=>({
  businessName:'Fruit stand fresh',industry,
  description:'Fruit stand fresh offers a variety of locally grown fruit and fruit baskets for customers to browse and inquire about availability.',
@@ -42,7 +45,7 @@ test('coffee, restaurants, baseball and immersive fruit each get varied images a
   for(const experienceStyle of ['standard','immersive'] as const){
    const site=generateBusinessWebsite({businessName:'Northstar Market',industry,description:'Local business offering products and services for shoppers in the area.',services:[...services],experienceStyle});
    for(const page of site.pages){
-    const urls=images(page.html).map(photoIdentity);
+    const urls=editorialImages(page.html).map(photoIdentity);
     assert.ok(urls.length>=3,industry+' '+experienceStyle+' '+page.slug+' should show 3+ photos');
     assert.equal(new Set(urls).size,urls.length,industry+' '+experienceStyle+' '+page.slug+' duplicates a photo');
     if(experienceStyle==='immersive')assert.match(page.html,/forge-immersive-world/,industry);
