@@ -1,3 +1,4 @@
+import {reviewWithBrowserWorker} from '../server/browser-quality-worker';
 import {requireGenerationBrief} from './generation-brief';
 import {generateWithLocalAi} from '../server/local-ai';
 import {z} from 'zod';
@@ -34,5 +35,7 @@ export async function executeAgent(task:AgentTask,generate=generateWithLocalAi,r
  const brief=requireGenerationBrief(context);
  const result=await generate({experienceStyle:context.experienceStyle,contactEmail:context.contactEmail,businessName:brief.businessName,industry:brief.industry,description:brief.summary,services:brief.services});
  const captured=applyCapturedAppearance(result.pages,context.browserEvidence,context.website||'',typeof context.designMode==='string'?context.designMode:'new');
- return {stage:task.kind,summary:'AI-generated four-page site draft',data:{name:result.draft.businessName,provider:result.provider,draft:result.draft,pages:captured.pages.map(page=>({slug:page.slug,title:page.title,html:page.html})),designWarnings:captured.warnings}};
+ const reviewed=await reviewWithBrowserWorker(captured.pages);
+ if(reviewed.browserReview.status==='failed'||reviewed.browserReview.status==='unavailable')throw Error('Generated website browser inspection blocked');
+ return {stage:task.kind,summary:'AI-generated four-page site draft',data:{name:result.draft.businessName,provider:result.provider,draft:result.draft,browserReview:reviewed.browserReview,pages:reviewed.pages.map(page=>({slug:page.slug,title:page.title,html:page.html})),designWarnings:captured.warnings}};
 }

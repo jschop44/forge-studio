@@ -9,6 +9,10 @@ import {pathToFileURL} from 'node:url';
 import {collectBrowserQualityEvidence} from '../../src/lib/browser-quality-evidence';
 import {inspectGeneratedPages,type PageEvidence,type QualityFinding} from '../../src/lib/auto-correction';
 
+async function bounded<T>(operation:Promise<T>,ms:number):Promise<T>{
+ let timer:ReturnType<typeof setTimeout>|undefined;
+ try{return await Promise.race([operation,new Promise<never>((_,reject)=>{timer=setTimeout(()=>reject(Error('Inspection timed out')),ms)})])}finally{clearTimeout(timer)}
+}
 const Input=z.object({pages:z.array(z.object({slug:z.string().regex(/^[a-z0-9-]+$/).max(64),title:z.string().min(1).max(200),html:z.string().min(1).max(250000)})).min(1).max(12)});
 type SitePage=PageEvidence&{title:string};
 const State=Annotation.Root({pages:Annotation<SitePage[]>(),findings:Annotation<QualityFinding[]>(),attempts:Annotation<number>()});
@@ -32,7 +36,7 @@ export const qualityGraph=new StateGraph(State)
       await tab.setContent(page.html,{waitUntil:'domcontentloaded',timeout:4000});
       const evidence=await tab.evaluate(collectBrowserQualityEvidence);
       await tab.evaluate(source=>(0,eval)(source),axe.source);
-      const violations=await tab.evaluate(async()=>{const result=await (window as unknown as {axe:{run:(root:Document,options:unknown)=>Promise<{violations:{id:string;impact:string|null}[]}>}}).axe.run(document,{runOnly:{type:'tag',values:['wcag2a','wcag2aa']}});return result.violations.filter(v=>v.impact==='critical'||v.impact==='serious').map(v=>v.id)});
+      const violations=await bounded(tab.evaluate(async()=>{const result=await (window as unknown as {axe:{run:(root:Document,options:unknown)=>Promise<{violations:{id:string;impact:string|null}[]}>}}).axe.run(document,{runOnly:{type:'tag',values:['wcag2a','wcag2aa']}});return result.violations.filter(v=>v.impact==='critical'||v.impact==='serious').map(v=>v.id)}),5000);
       accessibility.push(...violations.map(id=>({slug:page.slug,kind:'accessibility' as const,detail:id+' at '+width+'px'})));
       // Network requests are blocked; only embedded images can be tested here.
       observed.brokenImages.push(...evidence.brokenImages.filter(src=>src.startsWith('data:')));

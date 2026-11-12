@@ -109,7 +109,7 @@
 .forge-editor-actions{display:flex;flex-wrap:wrap;gap:6px}
 
 /* Full-workspace GrapesJS is the primary editor; advanced source editing stays optional. */
-.forge-visual-editor{border-radius:0;border:0;box-shadow:none;padding:clamp(12px,2vw,26px);background:#f5f8fc;min-height:100vh}
+.forge-visual-editor{border-radius:0;border:0;box-shadow:none;padding:clamp(12px,2vw,26px);background:linear-gradient(140deg,#f3f8ff 0%,#f7fcff 50%,#fff8f1 100%);min-height:100vh}
 .forge-visual-editor .forge-grapes-layout{width:100%;align-items:stretch}
 .forge-visual-editor .forge-grapes-center{min-width:0}
 .forge-visual-editor .forge-grapes-layout>aside{box-shadow:0 5px 22px rgba(18,46,82,.06)}

@@ -11,7 +11,8 @@ test('generated page edits return to the generator without losing sibling pages'
   sessionStorage.setItem('forge:visual-editor:site',JSON.stringify([home,contact]));
  },{home,contact});
  await page.reload();
- await expect(page.getByRole('status')).toContainText('Generated page loaded');
+ await page.getByText('Advanced HTML and CSS',{exact:true}).click();
+ await expect(page.getByRole('status',{name:'Editor status',exact:true})).toContainText('Generated page loaded');
  await expect(page.frameLocator('iframe[title="Edited website preview"]').locator('h1')).toHaveText('Original bakery');
  await page.getByRole('textbox',{name:'HTML body'}).fill('<main><h1>Updated bakery</h1></main>');
  await page.getByRole('textbox',{name:'CSS',exact:true}).fill('body{color:rgb(10,20,30)}');
@@ -32,17 +33,18 @@ test('active markup and CSS cannot be previewed or returned to generator',async(
  await page.goto('/visual-editor');
  await page.evaluate(home=>sessionStorage.setItem('forge:visual-editor:handoff',JSON.stringify(home)),home);
  await page.reload();
- await expect(page.getByRole('status')).toContainText('Generated page loaded');
+ await page.getByText('Advanced HTML and CSS',{exact:true}).click();
+ await expect(page.getByRole('status',{name:'Editor status',exact:true})).toContainText('Generated page loaded');
  await page.getByRole('textbox',{name:'HTML body'}).fill('<main><iframe src="https://example.com"></iframe></main>');
  await expect(page.locator('p[role="alert"]')).toContainText('Preview blocked');
  await page.getByRole('button',{name:'Return edited page to generator'}).click();
  await expect(page).toHaveURL(/\/visual-editor$/);
- await expect(page.getByRole('status')).toContainText('Return blocked');
+ await expect(page.getByRole('status',{name:'Editor status',exact:true})).toContainText('Return blocked');
  await page.getByRole('textbox',{name:'HTML body'}).fill('<main><h1>Safe again</h1></main>');
  await page.getByRole('textbox',{name:'CSS',exact:true}).fill('@import url(https://example.com/x.css)');
  await expect(page.locator('p[role="alert"]')).toContainText('Preview blocked');
  await page.getByRole('button',{name:'Validate and download edited page'}).click();
- await expect(page.getByRole('status')).toContainText('Export blocked');
+ await expect(page.getByRole('status',{name:'Editor status',exact:true})).toContainText('Export blocked');
 });
 
 test('no-code headline and paragraph controls update the preview safely',async({page})=>{
@@ -50,7 +52,8 @@ test('no-code headline and paragraph controls update the preview safely',async({
  await page.goto('/visual-editor');
  await page.evaluate(initial=>sessionStorage.setItem('forge:visual-editor:handoff',JSON.stringify(initial)),initial);
  await page.reload();
- await expect(page.getByRole('status')).toContainText('Generated page loaded');
+ await page.getByText('Advanced HTML and CSS',{exact:true}).click();
+ await expect(page.getByRole('status',{name:'Editor status',exact:true})).toContainText('Generated page loaded');
  await expect(page.getByRole('textbox',{name:'Visual main headline'})).toHaveValue('Original heading');
  await expect(page.getByRole('textbox',{name:'Visual first paragraph'})).toHaveValue('Original paragraph');
  await page.getByRole('textbox',{name:'Visual main headline'}).fill('New & better <bakery>');
@@ -68,11 +71,12 @@ test('GrapesJS designer opens with editable canvas and block palette',async({pag
  await page.goto('/visual-editor');
  await page.evaluate(initial=>sessionStorage.setItem('forge:visual-editor:handoff',JSON.stringify(initial)),initial);
  await page.reload();
- await page.getByRole('button',{name:'Open drag-and-drop designer'}).click();
+ await page.getByText('Advanced HTML and CSS',{exact:true}).click();
+ await expect(page.getByRole('region',{name:'Drag and drop page designer'})).toBeVisible();
  await expect(page.getByRole('region',{name:'Drag and drop page designer'})).toBeVisible();
  await expect(page.locator('#forge-grapes-blocks .gjs-block')).toHaveCount(5,{timeout:20000});
  await expect(page.locator('.gjs-cv-canvas iframe')).toBeVisible();
- await page.getByRole('button',{name:'Close drag-and-drop designer'}).click();
+ await page.getByRole('button',{name:'Hide visual canvas'}).click();
  await expect(page.getByRole('region',{name:'Drag and drop page designer'})).toHaveCount(0);
 });
 
@@ -81,7 +85,8 @@ test('Forge designer drag-and-drop reliably inserts a heading into the website',
  await page.goto('/visual-editor');
  await page.evaluate(initial=>sessionStorage.setItem('forge:visual-editor:handoff',JSON.stringify(initial)),initial);
  await page.reload();
- await page.getByRole('button',{name:'Open drag-and-drop designer'}).click();
+ await page.getByText('Advanced HTML and CSS',{exact:true}).click();
+ await expect(page.getByRole('region',{name:'Drag and drop page designer'})).toBeVisible();
  const block=page.getByRole('button',{name:'Insert heading block'});
  const target=page.getByRole('region',{name:'Drop new content into page'});
  await expect(block).toBeEnabled();
@@ -97,7 +102,8 @@ test('canvas Add button supports undo and redo while synchronizing the HTML edit
  await page.goto('/visual-editor');
  await page.evaluate(initial=>sessionStorage.setItem('forge:visual-editor:handoff',JSON.stringify(initial)),initial);
  await page.reload();
- await page.getByRole('button',{name:'Open drag-and-drop designer'}).click();
+ await page.getByText('Advanced HTML and CSS',{exact:true}).click();
+ await expect(page.getByRole('region',{name:'Drag and drop page designer'})).toBeVisible();
  const insert=page.getByRole('button',{name:'Insert paragraph block'});
  await expect(insert).toBeEnabled();
  await insert.click();
@@ -118,7 +124,8 @@ test('visual designer uses a single-column layout on narrow mobile screens',asyn
  await page.goto('/visual-editor');
  await page.evaluate(initial=>sessionStorage.setItem('forge:visual-editor:handoff',JSON.stringify(initial)),initial);
  await page.reload();
- await page.getByRole('button',{name:'Open drag-and-drop designer'}).click();
+ await page.getByText('Advanced HTML and CSS',{exact:true}).click();
+ await expect(page.getByRole('region',{name:'Drag and drop page designer'})).toBeVisible();
  const grid=page.locator('.forge-grapes-layout');
  await expect(grid).toBeVisible();
  await expect.poll(()=>grid.evaluate(element=>getComputedStyle(element).gridTemplateColumns.split(' ').length)).toBe(1);
@@ -131,6 +138,7 @@ test('visual editor has polished scoped styling and no mobile horizontal overflo
  await page.goto('/visual-editor');
  await page.evaluate(initial=>sessionStorage.setItem('forge:visual-editor:handoff',JSON.stringify(initial)),initial);
  await page.reload();
+ await page.getByText('Advanced HTML and CSS',{exact:true}).click();
  const editor=page.locator('main.forge-visual-editor');
  await expect(editor).toBeVisible();
  await expect.poll(()=>editor.evaluate(element=>getComputedStyle(element).backgroundImage)).toContain('linear-gradient');
@@ -145,7 +153,8 @@ test('download removes executable edits and includes responsive document metadat
  await page.goto('/visual-editor');
  await page.evaluate(home=>sessionStorage.setItem('forge:visual-editor:handoff',JSON.stringify(home)),home);
  await page.reload();
- await expect(page.getByRole('status')).toContainText('Generated page loaded');
+ await page.getByText('Advanced HTML and CSS',{exact:true}).click();
+ await expect(page.getByRole('status',{name:'Editor status',exact:true})).toContainText('Generated page loaded');
  await page.getByRole('textbox',{name:'HTML body'}).fill('<main><h1 onclick="alert(1)">Safe bakery</h1><script>alert(2)</script></main>');
  await expect(page.frameLocator('iframe[title="Edited website preview"]').locator('h1')).toHaveText('Safe bakery');
  const downloadPromise=page.waitForEvent('download');
@@ -164,7 +173,8 @@ test('device previews use real responsive viewports without changing page conten
  await page.goto('/visual-editor');
  await page.evaluate(initial=>sessionStorage.setItem('forge:visual-editor:handoff',JSON.stringify(initial)),initial);
  await page.reload();
- await page.getByRole('button',{name:'Open drag-and-drop designer',exact:true}).click();
+ await page.getByText('Advanced HTML and CSS',{exact:true}).click();
+ await expect(page.getByRole('region',{name:'Drag and drop page designer'})).toBeVisible();
  const frame=page.frameLocator('.gjs-cv-canvas iframe');
  const mobile=page.getByRole('button',{name:'Mobile canvas preview',exact:true});
  await expect(mobile).toBeEnabled();

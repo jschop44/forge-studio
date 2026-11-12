@@ -6,7 +6,7 @@ const contact={slug:'contact',title:'Contact',html:wrap('<main><h1>Original cont
 async function open(page:Page){
  await page.route('https://images.example.com/**',route=>route.fulfill({contentType:'image/svg+xml',body:'<svg xmlns="http://www.w3.org/2000/svg" width="200" height="100"><rect width="200" height="100" fill="blue"/></svg>'}));
  await page.goto('/visual-editor');await page.evaluate(({home,contact})=>{sessionStorage.setItem('forge:visual-editor:handoff',JSON.stringify(home));sessionStorage.setItem('forge:visual-editor:site',JSON.stringify([home,contact]))},{home,contact});await page.reload();
- await expect(page.getByRole('status')).toContainText('Generated page loaded');
+ await expect(page.getByRole('status',{name:'Editor status',exact:true})).toContainText('Generated page loaded');
 }
 test('multiple pages retain independent edits, export a complete ZIP, and return together',async({page})=>{
  await open(page);
@@ -39,8 +39,8 @@ test('selected image, link, typography, layout and placement controls work witho
 });
 test('unsafe edits block page switching and broken destinations block website export',async({page})=>{
  await open(page);await page.getByText('Advanced HTML and CSS',{exact:true}).click();await page.getByRole('textbox',{name:'HTML body',exact:true}).fill('<h1>Unsafe</h1><a href="java&#115;cript:alert(1)">Click</a>');await expect(page.locator('p[role="alert"]')).toContainText('Preview blocked');
- await page.getByRole('combobox',{name:'Website page',exact:true}).selectOption('contact');await expect(page.getByRole('status')).toContainText('Page switch blocked');await expect(page.getByRole('combobox',{name:'Website page',exact:true})).toHaveValue('index');
- await page.getByRole('textbox',{name:'HTML body',exact:true}).fill('<h1>Safe content</h1><a href="missing.html">Missing page</a>');await page.getByRole('button',{name:'Validate and download website ZIP',exact:true}).click();await expect(page.getByRole('status')).toContainText('broken internal link');
+ await page.getByRole('combobox',{name:'Website page',exact:true}).selectOption('contact');await expect(page.getByRole('status',{name:'Editor status',exact:true})).toContainText('Page switch blocked');await expect(page.getByRole('combobox',{name:'Website page',exact:true})).toHaveValue('index');
+ await page.getByRole('textbox',{name:'HTML body',exact:true}).fill('<h1>Safe content</h1><a href="missing.html">Missing page</a>');await page.getByRole('button',{name:'Validate and download website ZIP',exact:true}).click();await expect(page.getByRole('status',{name:'Editor status',exact:true})).toContainText('broken internal link');
 });
 
 
