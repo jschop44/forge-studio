@@ -17,7 +17,7 @@ export function relevantVisualAssets(industry:string,assets:unknown[]):VisualAss
 export function specificVisualOfferings(offerings:string[]):string[]{
  const generic=new Set('about contact team explore learn request booking bookings appointments availability available pricing inquiry information details visit us our your more support today general options quality solutions help get started'.split(' '));
  return [...new Set(offerings.filter(value=>typeof value==='string').map(value=>value.trim()).filter(value=>value.length>=3&&value.length<=100))]
-  .filter(value=>visualSubjectTerms(value).some(term=>!generic.has(term))).slice(0,3);
+  .filter(value=>!/\b(?:halloween|haunted|horror|scary|spooky|gore|blood|violence|weapons?|adult|erotic|drugs?|cannabis|marijuana)\b/i.test(value)&&visualSubjectTerms(value).some(term=>!generic.has(term))).slice(0,3);
 }
 
 /** Source license AND subject evidence must both pass, even for a specific menu item. */
