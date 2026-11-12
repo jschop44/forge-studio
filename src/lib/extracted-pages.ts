@@ -1,3 +1,4 @@
+import {usefulSourcePage} from './source-reuse-policy';
 import {defaultSourcePages} from './default-source-content';
 import {publicSourceAsset} from './website-design-dna';
 import {offeringPhotoCandidates,selectDiversePhoto} from './industry-photos';
@@ -14,6 +15,7 @@ function extractedPageEntries(evidence:SiteEvidence){
  const used=new Set(['index','services','about','contact']);
  const paths=new Set<string>();
  const entries=(evidence.pageSummaries||[]).flatMap(page=>{
+  if(!usefulSourcePage(page))return [];
   let path:string;
   try{const url=new URL(page.path,evidence.url);if(url.origin!==new URL(evidence.url).origin)return [];path=url.pathname.replace(/\/+$/,'')||'/'}catch{return []}
   if(paths.has(path))return [];paths.add(path);
