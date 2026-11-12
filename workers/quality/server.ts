@@ -5,6 +5,9 @@ import {chromium} from '@playwright/test';
 import {Annotation,StateGraph,START,END} from '@langchain/langgraph';
 import {z} from 'zod';
 import axe from 'axe-core';
+import {captureWithCrawlee} from './capture';
+import {generateComfyVisual} from './visual-generation';
+import {auditForgePerformance} from './performance-audit';
 import {pathToFileURL} from 'node:url';
 import {collectBrowserQualityEvidence} from '../../src/lib/browser-quality-evidence';
 import {inspectGeneratedPages,type PageEvidence,type QualityFinding} from '../../src/lib/auto-correction';
@@ -68,12 +71,26 @@ if(!secret||secret.length<32)throw Error('Set FORGE_QUALITY_WORKER_SECRET to at 
 createServer(async(req,res)=>{
  res.setHeader('Content-Type','application/json');res.setHeader('Cache-Control','no-store');
  const token=Buffer.from(req.headers.authorization||''),expected=Buffer.from('Bearer '+secret);
- if(req.method!=='POST'||req.url!=='/review'||token.length!==expected.length||!timingSafeEqual(token,expected)){res.writeHead(403).end('{"error":"Forbidden"}');return}
+ if(req.method!=='POST'||!['/review','/capture','/visual','/performance'].includes(req.url||'')||token.length!==expected.length||!timingSafeEqual(token,expected)){res.writeHead(403).end('{"error":"Forbidden"}');return}
  if(active){res.writeHead(429).end('{"error":"Worker busy"}');return}
  active=true;
  try{
   let raw='';for await(const chunk of req){raw+=chunk;if(Buffer.byteLength(raw)>1100000)throw Error('Payload too large')}
-  const input=Input.parse(JSON.parse(raw));
+  const payload:unknown=JSON.parse(raw);
+  if(req.url==='/capture'){
+   const input=z.object({url:z.string().url().max(2048)}).strict().parse(payload);
+   const hosts=(process.env.FORGE_CAPTURE_HOSTS||'').split(',').map(h=>h.trim()).filter(Boolean);
+   res.end(JSON.stringify(await captureWithCrawlee(input.url,hosts)));return;
+  }
+  if(req.url==='/visual'){
+   const input=z.object({businessName:z.string().min(1).max(100),industry:z.string().min(1).max(80),description:z.string().max(600),services:z.array(z.string().max(120)).max(8)}).strict().parse(payload);
+   res.end(JSON.stringify(await generateComfyVisual(input)));return;
+  }
+  if(req.url==='/performance'){
+   const input=z.object({path:z.string().max(200)}).strict().parse(payload);
+   res.end(JSON.stringify(await auditForgePerformance(input.path)));return;
+  }
+  const input=Input.parse(payload);
   if(new Set(input.pages.map(p=>p.slug)).size!==input.pages.length)throw Error('Duplicate pages');
   const result=await qualityGraph.invoke({pages:input.pages,findings:[],attempts:0},{recursionLimit:8});
   res.end(JSON.stringify({pages:result.pages.map(({slug,title,html})=>({slug,title,html})),passed:result.findings.length===0,attempts:result.attempts,findings:result.findings.slice(0,200)}));

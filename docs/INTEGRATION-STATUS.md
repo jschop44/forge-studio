@@ -14,7 +14,7 @@ Implementation and deployment are separate. This table describes source capabili
 | GSAP | Evaluated; not added | Standard license is not an open-source license and restricts competing visual animation builders. Existing reduced-motion-aware CSS remains in use. Source: https://webflow.com/legal/product-terms section 9 |
 | Dify / Flowise | Not activated | Would duplicate queue/orchestration for current generation path; only add an adapter for a concrete unique workflow |
 | Activepieces | Not activated | Existing GitHub Actions already cover build/deploy notifications; no external workflow target supplied |
-| ComfyUI / Sharp | Not implemented by current change | Image generation requires available compute, model/workflow and a persistent asset-delivery path; native optimization belongs outside Workers |
-| Crawlee / Lighthouse | Not added by current change | Existing permitted-source capture remains; production performance budgets and real browser extraction coverage remain outstanding |
+| ComfyUI / Sharp | Authenticated optional image generation endpoint; bounded owner workflow and metadata-free WebP optimization | Available compute, licensed model/workflow, persistent asset delivery and visual acceptance; not live |
+| Crawlee / Lighthouse | Authenticated bounded capture endpoint and owned-deployment performance audit endpoint | Worker hosting/ingress and actual capture/performance acceptance remain outstanding |
 
 No paid inference service or paid host has been added. External image licensing metadata and credits remain attached to generated pages. New optional services require server-only configuration, not end-user controls.
