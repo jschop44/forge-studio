@@ -26,7 +26,7 @@ import type {BrowserEvidence} from '../../lib/browser-evidence';
 
 import {portableStaticSiteLinks} from '../../lib/portable-static-site-links';
 import {inferBusinessIndustry} from '../../lib/website-experience';
-import {inferBusinessBrief as infer,normalizeBusinessBrief} from '../../lib/business-brief';
+import {inferBusinessBrief as infer,normalizeBusinessBrief,normalizeBusinessOfferings} from '../../lib/business-brief';
 import {analyzeSiteEvidence,inspectionCoverage} from '../../lib/forge-intelligence';
 import {inspectionToBrowserEvidence} from '../../lib/inspection-evidence-adapter';
 import {proposeBusinessSiteFromCapture,generateReviewedCaptureSite} from '../../lib/capture-business-proposal';
@@ -288,6 +288,7 @@ export default function BusinessGenerator(){
    }
    if(inferred.industry==='Professional services'&&!/(?:^|\n)\s*(?:industry|business type|category)\s*:/i.test(effectiveBrief)){setStatus('Tell Forge what this business does so its design, images and 3D experience can match. For example: Industry: Soccer club; Offerings: Training, Teamwear, Match tickets.');return}
    if(generationEpoch!==inspectionEpoch.current){setStatus('Website address changed during generation. Generate again using the current website.');return}
+   inferred.services=normalizeBusinessOfferings(inferred.industry,inferred.services);
    const explicitIndustry=/(?:^|\n)\s*(?:industry|business type|category)\s*:/i.test(effectiveBrief);
    const explicitOfferings=/(?:^|\n)\s*(?:services|products|offerings|menu)\s*:/i.test(effectiveBrief);
    const intelligence=evidence&&designMode!=='new'?analyzeSiteEvidence(evidence):null;
@@ -295,6 +296,7 @@ export default function BusinessGenerator(){
    const designDecision=planAdaptiveDesign({businessName:inferred.businessName,industry:inferred.industry,mode:visualDesignMode,patternId:visualDesignMode==='library'?visualPatternId:undefined,immersive3d:autoImmersive});
    const selectedExperience:WebsiteExperience=experienceStyle==='object-navigation'||autoImmersive&&designDecision.immersive3d?'immersive':experienceStyle;
    const input={...inferred,experienceStyle:selectedExperience,visualAssets:[] as VisualAsset[],...(intelligence&&intelligence.confidence!=='low'?{...(!explicitIndustry&&!recognizedActivity?{industry:intelligence.industry}:{}),...(!explicitOfferings&&!recognizedActivity?{services:intelligence.services}:{})}:{}),designMode,...(designMode!=='new'&&evidence?.visualSignals?{visualSignals:evidence.visualSignals}:{}),...(contactEmail.trim()?{contactEmail:contactEmail.trim()}:{}),...(designMode==='inspired'?{styleReference:appearance}:{})};
+   input.services=normalizeBusinessOfferings(input.industry,input.services);
    let visualNotice='';
    if(!industryPhotos(input.industry).length){
     setStatus('Finding images that match '+input.industry+'…');

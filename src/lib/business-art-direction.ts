@@ -2,6 +2,7 @@
 export function businessArtDirection(industry:string,businessName:string){
  const term=industry.toLowerCase();
  const profiles=[
+  {match:/\btoys?\b/,key:'toys',paper:'#fff8ef',ink:'#183c3a',accent:'#b53d47',night:'#102b2a',font:'Arial',mood:'Play, curiosity and colorful discovery'},
   {match:/coffee|café|cafe|roast/,key:'coffee',paper:'#f4eee4',ink:'#30271f',accent:'#b5572c',night:'#17120f',font:'Georgia',mood:'Warm craft and neighborhood hospitality'},
   {match:/baseball|softball/,key:'baseball',paper:'#f4f2e9',ink:'#102a37',accent:'#bd3e28',night:'#071d29',font:'Arial Black',mood:'Field lights, team identity and sporting craft'},
   {match:/soccer|football|basketball|sports?|athletic/,key:'sport',paper:'#f0f3e8',ink:'#12271d',accent:'#467b24',night:'#081c15',font:'Arial Black',mood:'Movement, competition and team spirit'},

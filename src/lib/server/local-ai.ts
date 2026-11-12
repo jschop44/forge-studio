@@ -1,3 +1,4 @@
+import {normalizeBusinessOfferings} from '../business-brief';
 import {designAdvice,notifyGeneration} from './workflow-adapters';
 import {randomUUID} from 'node:crypto';
 import {discoverBusinessVisuals} from './business-visuals';
@@ -72,6 +73,7 @@ export async function generateWithLocalAi(input:{businessName:string;industry:st
  activeGenerations++;
  const eventId=randomUUID();
  try {
+ input={...input,services:normalizeBusinessOfferings(input.industry,input.services)};
  const {visualAssets,...businessInput}=input;
  const advice=input.designLayout?{status:'not-configured' as const}:await designAdvice({industry:input.industry,services:input.services});
  const designLayout=input.designLayout||advice.layout;
