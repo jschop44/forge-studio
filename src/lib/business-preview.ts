@@ -23,7 +23,26 @@ function previewRuntime(slugs:string[],current:string,anchor:string,resolve:type
   if(destination.slug===current&&destination.hash){document.getElementById(destination.hash.slice(1))?.scrollIntoView();return}
   parent.postMessage({type:'forge-preview-navigate',...destination},'*');
  },true);
- addEventListener('DOMContentLoaded',()=>{if(anchor)requestAnimationFrame(()=>document.getElementById(anchor.slice(1))?.scrollIntoView())},{once:true});
+ // The srcdoc iframe has an opaque origin. Use events instead of locally
+ // named helper functions so esbuild's __name helper cannot leak into the
+ // standalone serialized preview script.
+ let lastHeight=0;
+ addEventListener('forge-preview-measure',()=>{
+  if(document.body?.getAttribute('data-forge-experience')!=='standard')return;
+  const height=Math.ceil(Math.max(document.body.scrollHeight,document.documentElement.scrollHeight));
+  if(!Number.isFinite(height)||height<300||Math.abs(height-lastHeight)<8)return;
+  lastHeight=height;
+  parent.postMessage({type:'forge-preview-height',slug:current,height},'*');
+ });
+ addEventListener('DOMContentLoaded',()=>{
+  if(anchor)requestAnimationFrame(()=>document.getElementById(anchor.slice(1))?.scrollIntoView());
+  if(typeof ResizeObserver==='function'){
+   const observer=new ResizeObserver(()=>dispatchEvent(new Event('forge-preview-measure')));
+   observer.observe(document.body);
+  }
+  requestAnimationFrame(()=>dispatchEvent(new Event('forge-preview-measure')));
+ },{once:true});
+ addEventListener('load',()=>dispatchEvent(new Event('forge-preview-measure')),{once:true});
 }
 export function businessPreviewHtml(page:GeneratedPage|undefined,pages:GeneratedPage[],anchor=''):string{
  if(!page)return '';

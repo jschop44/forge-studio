@@ -15,8 +15,16 @@ for(const mode of ['standard','cinematic','immersive'] as const)for(const mobile
   const frame=(title:string)=>page.frameLocator('iframe[title="Website preview: '+title+'"]');
   const nav=(title:string)=>mode==='immersive'?frame(title).locator('[data-world-page="about"]'):frame(title).locator('body>nav').getByRole('link',{name:'About',exact:true});
   await page.locator('iframe[title="Website preview: Home"]').scrollIntoViewIfNeeded();
-  const previewSize=await page.locator('iframe[title="Website preview: Home"]').boundingBox();
-  expect(previewSize!.height).toBeLessThanOrEqual(page.viewportSize()!.height*.8);
+  const preview=page.locator('iframe[title="Website preview: Home"]');
+  if(mode==='standard'&&mobile){
+   // The standard mobile site should expand beyond a cramped iframe, allowing
+   // its photograph-rich sections to scroll naturally in the parent page.
+   await expect.poll(async()=>((await preview.boundingBox())?.height||0)).toBeGreaterThan(page.viewportSize()!.height*.8);
+  }else{
+   // WebGL and cinematic scenes retain a finite viewport for correct camera scale.
+   const previewSize=await preview.boundingBox();
+   expect(previewSize!.height).toBeLessThanOrEqual(page.viewportSize()!.height*.8);
+  }
   await nav('Home').click();
   await expect(frame('About').locator('main h1')).toContainText('About Harbor Coffee');
   await expect(frame('About').locator('body')).not.toContainText('AI WEBSITE BUILDER');
