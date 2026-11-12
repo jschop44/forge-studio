@@ -19,6 +19,6 @@ test('preview bridge is valid JavaScript and installed before business controlle
  assert.match(script,/forge-preview-height/);
  assert.match(script,/ResizeObserver/);
  assert.match(script,/data-forge-experience/);
- assert.match(script,/getAttribute\('data-forge-experience'\)!=='standard'/);
+ assert.match(script,/getAttribute\(["']data-forge-experience["']\)\s*!==\s*["']standard["']/);
  assert.match(script,/parent\.postMessage/);
 });
