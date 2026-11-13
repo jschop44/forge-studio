@@ -70,8 +70,24 @@ export function extractWebsiteDesignDna(input:string,sourceUrl:string,stylesheet
   group.sort((a,b)=>a[0]-b[0]);
   pictureCandidates.set(picture.index+fallback.index,group.flatMap(([,urls])=>urls).slice(0,16));
  }
+ // Many real retail category cards intentionally have alt="" and provide their
+ // visible offering name on the enclosing link instead. Reuse only a published
+ // label on the image or its directly enclosing anchor, never nearby copy.
+ const contextualImageLabel=(tag:string,index:number)=>{
+  const intrinsic=[attribute(tag,'alt'),attribute(tag,'aria-label'),attribute(tag,'title'),attribute(tag,'data-alt')].find(value=>value.trim());
+  if(intrinsic)return text(intrinsic);
+  const prefix=html.slice(Math.max(0,index-1000),index);
+  const opens=[...prefix.matchAll(/<a\b[^>]*>/gi)];
+  const last=opens.at(-1);
+  if(!last)return '';
+  const closed=[...prefix.matchAll(/<\/a\s*>/gi)].at(-1);
+  if(closed&&(closed.index??-1)>(last.index??-1))return '';
+  const observed=attribute(last[0],'aria-label')||attribute(last[0],'title');
+  const label=text(observed);
+  return label.length>=4&&label.length<=110&&!/^(?:image|photo|picture|graphic|banner|shop now|click here|learn more|view all|open)$/i.test(label)?label:'';
+ };
  for(const match of html.matchAll(/<img\b[^>]*>/gi)){
-  const tag=match[0],alt=attribute(tag,'alt'),label=[alt,attribute(tag,'class'),attribute(tag,'id')].join(' ');
+  const tag=match[0],alt=contextualImageLabel(tag,match.index??0),label=[alt,attribute(tag,'class'),attribute(tag,'id')].join(' ');
   const candidates=[...(pictureCandidates.get(match.index??-1)||[]),attribute(tag,'data-src'),attribute(tag,'data-original'),attribute(tag,'data-lazy-src'),...responsiveUrls(attribute(tag,'data-srcset')),...responsiveUrls(attribute(tag,'srcset')),attribute(tag,'src')];
   const src=candidates.find(candidate=>candidate.trim().length>0&&publicSourceAsset(candidate,sourceUrl));
   const size=(name:string)=>{const n=Number(attribute(tag,name));return Number.isInteger(n)&&n>0&&n<=20000?n:undefined};

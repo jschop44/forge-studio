@@ -177,3 +177,25 @@ test('repeated source image is promoted to logo when CSS identifies its brand ro
  assert.equal(dna.images.filter(image=>image.url.endsWith('/company-symbol.svg')).length,1);
  assert.equal(dna.images[0].role,'logo');
 });
+
+
+test('image captions from the enclosing first-party product card remain semantically matchable',()=>{
+ const source='<a href="/headphones" aria-label="Shop Wireless Headphones"><img src="/headphones.webp" alt=""></a>'+
+  '<a href="/appliances" title="Small Kitchen Appliances"><img src="/appliances.webp" alt=""></a>'+
+  '<img src="/camera.jpg" alt="" aria-label="Mirrorless Cameras">'+
+  '<img src="/televisions.webp" alt="" title="OLED Televisions">';
+ const dna=extractWebsiteDesignDna(source,'https://retail.example/');
+ assert.equal(dna.images.find(image=>image.url.endsWith('/headphones.webp'))?.alt,'Shop Wireless Headphones');
+ assert.equal(dna.images.find(image=>image.url.endsWith('/appliances.webp'))?.alt,'Small Kitchen Appliances');
+ assert.equal(dna.images.find(image=>image.url.endsWith('/camera.jpg'))?.alt,'Mirrorless Cameras');
+ assert.equal(dna.images.find(image=>image.url.endsWith('/televisions.webp'))?.alt,'OLED Televisions');
+});
+test('closed and distant links never donate a misleading category to a source image',()=>{
+ const source='<a href="/wings" aria-label="Spicy Chicken Wings">Wings</a>'+
+  '<img src="/fruit.jpg" alt="">'+
+  '<a href="/category" aria-label="Shop Now"><img src="/unlabeled.jpg" alt=""></a>'+
+  '<a href="/cameras" aria-label="Mirrorless Cameras">'+('x'.repeat(1100))+'<img src="/distant.jpg" alt=""></a>';
+ const dna=extractWebsiteDesignDna(source,'https://retail.example/');
+ for(const file of ['fruit.jpg','unlabeled.jpg','distant.jpg'])
+  assert.equal(dna.images.find(image=>image.url.endsWith(file))?.alt,'','No inherited false product label: '+file);
+});
