@@ -9,6 +9,7 @@ import {captureWithCrawlee} from './capture';
 import {generateComfyVisual} from './visual-generation';
 import {auditForgePerformance} from './performance-audit';
 import {pathToFileURL} from 'node:url';
+import {qualityWorkerBindHost} from './bind-host';
 import {collectBrowserQualityEvidence} from '../../src/lib/browser-quality-evidence';
 import {applyMobileHeadingRepair} from '../../src/lib/heading-overflow-repair';
 import {inspectGeneratedPages,type PageEvidence,type QualityFinding} from '../../src/lib/auto-correction';
@@ -84,6 +85,7 @@ const secret=process.env.FORGE_QUALITY_WORKER_SECRET;
 if(!secret||secret.length<32)throw Error('Set FORGE_QUALITY_WORKER_SECRET to at least 32 characters');
 createServer(async(req,res)=>{
  res.setHeader('Content-Type','application/json');res.setHeader('Cache-Control','no-store');
+ if(req.method==='GET'&&req.url==='/health'){res.writeHead(200).end('{"ok":true}');return}
  const token=Buffer.from(req.headers.authorization||''),expected=Buffer.from('Bearer '+secret);
  if(req.method!=='POST'||!['/review','/capture','/visual','/performance'].includes(req.url||'')||token.length!==expected.length||!timingSafeEqual(token,expected)){res.writeHead(403).end('{"error":"Forbidden"}');return}
  if(active){res.writeHead(429).end('{"error":"Worker busy"}');return}
@@ -110,6 +112,6 @@ createServer(async(req,res)=>{
   res.end(JSON.stringify({pages:result.pages.map(({slug,title,html})=>({slug,title,html})),passed:result.findings.length===0,attempts:result.attempts,findings:result.findings.slice(0,200)}));
  }catch{res.writeHead(422).end('{"error":"Inspection failed"}')}
  finally{active=false}
-}).listen(Number(process.env.PORT||8788),'127.0.0.1');
+}).listen(Number(process.env.PORT||8788),qualityWorkerBindHost(process.env.FORGE_QUALITY_BIND_HOST));
 }
 if(process.argv[1]&&import.meta.url===pathToFileURL(process.argv[1]).href)startQualityServer();
