@@ -71,11 +71,16 @@ export function applySourceDesign(pages:GeneratedPage[],dna:WebsiteDesignDna|und
    if(selected){reservedForOfferings.add(selected.url);if(page.slug==='services')reservedForServices.add(selected.url)}
   }
  }
+ let suppressedUnverifiedMarks=0;
  const output=pages.map(page=>{
   const used=usedAcrossPages;let html=page.html.replace(/<style id="forge-source-design">[\s\S]*?<\/style>/g,'');
   if(logo&&!/class=["'][^"']*source-brand-logo/.test(html)){
    if(/<span\b[^>]*class=["'][^"']*\bbrand-mark\b/i.test(html))html=html.replace(/<span\b[^>]*class=["'][^"']*\bbrand-mark\b[^"']*["'][^>]*>[\s\S]*?<\/span>/i,()=>sourceImage(logo,'source-brand-logo',true));
    else html=html.replace(/<nav\b[^>]*>[\s\S]*?<\/nav>/i,nav=>nav.replace(/(<a\b[^>]*>)/i,tag=>tag+sourceImage(logo,'source-brand-logo',true)));
+  }else if(!logo){
+   // If no official logo can be observed, retain the business-name wordmark,
+   // not an invented single-letter icon that falsely resembles a copied mark.
+   html=html.replace(/<span\b[^>]*class=["'][^"']*\bbrand-mark\b[^"']*["'][^>]*>\s*[a-z0-9]\s*<\/span>(?=\s*[^<]{2,}<\/a>)/i,()=>{suppressedUnverifiedMarks++;return ''});
   }
   // Specific offering sections require matching semantic evidence; never substitute a generic source photograph.
   html=html.replace(/<article\b[^>]*>[\s\S]*?<\/article>/gi,article=>{const heading=article.match(/<h[23]\b[^>]*>([\s\S]*?)<\/h[23]>/i)?.[1]||'';const image=matchingImage(heading,images,page.slug==='services'?used:new Set([...used,...reservedForServices]));if(!image)return article;used.add(image.url);assigned++;return /<img\b/i.test(article)?article.replace(/<img\b[^>]*>/i,()=>sourceImage(image,'service-photo')):article.replace(/(<article\b[^>]*>)/i,tag=>tag+sourceImage(image,'service-photo'))});
@@ -112,6 +117,7 @@ export function applySourceDesign(pages:GeneratedPage[],dna:WebsiteDesignDna|und
   return {...page,html:html.replace(/<\/head>/i,'<style id="forge-source-design">'+css+'</style></head>')};
  });
  const warnings=['Original asset URLs were discovered in source HTML; availability and usage authorization still require verification.'];
+ if(suppressedUnverifiedMarks)warnings.push('No official source logo could be observed; preserved the business-name wordmark without fabricating a logo.');
  if(!assigned)warnings.push('No source images could be matched to generated sections; provide descriptive, authorized business imagery.');
  if(preserve)warnings.push('Source colors, available font names and representative images were reused. Exact layout, downloaded fonts and browser visual fidelity remain unverified.');
  return {pages:output,warnings};

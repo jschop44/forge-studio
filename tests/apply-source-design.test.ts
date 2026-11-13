@@ -223,3 +223,26 @@ test('enclosing observed retail catalog labels recover distinct offering photogr
  assert.doesNotMatch(site,/src="https:\/\/retail\.example\/fruit\.webp"/);
  assert.equal((site.match(/data-forge-source-image/g)||[]).length,2);
 });
+
+
+test('redesign without an observed official logo retains a wordmark, not a synthetic initial icon',()=>{
+ const source=extractWebsiteDesignDna('<img src="/appliances.jpg" alt="Kitchen Appliances">','https://retail.example/');
+ const original={slug:'index',title:'Home',html:wrap('<h1>Kitchen Appliances</h1>')};
+ const result=applySourceDesign([original],source,'redesign');
+ assert.match(result.pages[0].html,/>Pizza<\/a>/,'visible business-name wordmark is retained');
+ assert.doesNotMatch(result.pages[0].html,/<span class="brand-mark">P<\/span>/,'fabricated initial is suppressed');
+ assert.ok(result.warnings.some(text=>text.includes('without fabricating a logo')));
+ assert.match(original.html,/<span class="brand-mark">P<\/span>/,'input is not mutated');
+ const newSite=applySourceDesign([original],source,'new');
+ assert.match(newSite.pages[0].html,/<span class="brand-mark">P<\/span>/,'new brand design remains unchanged');
+});
+test('source logos still replace generated initials and meaningful multi-letter brand marks survive',()=>{
+ const original={slug:'index',title:'Home',html:wrap('<h1>Pizza</h1>')};
+ const observed=applySourceDesign([original],dna,'redesign').pages[0].html;
+ assert.match(observed,/class="source-brand-logo"/);
+ assert.doesNotMatch(observed,/<span class="brand-mark">P<\/span>/);
+ const noOfficialLogo=extractWebsiteDesignDna('<h1>Retail</h1>','https://retail.example/');
+ const deliberate={...original,html:original.html.replace('<span class="brand-mark">P</span>','<span class="brand-mark">BB</span>')};
+ const kept=applySourceDesign([deliberate],noOfficialLogo,'redesign').pages[0].html;
+ assert.match(kept,/<span class="brand-mark">BB<\/span>/);
+});
