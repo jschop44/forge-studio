@@ -72,3 +72,15 @@ test('a captured subpage remains usable when the inspected homepage has no compu
  assert.equal(result.pages[0].html,inputs[0].html);
  assert.match(result.pages[1].html,/--business-paper:#142230/);
 });
+
+test('source content widths above 999px are retained without copying unbounded CSS',()=>{
+ const wider={...capture,pages:[{...capture.pages[0],designTokens:{...tokens,contentMaxWidth:'1280px',heroLayout:'stacked' as const,heroTextAlign:'center' as const}}]};
+ const applied=applyCapturedAppearance(pages,wider,capture.sourceUrl,'preserve');
+ assert.match(applied.pages[0].html,/body main\{max-width:1280px;width:100%;margin-inline:auto\}/);
+ assert.match(applied.pages[0].html,/body main \.extracted-hero:has\(figure\)/);
+ assert.match(applied.pages[0].html,/@media\(max-width:700px\)/);
+});
+test('untrusted captured widths outside the approved geometry bounds are rejected',()=>{
+ const bad={...capture,pages:[{...capture.pages[0],designTokens:{...tokens,contentMaxWidth:'9999px'}}]};
+ assert.deepEqual(applyCapturedAppearance(pages,bad,capture.sourceUrl,'preserve').pages,pages);
+});
