@@ -167,3 +167,13 @@ test('source logo takes precedence over its favicon when both are publicly obser
  assert.equal(dna.logo?.url,'https://retail.example/brand.svg');
  assert.equal(dna.images.some(asset=>asset.url.endsWith('/touch.png')),false);
 });
+
+
+test('repeated source image is promoted to logo when CSS identifies its brand role',()=>{
+ const source='<img src="/company-symbol.svg" alt="Company symbol">'+
+  '<style>.site-logo{background-image:url("/company-symbol.svg")}</style>';
+ const dna=extractWebsiteDesignDna(source,'https://studio.example/');
+ assert.equal(dna.logo?.url,'https://studio.example/company-symbol.svg');
+ assert.equal(dna.images.filter(image=>image.url.endsWith('/company-symbol.svg')).length,1);
+ assert.equal(dna.images[0].role,'logo');
+});
