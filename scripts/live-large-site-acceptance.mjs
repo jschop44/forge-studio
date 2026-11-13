@@ -52,6 +52,52 @@ function zipGraph(bytes){
  while(queue.length){const name=queue.shift();if(reached.has(name)||!pages[name])continue;reached.add(name);queue.push(...(edges.get(name)||[]))}
  return {pages:names,unreachable:names.filter(name=>!reached.has(name)),brokenLinks:broken.slice(0,50),allPagesReachable:reached.size===names.length&&names.length>0};
 }
+
+async function inspectPortableExport(browser,archive,index,entry){
+ const entries=unzipSync(archive),files=new Map(Object.entries(entries).filter(([name])=>name.endsWith('.html')).map(([name,data])=>[name,strFromU8(data)]));
+ const context=await browser.newContext({viewport:{width:1280,height:900}});
+ const page=await context.newPage();
+ await page.route('https://forge-export.test/**',route=>{
+  const key=decodeURIComponent(new URL(route.request().url()).pathname).replace(/^\/+/,'')||'index.html';
+  return route.fulfill({status:files.has(key)?200:404,contentType:'text/html; charset=utf-8',body:files.get(key)||'Not in exported ZIP'});
+ });
+ const measurements=[];
+ try{
+  for(const [width,device] of [[1280,'desktop'],[390,'390px']]){
+   await page.setViewportSize({width,height:900});
+   await page.goto('https://forge-export.test/index.html',{waitUntil:'domcontentloaded',timeout:15000});
+   // Do not conflate lazy images outside the viewport with missing assets.
+   await page.waitForTimeout(1500);
+   const finding=await page.evaluate(()=>{
+    const images=[...document.images];
+    const headings=[...document.querySelectorAll('h1,h2,h3')];
+    return {
+     documentWidth:document.documentElement.scrollWidth,viewportWidth:innerWidth,
+     scrollHeight:document.documentElement.scrollHeight,
+     headingsClipped:headings.filter(h=>h.scrollWidth>h.clientWidth+2&&h.clientWidth>0).slice(0,8).map(h=>h.textContent?.trim().slice(0,80)),
+     nonStandardTransforms:headings.filter(h=>{
+      const t=getComputedStyle(h).transform;return t&&t!=='none'&&!/^matrix\(1, 0, 0, 1, /.test(t);
+     }).slice(0,5).map(h=>h.textContent?.trim().slice(0,80)),
+     images:{loaded:images.filter(i=>i.naturalWidth>0).length,
+      unloadedLazy:images.filter(i=>i.loading==='lazy'&&!i.complete).length,
+      confirmedBroken:images.filter(i=>i.complete&&i.naturalWidth===0).length,
+      otherPending:images.filter(i=>i.loading!=='lazy'&&!i.complete).length}
+    };
+   });
+   const screenshot='case-'+index+'-export-'+device+'.png';
+   await page.screenshot({path:join(OUT,screenshot),fullPage:true,timeout:30000});
+   entry.screenshots.push(screenshot);
+   measurements.push({device,...finding});
+  }
+  const serviceLink=page.locator('a[href^="services.html"]').first();
+  if(await serviceLink.count()){
+   await serviceLink.click({timeout:10000});
+   entry.exportNavigation={clicked:'services.html',destination:new URL(page.url()).pathname,landedOnServices:new URL(page.url()).pathname==='/services.html'};
+  }
+  return measurements;
+ }finally{await context.close()}
+}
+
 async function screenshotAndMeasure(page,label,path){
  const frame=page.locator('iframe[title^="Website preview:"]').first();
  await frame.waitFor({state:'visible',timeout:12000});
@@ -91,21 +137,25 @@ async function runOne(browser,item,index){
   }}).catch(()=>{entry.sourceEvidence={httpStatus:response.status(),error:'Inspection response was not parseable JSON'}});
  });
  try{
-  await page.goto(BASE+'/business',{waitUntil:'load',timeout:35000});
+  await page.goto(BASE+'/business',{waitUntil:'domcontentloaded',timeout:35000});
   const mode=page.getByRole('combobox',{name:/^Design approach/});
   await mode.waitFor({state:'visible',timeout:30000});
-  const sourceInput=page.getByRole('textbox',{name:'Existing website address'});
-  // A fresh Next.js page can show a usable native <select> before React binds
-  // its change handler. A one-time reload repeats that race and discards state.
-  // Repeat only the benign mode selection (never inspection or generation)
-  // until the conditional field proves that hydration handled the change.
-  let formReady=false;
-  for(let attempt=0;attempt<6;attempt++){
+  // Changing a select before React hydration modifies the DOM without updating state.
+  await page.waitForFunction(()=>{
+   const input=[...document.querySelectorAll('select')].find(el=>el.closest('label')?.textContent?.includes('Design approach'));
+   return !!input&&Object.keys(input).some(key=>key.startsWith('__reactFiber$'));
+  },null,{timeout:20000});
+  const sourceInput=page.locator('input[placeholder="e.g. disney.com"]');
+  for(let attempt=0;attempt<3;attempt++){
    await mode.selectOption(item.mode);
-   try{await sourceInput.waitFor({state:'visible',timeout:2500});formReady=true;break}catch{}
-   await page.waitForTimeout(400);
+   if(await sourceInput.isVisible().catch(()=>false))break;
+   if(attempt===1)await page.reload({waitUntil:'domcontentloaded'});
+   await page.waitForTimeout(500);
   }
-  if(!formReady)throw Error('Design approach did not hydrate: selected='+await mode.inputValue()+', requested='+item.mode);
+  if(!await sourceInput.isVisible()){
+   const actual=await mode.inputValue().catch(()=>'unknown');
+   throw Error('Expected website address field absent after hydration; selected design approach='+actual);
+  }
   await sourceInput.fill(item.url);
   const extractLabel=item.mode==='redesign'?'Extract website details for redesign':'Extract website appearance';
   await page.getByRole('button',{name:extractLabel,exact:true}).click();
@@ -131,8 +181,12 @@ async function runOne(browser,item,index){
   const download=await downloadPromise;
   const filename=join(OUT,'case-'+(index+1)+'.zip');
   await download.saveAs(filename);
-  entry.zip=zipGraph(await readFile(filename));
+  const archive=await readFile(filename);
+  entry.zip=zipGraph(archive);
   if(!entry.zip.allPagesReachable||entry.zip.brokenLinks.length)throw Error('Exported site navigation contains unreachable pages or broken local links');
+  entry.exportedSite=await inspectPortableExport(browser,archive,index+1,entry);
+  if(entry.exportedSite.some(view=>view.documentWidth>view.viewportWidth+2))throw Error('Exported website has browser-confirmed horizontal page overflow');
+  if(entry.exportNavigation&&entry.exportNavigation.landedOnServices!==true)throw Error('Exported homepage link did not navigate to services page');
   entry.status='structural_checks_passed_visual_review_pending';
  }catch(error){
   entry.firstFailure=String(error instanceof Error?error.message:error).slice(0,1100);
