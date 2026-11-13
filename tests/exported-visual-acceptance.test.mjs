@@ -7,7 +7,8 @@ const logo=(alt,url)=>'<html><body><nav><a href="index.html"><img class="source-
 test('large-site acceptance refuses already-observed Disney promotional partner marks',()=>{
  for(const [alt,url] of [
   ['Disney+ Hulu logo','https://lumiere-a.akamaihd.net/v1/images/disneybundle_slimbanner_logo.png'],
-  ['Fortnite | Disney logo','https://lumiere-a.akamaihd.net/v1/images/cg_dcp_fortnitexdisney_hz_desktop.jpeg']]){
+  ['Fortnite | Disney logo','https://lumiere-a.akamaihd.net/v1/images/cg_dcp_fortnitexdisney_hz_desktop.jpeg'],
+  ['Make the Holidays Magic logo','https://lumiere-a.akamaihd.net/v1/images/celebrate-the-magic-horizontal-logo-800.png']]){
   const result=inspectExportedBranding(logo(alt,url),'Disney');
   assert.equal(result.promotionalLogoFound,true,alt);
   assert.ok(result.warning);
