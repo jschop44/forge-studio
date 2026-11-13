@@ -33,8 +33,29 @@ export function industryPhotos(industry:string){if(requiresFamilySafeReview(indu
 if(/\bhospitals?\b|healthcare|medical|dental|pharmacy|veterinar|bakery|patisserie|legal|law firm|finance|financial|insurance|pet care/.test(term)&&!/restaurant/.test(term))return [];if(/education|school/.test(term)&&! /\btoys?\b/.test(term))return [];if(!/fruits?|produce|vegetables?|farmers? market|greengrocer|toys?|entertainment|theme park|movie|cinema|film|media|streaming|coffee|espresso|roast|barista|caf[eé]|soccer|football|baseball|softball|batting|cars?|automotive|auto repair|vehicles?|motors?|motorcycle|hotel|travel|resort|hospitality|fashion|jewel|clothing|luxury|food|restaurant|pizza|bakery|real.?estate|home|property|construction|technology|tech|software|digital|artificial intelligence|saas|computer|health|fitness|wellness|spa|beauty|salon|barber|hairdresser|hair styling|skincare|office|cowork|workspace/.test(term))return [];const category=/\b(?:fruit|fruits|produce|vegetables?|greengrocer)\b|farmers? market/.test(term)?'produce':/\btoys?\b/.test(term)?'toys':/entertainment|theme park|movie|cinema|film|media|streaming/.test(term)?'entertainment':/coffee|espresso|roast|barista|café|cafe/.test(term)?'coffee':/soccer|association football/.test(term)?'soccer':/baseball|softball|batting/.test(term)?'baseball':/\b(?:cars?|automotive|auto repair|auto dealership|vehicles?|motors?|motorcycle|car dealership)\b/.test(term)?'automotive':/hotel|travel|resort|stay|hospitality/.test(term)&&!/restaurant|dining|food/.test(term)?'hospitality':/fashion|jewel|clothing|luxury/.test(term)?'fashion':/food|restaurant|pizza|cafe|bakery/.test(term)?'food':/real.?estate|home|property|construction/.test(term)?'realestate':/\b(?:technology|tech|software|digital|artificial intelligence|ai solutions|computer|computing|saas)\b/.test(term)?'technology':/\b(?:beauty|salon|barber|hairdresser|hair styling|skincare)\b/.test(term)?'beauty':/\b(?:health|healthcare|fitness|wellness|spa|beauty|salon|barber|hairdresser|hair styling|skincare)\b/.test(term)?'wellness':'general';if(category==='general'&&!/\b(office|cowork(?:ing)?|workspace)\b/.test(term))return [];if(nicheTerms(industry).some(subject=>!stockDescriptors.has(subject)&&!stockSubjects[category].includes(subject)))return [];return photoLibrary[category].map(id=>'https://images.unsplash.com/'+id+'?auto=format&fit=crop&w=3840&q=90')}
 
 /** Match each offering to its own subject rather than reusing an industry hero. */
+/** Subject-confirmed free Unsplash photographs for broad consumer-electronics
+ * retail category cards. These are NOT photographs of the retailer's products,
+ * official campaigns or brand assets. Preserve Style still prioritizes matching
+ * observed source imagery when licensed; never label a stock photo as a SKU.
+ * Each photo's Unsplash page documents its free Unsplash License.
+ */
+const electronicsCategoryPhotos:[RegExp,string][]=[
+ [/\b(?:televisions?|tvs?|home theater|home theatre)\b/i,'photo-1461151304267-38535e780c79'],
+ [/\b(?:computers?|laptops?|notebooks?|tablets?)\b/i,'photo-1508780709619-79562169bc64'],
+ [/\b(?:headphones?|headsets?|earbuds?)\b/i,'photo-1524678606370-a47ad25cb82a'],
+ [/\b(?:video games?|gaming|game consoles?|playstation)\b/i,'photo-1665041974623-d398d035023e'],
+ [/\b(?:cameras?|camcorders?|photography equipment)\b/i,'photo-1719937206098-236a481a2b6d'],
+ [/\b(?:kitchen appliances?|appliances?)\b/i,'photo-1770063817031-f3b98dff347f']
+];
 export function servicePhoto(service:string,industry:string):string|null{
- if(requiresFamilySafeReview(service+' '+industry)||!industryPhotos(industry).length)return null;
+ if(requiresFamilySafeReview(service+' '+industry))return null;
+ // No invented product identity: do not attach an electronics photo to an
+ // unrelated software firm, restaurant, Apple brand name, or drone-only label.
+ if(/\b(?:electronics?\s+(?:retail|retailer|shops?|stores?)|consumer electronics)\b/i.test(industry)){
+  const candidate=electronicsCategoryPhotos.find(([pattern])=>pattern.test(service));
+  return candidate?'https://images.unsplash.com/'+candidate[1]+'?auto=format&fit=crop&w=3840&q=90':null;
+ }
+ if(!industryPhotos(industry).length)return null;
  const term=service.toLowerCase();
  if(/\b(?:bail\s*bonds?|bail\s*bonding|bailbond|bailbonds)\b/.test(industry.toLowerCase())&&/\b(?:bail|bond|court|release|surety)\b/.test(term))return industryPhotos(industry)[4]||null;
  if(/baseball|softball/.test(industry.toLowerCase())&&/\b(baseballs?|softballs?|balls?)\b/.test(term)&&!/\b(bats?|gloves?|mitts?)\b/.test(term))return 'https://images.unsplash.com/photo-1519152638844-5f96fded9237?auto=format&fit=crop&w=3840&q=90';
