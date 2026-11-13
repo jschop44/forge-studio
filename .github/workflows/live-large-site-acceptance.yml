@@ -4,11 +4,27 @@ on:
     paths:
       - 'scripts/live-large-site-acceptance.mjs'
       - '.github/workflows/live-large-site-acceptance.yml'
+      - 'src/app/business/page.tsx'
+      - 'src/app/api/site-reference/**'
+      - 'src/lib/apply-source-design.ts'
+      - 'src/lib/observed-product-links.ts'
+      - 'src/lib/business-site.ts'
+      - 'src/lib/extracted-pages.ts'
+      - 'src/lib/source-reuse-policy.ts'
+      - 'src/lib/website-design-dna.ts'
   push:
     branches: [main]
     paths:
       - 'scripts/live-large-site-acceptance.mjs'
       - '.github/workflows/live-large-site-acceptance.yml'
+      - 'src/app/business/page.tsx'
+      - 'src/app/api/site-reference/**'
+      - 'src/lib/apply-source-design.ts'
+      - 'src/lib/observed-product-links.ts'
+      - 'src/lib/business-site.ts'
+      - 'src/lib/extracted-pages.ts'
+      - 'src/lib/source-reuse-policy.ts'
+      - 'src/lib/website-design-dna.ts'
   workflow_dispatch:
 permissions:
   contents: read
