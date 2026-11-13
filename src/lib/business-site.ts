@@ -54,9 +54,10 @@ if(isExcludedBusiness(b))throw new Error('Unsupported business category');const 
  // identity tracking prevents the homepage teasers repeating those same files.
  const usedAcrossOfferingCards=new Set<string>();
  const cardsFor=(page:'home'|'services')=>{const usedServiceImages=new Set<string>([...usedAcrossOfferingCards,...[photos[page==='home'?0:1],...(objectPlan?.targets.map(target=>target.image)||[])].filter((url):url is string=>Boolean(url)).map(photoIdentity)]);return b.services.map((service,index)=>{const unsafe=requiresFamilySafeReview(service+' '+b.industry);const candidates=unsafe?[]:offeringPhotoCandidates(service,b.industry);const subjectWords=service.toLowerCase().split(/[^a-z0-9]+/).filter(word=>word.length>3&&!['services','products','available','general'].includes(word));const verifiedMatches=unsafe?[]:verifiedVisuals.filter(asset=>subjectWords.length>0&&relevantVisualAssets(service,[asset]).length>0).map(asset=>asset.url);const verifiedFallback=unsafe||specificVisualOfferings([service]).length?[]:verifiedVisuals.filter(asset=>!verifiedMatches.includes(asset.url)).map(asset=>asset.url);const image=selectDiversePhoto([...verifiedMatches,...candidates,...verifiedFallback,...(direction.key==='baseball'?photos:[])],usedServiceImages,heroAssets);if(image)usedAcrossOfferingCards.add(photoIdentity(image));return '<article id="offering-'+index+'" class="card service-card">'+(image?'<img class="service-photo" src="'+s(image)+'" alt="'+s(service)+'" loading="lazy">':'')+'<div class="service-copy"><span class="eyebrow">'+String(index+1).padStart(2,'0')+' / '+s(b.industry)+'</span><h2>'+s(service)+'</h2><p>'+s(serviceSummary(service))+'</p><a href="contact.html" aria-label="Ask about '+s(service)+'">'+(retail?'Ask about availability':'Ask about this service')+' →</a></div></article>'}).join('')};
- // Render catalog cards first even though the homepage is the first output page.
- const serviceCards=cardsFor('services');
+ // Preserve image-rich homepage teaser cards; reuse only unclaimed images on
+ // the detailed catalog so offering imagery never repeats across pages.
  const homeCards=cardsFor('home');
+ const serviceCards=cardsFor('services');
  const coffee=/coffee|espresso|barista|cafe|café|roast/i.test(b.industry+' '+b.description+' '+b.businessName);
  const realestate=/real.?estate|realtor|property|homes/i.test(b.industry+' '+b.description);
  const restaurant=/restaurant|pizza|bakery|food/i.test(b.industry+' '+b.description);
