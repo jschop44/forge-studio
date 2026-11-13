@@ -1,0 +1,43 @@
+import {test} from 'node:test';
+import assert from 'node:assert/strict';
+import {generateBusinessWebsite} from '../src/lib/business-site';
+
+function cardPhotoUrls(html:string):string[]{
+ return [...html.matchAll(/<img\b[^>]*class="service-photo"[^>]*src="([^"]+)"/gi)]
+  .map(match=>match[1].replace(/&amp;/g,'&').split('?')[0]);
+}
+
+test('catalog photos do not repeat on the homepage teaser cards',()=>{
+ const site=generateBusinessWebsite({
+  businessName:'Neighborhood Coffee Roasters',
+  industry:'Coffee shop and cafe',
+  description:'A friendly neighborhood coffee shop serving espresso drinks, roasted beans and pastries.',
+  services:['Coffee beans','Espresso drinks','Pastries'],
+  experienceStyle:'standard'
+ });
+ const home=site.pages.find(page=>page.slug==='index');
+ const catalog=site.pages.find(page=>page.slug==='services');
+ assert.ok(home&&catalog);
+ const catalogPhotos=cardPhotoUrls(catalog.html);
+ const homePhotos=cardPhotoUrls(home.html);
+ assert.ok(catalogPhotos.length>=2,'catalog should keep available subject-matched photos');
+ const all=[...catalogPhotos,...homePhotos];
+ assert.equal(new Set(all).size,all.length,'offerings must not repeat an image across the generated pages');
+ assert.match(home.html,/href="services\.html"/,'homepage still links to its full catalog');
+ assert.match(catalog.html,/Espresso drinks/,'offering copy must survive photo allocation');
+});
+
+test('available catalog photography takes priority over repeating teaser images',()=>{
+ const site=generateBusinessWebsite({
+  businessName:'Coffee Counter',
+  industry:'Coffee shop and cafe',
+  description:'Serving small batch coffee beans and brewed espresso for the neighborhood.',
+  services:['Coffee beans','Coffee bean roasting'],
+  experienceStyle:'standard'
+ });
+ const catalog=site.pages.find(page=>page.slug==='services')!;
+ const home=site.pages.find(page=>page.slug==='index')!;
+ const catalogPhotos=cardPhotoUrls(catalog.html);
+ assert.ok(catalogPhotos.length>=1);
+ assert.ok(catalogPhotos.every(url=>!cardPhotoUrls(home.html).includes(url)));
+});
