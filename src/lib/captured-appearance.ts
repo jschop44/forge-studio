@@ -68,8 +68,8 @@ function appearanceRules(tokens:unknown):string{
   navBg?'body>nav{background:'+navBg+';color:'+readableInk(navBg)+'}body>nav a{color:inherit}':'',
   buttonBg?'body .button{background:'+buttonBg+';color:'+buttonInk+'}':'',
   radius!==undefined?'body .button{border-radius:'+radius+'px}':'',
-  headerTop!==undefined?'body>nav{padding-top:'+headerTop+'px}':'',
-  headerBottom!==undefined?'body>nav{padding-bottom:'+headerBottom+'px}':'',
+  headerTop!==undefined?'@media(min-width:701px){body>nav{padding-top:'+headerTop+'px}}':'',
+  headerBottom!==undefined?'@media(min-width:701px){body>nav{padding-bottom:'+headerBottom+'px}}':'',
   mediaRadius!==undefined?'body main .site-hero .editorial-photo img,body main .extracted-hero img{border-radius:'+mediaRadius+'px}':'',
   // Only copy desktop geometry to desktop: actual source phone geometry was not captured.
   heroGap!==undefined?'@media(min-width:701px){body main .site-hero,body main .extracted-hero{column-gap:'+heroGap+'px}}':'',
