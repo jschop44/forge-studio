@@ -91,15 +91,21 @@ async function runOne(browser,item,index){
   }}).catch(()=>{entry.sourceEvidence={httpStatus:response.status(),error:'Inspection response was not parseable JSON'}});
  });
  try{
-  await page.goto(BASE+'/business',{waitUntil:'domcontentloaded',timeout:35000});
+  await page.goto(BASE+'/business',{waitUntil:'load',timeout:35000});
   const mode=page.getByRole('combobox',{name:/^Design approach/});
   await mode.waitFor({state:'visible',timeout:30000});
-  await mode.selectOption(item.mode);
   const sourceInput=page.getByRole('textbox',{name:'Existing website address'});
-  // A cold first paint can display pre-hydration controls. Retry UI setup once,
-  // not source inspection or generation, if the conditional address field is absent.
-  try{await sourceInput.waitFor({state:'visible',timeout:8000})}
-  catch{await page.reload({waitUntil:'domcontentloaded'});await mode.selectOption(item.mode);await sourceInput.waitFor({state:'visible',timeout:12000})}
+  // A fresh Next.js page can show a usable native <select> before React binds
+  // its change handler. A one-time reload repeats that race and discards state.
+  // Repeat only the benign mode selection (never inspection or generation)
+  // until the conditional field proves that hydration handled the change.
+  let formReady=false;
+  for(let attempt=0;attempt<6;attempt++){
+   await mode.selectOption(item.mode);
+   try{await sourceInput.waitFor({state:'visible',timeout:2500});formReady=true;break}catch{}
+   await page.waitForTimeout(400);
+  }
+  if(!formReady)throw Error('Design approach did not hydrate: selected='+await mode.inputValue()+', requested='+item.mode);
   await sourceInput.fill(item.url);
   const extractLabel=item.mode==='redesign'?'Extract website details for redesign':'Extract website appearance';
   await page.getByRole('button',{name:extractLabel,exact:true}).click();
