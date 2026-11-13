@@ -56,6 +56,14 @@ async function screenshotAndMeasure(page,label,path){
  const frame=page.locator('iframe[title^="Website preview:"]').first();
  await frame.waitFor({state:'visible',timeout:12000});
  const html=page.frameLocator('iframe[title^="Website preview:"]').locator('html');
+ // A lazy image outside the current inner viewport is untested, not broken.
+ // Let visible/priority images settle before the screenshot and preserve pending counts.
+ await html.evaluate(async()=>{
+  const images=[...document.images].filter(img=>img.loading!=='lazy'||img.getBoundingClientRect().top<window.innerHeight);
+  await Promise.race([Promise.all(images.map(img=>img.complete?Promise.resolve():new Promise(resolve=>{
+   img.addEventListener('load',resolve,{once:true});img.addEventListener('error',resolve,{once:true});
+  }))),new Promise(resolve=>setTimeout(resolve,7000))]);
+ });
  const measurements=await html.evaluate(element=>{
   const imgs=[...element.querySelectorAll('img')];
   return {contentWidth:element.clientWidth,scrollWidth:element.scrollWidth,scrollHeight:element.scrollHeight,clientHeight:element.clientHeight,
