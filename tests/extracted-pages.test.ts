@@ -69,3 +69,15 @@ test('source image rendering rejects unsafe URLs, foreign page context, tracking
  assert.doesNotMatch(pages[0].html,/<script>/);
  assert.match(pages[0].html,/Text &lt;script&gt;/);
 });
+
+test('unknown-size source tracking beacons never become inspected-page photographs',()=>{
+ const pages=createExtractedPages({url:'https://retailer.example',title:'Retailer',description:'Phones',headings:[],pageSummaries:[{
+  path:'/phones',label:'Phones',title:'Phones',description:'Devices and accessories',headings:['Google Pixel 9'],images:[
+   {url:'https://retailer.example/akam/13/pixel_62c5ef83',sourcePage:'https://retailer.example/phones',alt:'',role:'content'},
+   {url:'https://retailer.example/products/pixel-9.jpg',sourcePage:'https://retailer.example/phones',alt:'Google Pixel 9 phone',role:'content'}
+  ]
+ }]},'Retailer');
+ assert.equal(pages.length,1);
+ assert.doesNotMatch(pages[0].html,/\/akam\/13\/pixel_/);
+ assert.match(pages[0].html,/src="https:\/\/retailer\.example\/products\/pixel-9\.jpg"/);
+});

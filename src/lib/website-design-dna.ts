@@ -7,7 +7,7 @@ function text(value:string){return decode(value.replace(/<[^>]*>/g,' ')).replace
 function attribute(tag:string,name:string){return decode(tag.match(new RegExp('(?:^|\\s)'+name+'\\s*=\\s*(?:"([^"]*)"|\'([^\']*)\'|([^\\s>]+))','i'))?.slice(1).find(value=>value!==undefined)||'')}
 /** Exclude credentialed, local, literal-IP and non-HTTPS destinations before exposing assets. */
 export function publicSourceAsset(value:string,base:string):string|undefined{
- try{const url=new URL(decode(value),base);const host=url.hostname.toLowerCase();if(url.protocol!=='https:'||url.username||url.password||url.port&&url.port!=='443'||!host.includes('.')||host.endsWith('.local')||host.endsWith('.localhost')||host==='localhost'||host==='metadata.google.internal'||host.endsWith('.internal')||/^\d+(?:\.\d+){3}$/.test(host)||host.includes(':')||url.href.length>2000)return;url.hash='';return url.href}catch{return}
+ try{const url=new URL(decode(value),base);const host=url.hostname.toLowerCase();if(url.protocol!=='https:'||url.username||url.password||url.port&&url.port!=='443'||!host.includes('.')||host.endsWith('.local')||host.endsWith('.localhost')||host==='localhost'||host==='metadata.google.internal'||host.endsWith('.internal')||/^\d+(?:\.\d+){3}$/.test(host)||host.includes(':')||url.href.length>2000)return;if(/\/akam\/\d+\/pixel_/i.test(url.pathname))return;url.hash='';return url.href}catch{return}
 }
 export function extractWebsiteDesignDna(input:string,sourceUrl:string,stylesheets:string[]=[]):WebsiteDesignDna{
  const html=input.slice(0,2_000_000).replace(/<script\b[^>]*>[\s\S]*?<\/script\s*>/gi,'');

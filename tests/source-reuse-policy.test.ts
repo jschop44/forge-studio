@@ -36,3 +36,15 @@ test('observed catalog survives broad recognition without inventing offerings',(
  assert.deepEqual(observedCatalogOfferings(navigation,images),['TV & Home Theater','Computers & Tablets']);
  assert.deepEqual(observedCatalogOfferings(navigation,[{alt:'Computers & Tablets',role:'logo'}]),[]);
 });
+
+test('ambiguous shared name tokens cannot carry an unrelated brand into Preserve Style',()=>{
+ assert.equal(matchingSourceBusiness('Best Buy','Best Dentistry'),false);
+ assert.equal(matchingSourceBusiness('Best Buy','Buy Gold'),false);
+ assert.equal(matchingSourceBusiness('Northstar Coffee','Northstar Books'),false);
+ assert.equal(matchingSourceBusiness('Best Buy','BestBuy'),true);
+ assert.equal(matchingSourceBusiness('Best Buy','Best Buy Official Store'),true);
+ assert.equal(matchingSourceBusiness('Tamberinos Pizza','Tamberinos'),true);
+ assert.equal(matchingSourceBusiness('Disney','Walt Disney Company'),true);
+ assert.deepEqual(resolveGenerationSourceMode('inspired','Best Buy','Best Dentistry'),{mode:'new',discardUnrelatedSource:true});
+ assert.deepEqual(resolveGenerationSourceMode('redesign','Best Buy','Best Buy Official Store'),{mode:'redesign',discardUnrelatedSource:false});
+});
