@@ -1,3 +1,4 @@
+import {cleanSourceText as clean} from '../../../lib/source-text';
 import {usefulSourcePage} from '../../../lib/source-reuse-policy';
 import {NextRequest,NextResponse} from 'next/server';
 import {captureWithBrowserWorker} from '../../../lib/server/browser-capture-worker';
@@ -8,7 +9,7 @@ import {sitemapPages} from '../../../lib/sitemap-discovery';
 import {homepageSourceParagraphs} from '../../../lib/forge-intelligence';
 import {fetchPublicText,publicSiteUrl} from '../../../lib/server/public-site-fetch';
 export const runtime='nodejs';
-function clean(value:string){return value.replace(/<[^>]*>/g,' ').replace(/&amp;/g,'&').replace(/&quot;/g,'"').replace(/&#39;/g,"'").replace(/\s+/g,' ').trim().slice(0,400)}
+
 function meta(html:string,key:string){const tags=html.match(/<meta\b[^>]*>/gi)||[];for(const tag of tags){const property=tag.match(/(?:name|property)\s*=\s*["']([^"']+)["']/i)?.[1];if(property?.toLowerCase()===key.toLowerCase())return clean(tag.match(/content\s*=\s*["']([^"']*)["']/i)?.[1]||'')}return ''}
 export async function POST(req:NextRequest){
  if(!sameOrigin(req))return NextResponse.json({error:'Origin rejected'},{status:403});
