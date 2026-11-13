@@ -13,7 +13,36 @@ export function extractWebsiteDesignDna(input:string,sourceUrl:string,stylesheet
  const html=input.slice(0,2_000_000).replace(/<script\b[^>]*>[\s\S]*?<\/script\s*>/gi,'');
  const css=[...(html.match(/<style\b[^>]*>[\s\S]*?<\/style\s*>/gi)||[]),...stylesheets.slice(0,5).map(sheet=>sheet.slice(0,100_000))].join('\n').slice(0,500_000);
  const images:SourceImage[]=[],seen=new Set<string>();
- const add=(value:string,alt:string,role:SourceImage['role'],width?:number,height?:number)=>{const url=publicSourceAsset(value,sourceUrl);if(!url||seen.has(url)||images.length>=30||width&&height&&width<32&&height<32)return;seen.add(url);images.push({url,alt:text(alt),role,sourcePage:sourceUrl,...(width?{width}:{}),...(height?{height}:{})})};
+ const add=(value:string,alt:string,role:SourceImage['role'],width?:number,height?:number)=>{
+  const url=publicSourceAsset(value,sourceUrl);
+  if(!url||width&&height&&width<32&&height<32)return;
+  if(seen.has(url)){
+   // The same asset may first appear as a generic <img>, then be identified
+   // as a logo by the source's logo-specific CSS. Promote its observed role.
+   if(role==='logo'){
+    const at=images.findIndex(image=>image.url===url);
+    if(at>=0&&images[at].role!=='logo'){
+     const [observed]=images.splice(at,1);
+     images.unshift({...observed,role:'logo',alt:text(alt)||observed.alt});
+    }
+   }
+   return;
+  }
+  if(images.length>=30){
+   // Source storefronts can have dozens of category photographs before the
+   // official brand asset appears. Reserve observed logo evidence rather than
+   // silently replacing it with a generated monogram.
+   if(role!=='logo')return;
+   const displaced=images.findLastIndex(image=>image.role!=='logo');
+   if(displaced<0)return;
+   seen.delete(images[displaced].url);
+   images.splice(displaced,1);
+  }
+  seen.add(url);
+  const asset={url,alt:text(alt),role,sourcePage:sourceUrl,...(width?{width}:{}),...(height?{height}:{})};
+  if(role==='logo')images.unshift(asset);
+  else images.push(asset);
+ };
  // The original photo often lives in srcset while src contains a transparent placeholder.
  // Treat source markup as URL evidence only; never execute it in a generated page.
  const responsiveUrls=(value:string)=>value.split(',').map(part=>{
@@ -61,6 +90,24 @@ export function extractWebsiteDesignDna(input:string,sourceUrl:string,stylesheet
   if(!/(?:^|[\s.#_-])(?:logo|brand[-_]?mark)(?:$|[\s.#:_>-])/i.test(selector))continue;
   for(const hit of rule[2].matchAll(/background(?:-image)?\s*:[^;}]*?url\(\s*["']?([^\s"')]+)["']?\s*\)/gi))
    add(hit[1],'Source website logo','logo');
+ }
+ // If the source displays its brand through inline SVG and no public image
+ // URL is available, a first-party published touch icon is an evidence-backed
+ // fallback. Do not convert a third-party icon or an invented URL into a logo.
+ if(!images.some(image=>image.role==='logo')){
+  const homepage=new URL(sourceUrl);
+  const icons=[...html.matchAll(/<link\b[^>]*>/gi)]
+   .map(match=>match[0])
+   .filter(tag=>/(?:^|\s)(?:apple-touch-icon|icon)(?:\s|$)/i.test(attribute(tag,'rel')))
+   .sort((a,b)=>Number(/apple-touch-icon/i.test(attribute(b,'rel')))-Number(/apple-touch-icon/i.test(attribute(a,'rel'))));
+  for(const tag of icons){
+   const value=publicSourceAsset(attribute(tag,'href'),sourceUrl);
+   if(!value)continue;
+   const asset=new URL(value);
+   if(asset.origin!==homepage.origin||!/\.(?:png|jpe?g|webp|svg|ico)$/i.test(asset.pathname))continue;
+   add(value,'Source website icon','logo');
+   if(images.some(image=>image.role==='logo'))break;
+  }
  }
  // CSS URLs are read as evidence, never emitted as executable style rules.
  for(const match of css.matchAll(/(?:background(?:-image)?\s*:[^;}]*?)url\(\s*["']?([^\s"')]+)["']?\s*\)/gi))add(match[1],'Source website background','background');
