@@ -23,7 +23,13 @@ test('business identity selects a palette and story for actual niche, not generi
 
 test('each page uses purposeful, distinct niche-specific headings and matching editorial theme',()=>{
  for(const entry of businesses){
-  const site=generateBusinessWebsite({...entry,experienceStyle:'standard'});
+  const visualAssets=Array.from({length:8},(_,index)=>({
+   url:'https://upload.wikimedia.org/wikipedia/commons/a/ab/'+entry.theme+'-photo-'+index+'.jpg',
+   title:entry.industry+' photographed '+index,
+   source:'https://commons.wikimedia.org/wiki/File:'+entry.theme+'-photo-'+index+'.jpg',
+   credit:'Public domain photographer',license:'CC0'
+  }));
+  const site=generateBusinessWebsite({...entry,experienceStyle:'standard',visualAssets});
   assert.deepEqual(site.pages.map(page=>page.slug),['index','services','about','contact']);
   assert.deepEqual(inspectGeneratedPages(site.pages),[],entry.industry);
   const headings:string[]=[];
