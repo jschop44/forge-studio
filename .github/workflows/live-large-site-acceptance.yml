@@ -9,6 +9,11 @@ on:
     paths:
       - 'scripts/live-large-site-acceptance.mjs'
       - '.github/workflows/live-large-site-acceptance.yml'
+      - 'src/lib/apply-source-design.ts'
+      - 'src/lib/website-design-dna.ts'
+      - 'src/lib/business-site.ts'
+      - 'src/lib/source-reuse-policy.ts'
+      - 'src/app/business/page.tsx'
   workflow_dispatch:
 permissions:
   contents: read
