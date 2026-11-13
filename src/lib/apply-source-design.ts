@@ -18,7 +18,7 @@ function matchingImage(subject:string,images:SourceImage[],used:Set<string>){
   return {image,overlap,full:overlap===wanted.length,extra:Math.max(0,observed.size-overlap)};
  }).filter(item=>item.full).sort((a,b)=>a.extra-b.extra)[0]?.image;
 }
-function sourceImage(image:SourceImage,className='source-photo'){return '<img class="'+className+'" data-forge-source-image src="'+esc(image.url)+'" alt="'+esc(image.alt)+'" loading="lazy" decoding="async"'+(image.width?' width="'+image.width+'"':'')+(image.height?' height="'+image.height+'"':'')+'>'}
+function sourceImage(image:SourceImage,className='source-photo',eager=false){return '<img class="'+className+'" data-forge-source-image src="'+esc(image.url)+'" alt="'+esc(image.alt)+'" loading="'+(eager?'eager':'lazy')+'"'+(eager?' fetchpriority="high"':'')+' decoding="async"'+(image.width?' width="'+image.width+'"':'')+(image.height?' height="'+image.height+'"':'')+'>'}
 function foreground(background:string){const rgb=(background.length===4?background.slice(1).split('').map(c=>c+c).join(''):background.slice(1)).match(/../g)!.map(c=>parseInt(c,16));return rgb[0]*.299+rgb[1]*.587+rgb[2]*.114>150?'#151515':'#f8f8f8'}
 /** Reuse observed assets and bounded design tokens without executing source HTML/CSS. */
 export function applySourceDesign(pages:GeneratedPage[],dna:WebsiteDesignDna|undefined,mode:string):{pages:GeneratedPage[];warnings:string[]}{
@@ -56,8 +56,8 @@ export function applySourceDesign(pages:GeneratedPage[],dna:WebsiteDesignDna|und
  const output=pages.map(page=>{
   const used=usedAcrossPages;let html=page.html.replace(/<style id="forge-source-design">[\s\S]*?<\/style>/g,'');
   if(logo&&!/class=["'][^"']*source-brand-logo/.test(html)){
-   if(/<span\b[^>]*class=["'][^"']*\bbrand-mark\b/i.test(html))html=html.replace(/<span\b[^>]*class=["'][^"']*\bbrand-mark\b[^"']*["'][^>]*>[\s\S]*?<\/span>/i,()=>sourceImage(logo,'source-brand-logo'));
-   else html=html.replace(/<nav\b[^>]*>[\s\S]*?<\/nav>/i,nav=>nav.replace(/(<a\b[^>]*>)/i,tag=>tag+sourceImage(logo,'source-brand-logo')));
+   if(/<span\b[^>]*class=["'][^"']*\bbrand-mark\b/i.test(html))html=html.replace(/<span\b[^>]*class=["'][^"']*\bbrand-mark\b[^"']*["'][^>]*>[\s\S]*?<\/span>/i,()=>sourceImage(logo,'source-brand-logo',true));
+   else html=html.replace(/<nav\b[^>]*>[\s\S]*?<\/nav>/i,nav=>nav.replace(/(<a\b[^>]*>)/i,tag=>tag+sourceImage(logo,'source-brand-logo',true)));
   }
   // Specific offering sections require matching semantic evidence; never substitute a generic source photograph.
   html=html.replace(/<article\b[^>]*>[\s\S]*?<\/article>/gi,article=>{const heading=article.match(/<h[23]\b[^>]*>([\s\S]*?)<\/h[23]>/i)?.[1]||'';const image=matchingImage(heading,images,page.slug==='services'?used:new Set([...used,...reservedForServices]));if(!image)return article;used.add(image.url);assigned++;return /<img\b/i.test(article)?article.replace(/<img\b[^>]*>/i,()=>sourceImage(image,'service-photo')):article.replace(/(<article\b[^>]*>)/i,tag=>tag+sourceImage(image,'service-photo'))});
@@ -65,12 +65,12 @@ export function applySourceDesign(pages:GeneratedPage[],dna:WebsiteDesignDna|und
   html=html.replace(/<figure\b[^>]*class=["'][^"']*\beditorial-photo\b[^"']*["'][^>]*>[\s\S]*?<\/figure>/gi,figure=>{
    const heading=html.match(/<h1\b[^>]*>([\s\S]*?)<\/h1>/i)?.[1]||'';
    const subject=page.title+' '+heading+' '+(figure.match(/alt=["']([^"']*)["']/i)?.[1]||'');const image=matchingImage(subject,images,new Set([...used,...reservedForOfferings]));
-   if(!image)return figure;used.add(image.url);heroAssigned=true;assigned++;return '<figure class="editorial-photo" data-forge-source-figure>'+sourceImage(image)+'</figure>';
+   if(!image)return figure;used.add(image.url);heroAssigned=true;assigned++;return '<figure class="editorial-photo" data-forge-source-figure>'+sourceImage(image,'source-photo',true)+'</figure>';
   });
   if(!heroAssigned&&!/data-forge-source-figure/.test(html)){
    const heading=html.match(/<h1\b[^>]*>([\s\S]*?)<\/h1>/i)?.[1]||'';
    const image=matchingImage(page.title+' '+heading,images,new Set([...used,...reservedForOfferings]));
-   if(image&&!/data-forge-source-page-visual/.test(html)){used.add(image.url);assigned++;html=html.replace(/(<main\b[^>]*>)/i,tag=>tag+'<figure class="source-page-visual" data-forge-source-page-visual>'+sourceImage(image)+'</figure>')}
+   if(image&&!/data-forge-source-page-visual/.test(html)){used.add(image.url);assigned++;html=html.replace(/(<main\b[^>]*>)/i,tag=>tag+'<figure class="source-page-visual" data-forge-source-page-visual>'+sourceImage(image,'source-photo',true)+'</figure>')}
   }
   if(contact&&!/data-forge-source-contact/.test(html)){
    if(page.slug==='contact'&&/<p>Contact details are being updated\.<\/p>/i.test(html))html=html.replace(/<p>Contact details are being updated\.<\/p>/i,()=>'<p class="source-contact" data-forge-source-contact>'+contact+'</p>');

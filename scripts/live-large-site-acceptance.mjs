@@ -56,6 +56,14 @@ async function screenshotAndMeasure(page,label,path){
  const frame=page.locator('iframe[title^="Website preview:"]').first();
  await frame.waitFor({state:'visible',timeout:12000});
  const html=page.frameLocator('iframe[title^="Website preview:"]').locator('html');
+ // A lazy image outside the current inner viewport is untested, not broken.
+ // Let visible/priority images settle before the screenshot and preserve pending counts.
+ await html.evaluate(async()=>{
+  const images=[...document.images].filter(img=>img.loading!=='lazy'||img.getBoundingClientRect().top<window.innerHeight);
+  await Promise.race([Promise.all(images.map(img=>img.complete?Promise.resolve():new Promise(resolve=>{
+   img.addEventListener('load',resolve,{once:true});img.addEventListener('error',resolve,{once:true});
+  }))),new Promise(resolve=>setTimeout(resolve,7000))]);
+ });
  const measurements=await html.evaluate(element=>{
   const imgs=[...element.querySelectorAll('img')];
   return {contentWidth:element.clientWidth,scrollWidth:element.scrollWidth,scrollHeight:element.scrollHeight,clientHeight:element.clientHeight,
@@ -77,15 +85,24 @@ async function runOne(browser,item,index){
   void response.json().then(data=>{entry.sourceEvidence={
    httpStatus:response.status(),inspectedUrl:data.url||null,
    pageSummaries:(data.pageSummaries||[]).map(p=>({path:p.path,label:p.label,imageCount:p.images?.length||0})),
+   navigation:(data.navigation||[]).slice(0,30).map(link=>({label:link.label,path:link.path})),
    warnings:(data.warnings||[]).slice(0,20),
    measuredGeometry:!!data.browserEvidence?.pages?.some(p=>p.designTokens)
   }}).catch(()=>{entry.sourceEvidence={httpStatus:response.status(),error:'Inspection response was not parseable JSON'}});
  });
  try{
   await page.goto(BASE+'/business',{waitUntil:'domcontentloaded',timeout:35000});
-  await page.getByRole('combobox',{name:/^Design approach/}).selectOption(item.mode);
-  await page.getByPlaceholder('e.g. disney.com').fill(item.url);
-  await page.getByRole('button',{name:'Extract website appearance',exact:true}).click();
+  const mode=page.getByRole('combobox',{name:/^Design approach/});
+  await mode.waitFor({state:'visible',timeout:30000});
+  await mode.selectOption(item.mode);
+  const sourceInput=page.getByRole('textbox',{name:'Existing website address'});
+  // A cold first paint can display pre-hydration controls. Retry UI setup once,
+  // not source inspection or generation, if the conditional address field is absent.
+  try{await sourceInput.waitFor({state:'visible',timeout:8000})}
+  catch{await page.reload({waitUntil:'domcontentloaded'});await mode.selectOption(item.mode);await sourceInput.waitFor({state:'visible',timeout:12000})}
+  await sourceInput.fill(item.url);
+  const extractLabel=item.mode==='redesign'?'Extract website details for redesign':'Extract website appearance';
+  await page.getByRole('button',{name:extractLabel,exact:true}).click();
   await page.waitForFunction(()=>/Website extracted:|Website extraction failed:/i.test(document.body.innerText),null,{timeout:95000});
   const visible=(await page.locator('body').innerText()).slice(-4500);
   if(!visible.includes('Website extracted:'))throw Error('Source inspection unsuccessful: '+(visible.match(/Website extraction failed:[^\n]*/i)?.[0]||'unavailable'));
@@ -111,7 +128,12 @@ async function runOne(browser,item,index){
   entry.zip=zipGraph(await readFile(filename));
   if(!entry.zip.allPagesReachable||entry.zip.brokenLinks.length)throw Error('Exported site navigation contains unreachable pages or broken local links');
   entry.status='structural_checks_passed_visual_review_pending';
- }catch(error){entry.firstFailure=String(error instanceof Error?error.message:error).slice(0,1100)}
+ }catch(error){
+  entry.firstFailure=String(error instanceof Error?error.message:error).slice(0,1100);
+  entry.browserDiagnostic={url:page.url(),title:(await page.title().catch(()=>''))?.slice(0,160)};
+  const failedName='case-'+(index+1)+'-blocked.png';
+  try{await page.screenshot({path:join(OUT,failedName),fullPage:true,timeout:9000});entry.screenshots.push(failedName)}catch{}
+ }
  finally{await context.close().catch(()=>{})}
  return entry;
 }
