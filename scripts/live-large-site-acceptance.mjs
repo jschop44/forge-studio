@@ -2,6 +2,7 @@ import {chromium} from '@playwright/test';
 import {unzipSync,strFromU8} from 'fflate';
 import {mkdir,writeFile,readFile} from 'node:fs/promises';
 import {join,posix} from 'node:path';
+import {inspectExportedBranding,inspectExportedPhotoCoverage} from './exported-visual-acceptance.mjs';
 
 const BASE='https://forge-studio-preview.stands-old-3h.workers.dev';
 const OUT='acceptance-evidence';
@@ -183,6 +184,13 @@ async function runOne(browser,item,index){
   await download.saveAs(filename);
   const archive=await readFile(filename);
   entry.zip=zipGraph(archive);
+  const exportedHomepage=unzipSync(archive)['index.html'];
+  if(!exportedHomepage)throw Error('Exported website is missing index.html');
+  const exportedHtml=strFromU8(exportedHomepage);
+  entry.brandingReview=inspectExportedBranding(exportedHtml,item.business);
+  entry.offeringImageCoverage=inspectExportedPhotoCoverage(exportedHtml);
+  if(entry.brandingReview.promotionalLogoFound)
+   throw Error('Exported site header uses a promotional partner logo rather than the company brand');
   if(!entry.zip.allPagesReachable||entry.zip.brokenLinks.length)throw Error('Exported site navigation contains unreachable pages or broken local links');
   entry.exportedSite=await inspectPortableExport(browser,archive,index+1,entry);
   if(entry.exportedSite.some(view=>view.documentWidth>view.viewportWidth+2))throw Error('Exported website has browser-confirmed horizontal page overflow');
