@@ -27,6 +27,7 @@ import {navigationQualityRecommendations} from '../../lib/navigation-quality-rec
 import type {BrowserEvidence} from '../../lib/browser-evidence';
 
 import {portableStaticSiteLinks} from '../../lib/portable-static-site-links';
+import {linkObservedOfferingDestinations} from '../../lib/observed-product-links';
 import {inferBusinessIndustry} from '../../lib/website-experience';
 import {inferBusinessBrief as infer,normalizeBusinessBrief,normalizeBusinessOfferings} from '../../lib/business-brief';
 import {analyzeSiteEvidence,inspectionCoverage} from '../../lib/forge-intelligence';
@@ -374,7 +375,7 @@ export default function BusinessGenerator(){
    const captured=applyCapturedAppearance(sourceApplied.pages,evidence?.browserEvidence||(discardedSourceName?null:workerEvidence),generationMode==='new'?'':evidence?.url||websiteAddressKey(siteUrl)||'',generationMode,extractedPageSources(evidence));
    const photoRepaired=ensurePagePhotography(captured.pages,input.industry,input.visualAssets,input.services);
     const editorialPages=generationMode==='inspired'?photoRepaired:enrichGeneratedBusinessPages(photoRepaired,input);
-    const finalPages=automaticallyOptimizeMetadata(editorialPages);
+    const finalPages=linkObservedOfferingDestinations(automaticallyOptimizeMetadata(editorialPages),evidence?.url,evidence?.navigation,generationMode);
    const validation=auditGeneratedDraft(finalPages);
    if(!validation.readyForReview)throw Error('The generated website did not pass its content and navigation checks. Please retry or review the business details.');
    revealGeneratedPreview.current=true;setPages(finalPages);setActive('index');setStatus('Website draft generated for '+input.industry+'. Review its content and design before publishing.'+visualNotice+(contentApplied.warnings.length?' '+contentApplied.warnings.join(' '):'')+(sourceApplied.warnings.length?' '+sourceApplied.warnings.join(' '):'')+(captured.warnings.length?' '+captured.warnings.join(' '):'')+(discardedSourceName?' A previous inspection of '+discardedSourceName+' was excluded; this is a new business website.':''));
