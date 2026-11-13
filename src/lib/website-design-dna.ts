@@ -46,7 +46,7 @@ export function extractWebsiteDesignDna(input:string,sourceUrl:string,stylesheet
   const candidates=[...(pictureCandidates.get(match.index??-1)||[]),attribute(tag,'data-src'),attribute(tag,'data-original'),attribute(tag,'data-lazy-src'),...responsiveUrls(attribute(tag,'data-srcset')),...responsiveUrls(attribute(tag,'srcset')),attribute(tag,'src')];
   const src=candidates.find(candidate=>candidate.trim().length>0&&publicSourceAsset(candidate,sourceUrl));
   const size=(name:string)=>{const n=Number(attribute(tag,name));return Number.isInteger(n)&&n>0&&n<=20000?n:undefined};
-  if(!src||/pixel|tracking|spacer/i.test(label))continue;
+  if(!src||/pixel|tracking|spacer/i.test(label)||/\/akam\/\d+\/pixel_/i.test(src))continue;
   const filename=src.split(/[?#]/)[0].split('/').pop()||'';
   const isLogo=/\blogo\b|brand[-_ ]?mark/i.test(label)||/(?:^|[-_.])(?:logo|brandmark)(?:[-_.]|$)/i.test(filename);
   add(src,alt,isLogo?'logo':'content',size('width'),size('height'));

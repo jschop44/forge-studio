@@ -148,3 +148,15 @@ test('unavailable source webfonts retain a readable system fallback',()=>{
  const result=applySourceDesign([{slug:'index',title:'Home',html:'<!doctype html><html><head></head><body><main><h1>Home</h1></main></body></html>'}],dna,'inspired');
  assert.match(result.pages[0].html,/font-family:"InspireTWDC",system-ui,sans-serif/);
 });
+
+test('source tracking beacons do not become duplicate business photographs',()=>{
+ const dna=extractWebsiteDesignDna('<img src="/akam/13/pixel_62c5ef83"><img src="/products/pixel-9.jpg" alt="Google phone">','https://example.com');
+ assert.deepEqual(dna.images.map(image=>image.url),['https://example.com/products/pixel-9.jpg']);
+});
+
+test('escaped retail category labels match their actual source photographs',()=>{
+ const dna=extractWebsiteDesignDna('<img src="/tv.jpg" alt="TV &amp; Home Theater"><img src="/computer.jpg" alt="Computers &amp; Tablets">','https://example.com');
+ const result=applySourceDesign([{slug:'services',title:'Products',html:wrap('<article><h2>TV &amp; Home Theater</h2></article><article><h2>Computers &amp; Tablets</h2></article>')}],dna,'inspired');
+ assert.match(result.pages[0].html,/src="https:\/\/example.com\/tv.jpg"/);
+ assert.match(result.pages[0].html,/src="https:\/\/example.com\/computer.jpg"/);
+});
