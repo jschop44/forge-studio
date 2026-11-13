@@ -189,3 +189,21 @@ test('source logos and above-fold photographs load eagerly while offering cards 
  assert.match(generated[1].html,/src="https:\/\/market\.example\/wings\.jpg"[^>]*loading="lazy"/);
  assert.doesNotMatch(generated[1].html,/src="https:\/\/market\.example\/wings\.jpg"[^>]*fetchpriority="high"/);
 });
+
+test('a generic retail redesign uses an advertised source category photo as its homepage hero',()=>{
+ const source=extractWebsiteDesignDna(
+  '<img src="/logo.png" alt="Retailer logo" class="brand-logo">'+
+  '<img src="/kitchen.jpg" alt="Small Kitchen Appliances">'+
+  '<img src="/headphones.jpg" alt="Wireless Headphones">'+
+  '<img src="/fruit.jpg" alt="Fruit bowl">',
+  'https://store.example/');
+ const home=wrap('<section class="site-hero editorial text-led"><div><p class="eyebrow">Electronics Retail</p><h1>Store</h1><p>Browse computers, TVs, headphones and appliances.</p></div></section>');
+ const services=wrap('<article><h2>Wireless Headphones</h2></article>');
+ const result=applySourceDesign([{slug:'index',title:'Home',html:home},{slug:'services',title:'Products',html:services}],source,'redesign');
+ assert.match(result.pages[0].html,/class="site-hero editorial image-led"/);
+ assert.match(result.pages[0].html,/src="https:\/\/store\.example\/kitchen\.jpg"[^>]*loading="eager"/);
+ assert.match(result.pages[1].html,/src="https:\/\/store\.example\/headphones\.jpg"/);
+ assert.doesNotMatch(result.pages[0].html,/src="https:\/\/store\.example\/fruit\.jpg"/);
+ const preserved=applySourceDesign([{slug:'index',title:'Home',html:home}],source,'inspired');
+ assert.doesNotMatch(preserved.pages[0].html,/data-forge-source-figure/);
+});

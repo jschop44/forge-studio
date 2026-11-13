@@ -18,6 +18,24 @@ function matchingImage(subject:string,images:SourceImage[],used:Set<string>){
   return {image,overlap,full:overlap===wanted.length,extra:Math.max(0,observed.size-overlap)};
  }).filter(item=>item.full).sort((a,b)=>a.extra-b.extra)[0]?.image;
 }
+/** A general retail homepage can advertise several product categories without
+ * repeating any single product's complete alt text in its H1. Only borrow a
+ * source photograph when its distinctive advertised category occurs in the
+ * actual homepage copy. Never consume photos reserved for specific products.
+ */
+function observedRetailHero(html:string,images:SourceImage[],used:Set<string>){
+ const main=html.match(/<main\b[^>]*>([\s\S]*?)<\/main>/i)?.[1]||'';
+ const readable=decodeSourceEntities(main.replace(/<[^>]*>/g,' '));
+ if(!/\b(?:retail|electronics|department store|online store)\b/i.test(readable))return;
+ const publicTerms=new Set(terms(readable));
+ return images.filter(image=>image.role==='content'&&!used.has(image.url)&&image.alt.trim().length>5)
+  .map(image=>{
+   const words=[...new Set(terms(image.alt))];
+   const categoryHits=words.filter(word=>word.length>=6&&publicTerms.has(word));
+   return {image,categoryHits,extra:words.length-categoryHits.length};
+  }).filter(x=>x.categoryHits.length>0)
+  .sort((a,b)=>b.categoryHits.length-a.categoryHits.length||a.extra-b.extra)[0]?.image;
+}
 function sourceImage(image:SourceImage,className='source-photo',eager=false){return '<img class="'+className+'" data-forge-source-image src="'+esc(image.url)+'" alt="'+esc(image.alt)+'" loading="'+(eager?'eager':'lazy')+'"'+(eager?' fetchpriority="high"':'')+' decoding="async"'+(image.width?' width="'+image.width+'"':'')+(image.height?' height="'+image.height+'"':'')+'>'}
 function foreground(background:string){const rgb=(background.length===4?background.slice(1).split('').map(c=>c+c).join(''):background.slice(1)).match(/../g)!.map(c=>parseInt(c,16));return rgb[0]*.299+rgb[1]*.587+rgb[2]*.114>150?'#151515':'#f8f8f8'}
 /** Reuse observed assets and bounded design tokens without executing source HTML/CSS. */
@@ -67,6 +85,20 @@ export function applySourceDesign(pages:GeneratedPage[],dna:WebsiteDesignDna|und
    const subject=page.title+' '+heading+' '+(figure.match(/alt=["']([^"']*)["']/i)?.[1]||'');const image=matchingImage(subject,images,new Set([...used,...reservedForOfferings]));
    if(!image)return figure;used.add(image.url);heroAssigned=true;assigned++;return '<figure class="editorial-photo" data-forge-source-figure>'+sourceImage(image,'source-photo',true)+'</figure>';
   });
+  // Redesigns of retail catalogs should not look like a text-only storefront
+  // when the inspected source already publishes matching category photography.
+  // Require category wording on the generated homepage; do not guess from URLs.
+  if(!heroAssigned&&mode==='redesign'&&page.slug==='index'){
+   const firstHero=html.match(/<section\b[^>]*class=["'][^"']*\bsite-hero\b[^"']*["'][^>]*>[\s\S]*?<\/section>/i)?.[0];
+   if(firstHero&&!/<(?:figure|img)\b/i.test(firstHero)){
+    const image=observedRetailHero(html,images,new Set([...used,...reservedForOfferings]));
+    if(image){
+     used.add(image.url);assigned++;heroAssigned=true;
+     const amended=firstHero.replace(/\btext-led\b/g,'image-led').replace(/<\/section>$/i,'<figure class="editorial-photo" data-forge-source-figure>'+sourceImage(image,'source-photo',true)+'</figure></section>');
+     html=html.replace(firstHero,amended);
+    }
+   }
+  }
   if(!heroAssigned&&!/data-forge-source-figure/.test(html)){
    const heading=html.match(/<h1\b[^>]*>([\s\S]*?)<\/h1>/i)?.[1]||'';
    const image=matchingImage(page.title+' '+heading,images,new Set([...used,...reservedForOfferings]));
