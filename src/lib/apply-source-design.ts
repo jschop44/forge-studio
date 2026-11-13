@@ -96,7 +96,7 @@ export function applySourceDesign(pages:GeneratedPage[],dna:WebsiteDesignDna|und
  const font=family?.split(',').map(part=>part.trim()).filter(Boolean).map(part=>/^(?:serif|sans-serif|monospace|system-ui|cursive|fantasy)$/i.test(part)?part:'"'+part+'"').join(',');
  const safeFont=font?font+(/(?:^|,)(?:serif|sans-serif|monospace|system-ui|cursive|fantasy)$/.test(font)?'':',system-ui,sans-serif'):undefined;
  const preserve=mode==='inspired'||mode==='preserve';
- const css='.source-brand-logo{display:inline-block;width:auto;max-width:min(160px,35vw);max-height:64px;object-fit:contain;vertical-align:middle;margin-right:14px}.source-contact{display:flex;gap:12px;flex-wrap:wrap;overflow-wrap:anywhere}.source-photo{display:block;width:100%;height:100%;object-fit:cover}.source-page-visual{margin:32px 0;max-width:100%;overflow:hidden;aspect-ratio:16/9}.source-page-visual img{width:100%;height:100%;object-fit:cover}'+(preserve?(safeFont?'body,h1,h2,h3{font-family:'+safeFont+'}':'')+(palette[0]?':root{--business-paper:'+palette[0]+';--business-ink:'+foreground(palette[0])+';--business-accent:'+foreground(palette[0])+'}body{background:'+palette[0]+';color:'+foreground(palette[0])+'}body>nav,body>footer,main p,.card p,.contact-panel{color:'+foreground(palette[0])+'}body>nav a,body>footer a,main a:not(.button),.eyebrow{color:inherit}main p,.card p,body>footer{opacity:1}.service-card,.contact-panel{background:transparent}.button{background:'+foreground(palette[0])+';color:'+palette[0]+'}':'')+(dna.layout?.header?'body>nav{display:flex;align-items:center;flex-wrap:wrap;gap:20px}':'')+(dna.layout?.heroAlignment==='center'?'.site-hero{grid-template-columns:1fr;text-align:center;justify-items:center}.site-hero>div{max-width:760px}.site-hero .editorial-photo{width:min(100%,980px)}':dna.layout?.heroAlignment==='right'?'.site-hero>div{text-align:right;justify-self:end}':'')+'@media(max-width:650px){.site-hero{grid-template-columns:1fr}}':'');
+ const css='.source-highlights{margin:clamp(28px,5vw,64px) 0}.source-highlights>h2{margin-bottom:18px}.source-highlights-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,220px),1fr));gap:clamp(12px,2vw,24px)}.source-highlights figure{min-width:0;margin:0}.source-highlights img{display:block;width:100%;aspect-ratio:4/3;object-fit:cover;border-radius:16px}.source-highlights figcaption{padding:10px 2px;font-size:.88rem;line-height:1.45;overflow-wrap:anywhere}.source-brand-logo{display:inline-block;width:auto;max-width:min(160px,35vw);max-height:64px;object-fit:contain;vertical-align:middle;margin-right:14px}.source-contact{display:flex;gap:12px;flex-wrap:wrap;overflow-wrap:anywhere}.source-photo{display:block;width:100%;height:100%;object-fit:cover}.source-page-visual{margin:32px 0;max-width:100%;overflow:hidden;aspect-ratio:16/9}.source-page-visual img{width:100%;height:100%;object-fit:cover}'+(preserve?(safeFont?'body,h1,h2,h3{font-family:'+safeFont+'}':'')+(palette[0]?':root{--business-paper:'+palette[0]+';--business-ink:'+foreground(palette[0])+';--business-accent:'+foreground(palette[0])+'}body{background:'+palette[0]+';color:'+foreground(palette[0])+'}body>nav,body>footer,main p,.card p,.contact-panel{color:'+foreground(palette[0])+'}body>nav a,body>footer a,main a:not(.button),.eyebrow{color:inherit}main p,.card p,body>footer{opacity:1}.service-card,.contact-panel{background:transparent}.button{background:'+foreground(palette[0])+';color:'+palette[0]+'}':'')+(dna.layout?.header?'body>nav{display:flex;align-items:center;flex-wrap:wrap;gap:20px}':'')+(dna.layout?.heroAlignment==='center'?'.site-hero{grid-template-columns:1fr;text-align:center;justify-items:center}.site-hero>div{max-width:760px}.site-hero .editorial-photo{width:min(100%,980px)}':dna.layout?.heroAlignment==='right'?'.site-hero>div{text-align:right;justify-self:end}':'')+'@media(max-width:650px){.site-hero{grid-template-columns:1fr}}':'');
  let assigned=0;
  // Reserve each source photograph at most once across the entire generated site.
  // The brand logo is intentionally shared on every page, but unrelated content images
@@ -161,6 +161,34 @@ export function applySourceDesign(pages:GeneratedPage[],dna:WebsiteDesignDna|und
   }
   return {...page,html:html.replace(/<\/head>/i,'<style id="forge-source-design">'+css+'</style></head>')};
  });
+ // The source may publish far more photographs than can be safely matched to
+ // individual offerings. On a photo-poor homepage, show remaining observed
+ // first-party highlights with their own published captions instead of
+ // attaching arbitrary pictures to unrelated cards. This second pass runs
+ // after all other pages so it cannot steal photos from services or About.
+ const homeIndex=output.findIndex(page=>page.slug==='index');
+ if(homeIndex>=0){
+  const home=output[homeIndex];
+  const cards=home.html.match(/<article\b[^>]*class=["'][^"']*\bservice-card\b[^"']*["'][^>]*>[\s\S]*?<\/article>/gi)||[];
+  const illustrated=cards.filter(card=>/<img\b/i.test(card)).length;
+  if(cards.length>=3&&illustrated<Math.ceil(cards.length/2)&&!home.html.includes('data-forge-source-highlights')){
+   const rootOrigin=new URL(dna.sourceUrl).origin;
+   const eligible=images.filter(image=>{
+    if(image.role!=='content'||usedAcrossPages.has(image.url)||reservedForOfferings.has(image.url))return false;
+    const label=decodeSourceEntities(image.alt).trim();
+    if(label.length<12||label.length>160||/\b(?:logo|icon|sprite|pixel|tracking|placeholder)\b/i.test(label))return false;
+    if(image.width&&image.width<220||image.height&&image.height<170)return false;
+    try{return new URL(image.sourcePage).origin===rootOrigin}catch{return false}
+   }).slice(0,3);
+   if(eligible.length>=2){
+    const figures=eligible.map(image=>'<figure>'+sourceImage(image,'source-highlights-photo')+'<figcaption>'+esc(decodeSourceEntities(image.alt).trim().slice(0,125))+'</figcaption></figure>').join('');
+    const gallery='<section class="source-highlights" data-forge-source-highlights aria-label="More from this business"><h2>More to explore</h2><div class="source-highlights-grid">'+figures+'</div></section>';
+    output[homeIndex]={...home,html:home.html.replace(/<\/main>/i,()=>gallery+'</main>')};
+    for(const image of eligible)usedAcrossPages.add(image.url);
+    assigned+=eligible.length;
+   }
+  }
+ }
  const warnings=['Original asset URLs were discovered in source HTML; availability and usage authorization still require verification.'];
  if(rejectedCampaignLogos.length)warnings.push('Co-branded, promotional or non-company source graphics were not treated as the primary company logo.');
  if(suppressedUnverifiedMarks)warnings.push('No official source logo could be observed; preserved the business-name wordmark without fabricating a logo.');
