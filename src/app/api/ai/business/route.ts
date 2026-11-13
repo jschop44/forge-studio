@@ -1,4 +1,5 @@
 import {reviewWithBrowserWorker} from '../../../../lib/server/browser-quality-worker';
+import {browserReviewGate} from '../../../../lib/server/browser-review-policy';
 import {limitedRequestBody,RequestBodyTooLarge} from '../../../../lib/server/limited-request-body';
 import {BUSINESS_GENERATION_MAX_BYTES} from '../../../../lib/business-generation-payload';
 import {VisualAssetSchema} from '../../../../lib/visual-assets';
@@ -31,8 +32,13 @@ export async function POST(req:NextRequest){
  const response=businessGenerationResponse({...result,pages:reviewed.pages});
  if(!response.ok)return response;
  const payload=await response.json();
- if(reviewed.browserReview.status==='failed'||reviewed.browserReview.status==='unavailable')return NextResponse.json({error:'Website browser inspection requires attention. Retry generation before publishing.',browserReview:reviewed.browserReview},{status:422,headers:{'Cache-Control':'no-store'}});
- return NextResponse.json({...payload,browserReview:reviewed.browserReview,designDecision:design},{headers:{'Cache-Control':'no-store'}});
+ const gate=browserReviewGate(reviewed.browserReview.status,process.env.FORGE_REQUIRE_BROWSER_REVIEW==='true');
+ if(gate.block)return NextResponse.json({error:gate.reason==='quality-failed'?'Generated website failed visual inspection. Review the findings before publication.':'Required browser inspection is unavailable; try again when the inspector is ready.',browserReview:reviewed.browserReview},{status:422,headers:{'Cache-Control':'no-store'}});
+ // When the optional worker is sleeping, keep the generated website intact.
+ // Report the missing review explicitly instead of falsely claiming it passed.
+ const unverified=reviewed.browserReview.status==='unavailable'||reviewed.browserReview.status==='not-configured';
+ return NextResponse.json({...payload,browserReview:reviewed.browserReview,...(unverified?{visualReviewPending:true}:{}),designDecision:design},{headers:{'Cache-Control':'no-store'}});
+
  }catch(error){
   if(error instanceof RequestBodyTooLarge)return NextResponse.json({error:'Website brief exceeds the 64 KB limit. Shorten the description or remove extra image references.'},{status:413});
   const detail=error instanceof Error?error.message:'';
