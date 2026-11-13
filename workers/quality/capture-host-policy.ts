@@ -1,4 +1,4 @@
-import {publicSiteUrl} from '../src/lib/server/public-site-fetch';
+import {publicSiteUrl} from '../../src/lib/server/public-site-fetch';
 
 /** The inspected source URL authorizes only its own public HTTPS hostname by
  * default. An explicit operator allowlist remains restrictive, not additive.
