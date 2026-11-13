@@ -75,3 +75,17 @@ export function applyExtractedExperience(pages:GeneratedPage[],experience:Websit
  const plan=experience==='object-navigation'?objectNavigationPlan({...business,images}):null;
  return plan?branded.map(page=>({...page,html:page.html.replace(/(<main\b[^>]*>)/,'$1'+objectNavigationMarkup(plan))})):branded;
 }
+
+/** Builder tabs are not part of the exported website. Connect emitted source
+ * pages from the actual documents so visitors can reach them from Home.
+ */
+export function connectExtractedPages(pages:GeneratedPage[],extras:GeneratedPage[]):GeneratedPage[]{
+ const destinations=extras.filter(page=>/^[a-z0-9-]{1,64}$/.test(page.slug));
+ if(!destinations.length)return pages;
+ return pages.map(page=>{
+  const links=destinations.filter(target=>target.slug!==page.slug&&!page.html.includes('href="'+target.slug+'.html"'));
+  if(!links.length||!/<\/main>/i.test(page.html))return page;
+  const navigation='<nav aria-label="More website pages" data-forge-source-navigation style="display:flex;flex-wrap:wrap;gap:12px;margin-block:2rem">'+links.map(target=>'<a style="display:inline-flex;align-items:center;min-height:44px;overflow-wrap:anywhere" href="'+target.slug+'.html">'+esc(target.title)+'</a>').join('')+'</nav>';
+  return {...page,html:page.html.replace(/<\/main>/i,navigation+'</main>')};
+ });
+}
