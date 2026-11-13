@@ -53,8 +53,10 @@ try{
   ...(['left','center','right'].includes(alignment)?{heroTextAlign:alignment}:{}),
   ...(heroStyle?.display==='grid'&&tracks.length>0?{heroLayout:tracks.length>=2?'split':'stacked'}:heroStyle?.display==='flex'?{heroLayout:heroStyle.flexDirection.startsWith('column')?'stacked':'split'}:{}),
   ...(mainWidth>=320&&mainWidth<=1800?{contentMaxWidth:mainWidth+'px'}:{}),
-  ...(ctaStyle?{buttonRadius:Math.min(64,Math.max(0,Number.parseFloat(ctaStyle.borderTopLeftRadius)||0))+'px',buttonBackgroundColor:ctaStyle.backgroundColor,buttonTextColor:ctaStyle.color}:{}),
-  ...(navStyle?{headerBackgroundColor:navStyle.backgroundColor}:{})
+  ...(ctaStyle?{buttonRadius:Math.min(64,Math.max(0,Number.parseFloat(ctaStyle.borderTopLeftRadius)||0))+'px'}:{}),
+      ...(ctaStyle&&(ctaStyle.backgroundColor.startsWith('rgb(')||ctaStyle.backgroundColor.startsWith('rgba(')||ctaStyle.backgroundColor.startsWith('#'))?{buttonBackgroundColor:ctaStyle.backgroundColor}:{}),
+      ...(ctaStyle&&(ctaStyle.color.startsWith('rgb(')||ctaStyle.color.startsWith('rgba(')||ctaStyle.color.startsWith('#'))?{buttonTextColor:ctaStyle.color}:{}),
+  ...(navStyle&&(navStyle.backgroundColor.startsWith('rgb(')||navStyle.backgroundColor.startsWith('rgba(')||navStyle.backgroundColor.startsWith('#'))?{headerBackgroundColor:navStyle.backgroundColor}:{})
  };return {backgroundColor:body.backgroundColor,textColor:body.color,fontFamily:body.fontFamily,headingFontFamily:h.fontFamily,headingFontSize:h.fontSize,...(/^\d+(?:\.\d+)?px$/.test(h.lineHeight)?{headingLineHeight:h.lineHeight}:{}),baseFontSize:body.fontSize,...(/^\d+(?:\.\d+)?px$/.test(body.lineHeight)?{lineHeight:body.lineHeight}:{}),...layoutTokens}});
  const interactions=await page.locator('a,button,form').evaluateAll(nodes=>nodes.slice(0,80).map(n=>({kind:n.tagName.toLowerCase()==='a'?'link':n.tagName.toLowerCase()==='form'?'form':'button',label:(n.getAttribute('aria-label')||n.textContent||'').trim().slice(0,100),target:n.tagName.toLowerCase()==='a'?(n.getAttribute('href')||'').slice(0,300):undefined,verified:false})));
  const navigationChecks=[];
@@ -86,8 +88,10 @@ try{
   ...(['left','center','right'].includes(alignment)?{heroTextAlign:alignment}:{}),
   ...(heroStyle?.display==='grid'&&tracks.length>0?{heroLayout:tracks.length>=2?'split':'stacked'}:heroStyle?.display==='flex'?{heroLayout:heroStyle.flexDirection.startsWith('column')?'stacked':'split'}:{}),
   ...(mainWidth>=320&&mainWidth<=1800?{contentMaxWidth:mainWidth+'px'}:{}),
-  ...(ctaStyle?{buttonRadius:Math.min(64,Math.max(0,Number.parseFloat(ctaStyle.borderTopLeftRadius)||0))+'px',buttonBackgroundColor:ctaStyle.backgroundColor,buttonTextColor:ctaStyle.color}:{}),
-  ...(navStyle?{headerBackgroundColor:navStyle.backgroundColor}:{})
+  ...(ctaStyle?{buttonRadius:Math.min(64,Math.max(0,Number.parseFloat(ctaStyle.borderTopLeftRadius)||0))+'px'}:{}),
+      ...(ctaStyle&&(ctaStyle.backgroundColor.startsWith('rgb(')||ctaStyle.backgroundColor.startsWith('rgba(')||ctaStyle.backgroundColor.startsWith('#'))?{buttonBackgroundColor:ctaStyle.backgroundColor}:{}),
+      ...(ctaStyle&&(ctaStyle.color.startsWith('rgb(')||ctaStyle.color.startsWith('rgba(')||ctaStyle.color.startsWith('#'))?{buttonTextColor:ctaStyle.color}:{}),
+  ...(navStyle&&(navStyle.backgroundColor.startsWith('rgb(')||navStyle.backgroundColor.startsWith('rgba(')||navStyle.backgroundColor.startsWith('#'))?{headerBackgroundColor:navStyle.backgroundColor}:{})
  };
      const links=[...document.querySelectorAll('a')].slice(0,30).map(n=>({kind:'link',label:(n.getAttribute('aria-label')||n.textContent||'').trim().slice(0,100),target:(n.getAttribute('href')||'').slice(0,300),verified:false}));
      return {title:document.title,visualRegions:regions,designTokens:{backgroundColor:body.backgroundColor,textColor:body.color,fontFamily:body.fontFamily,headingFontFamily:h.fontFamily,headingFontSize:h.fontSize,...(/^\d+(?:\.\d+)?px$/.test(h.lineHeight)?{headingLineHeight:h.lineHeight}:{}),baseFontSize:body.fontSize,...(/^\d+(?:\.\d+)?px$/.test(body.lineHeight)?{lineHeight:body.lineHeight}:{}),...layoutTokens},interactions:links,landmarks:[...document.querySelectorAll('h1,h2')].slice(0,30).map(n=>({role:n.tagName.toLowerCase(),text:(n.textContent||'').trim().slice(0,120)}))};
