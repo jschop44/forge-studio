@@ -16,6 +16,9 @@ function pageKind(item:SourceNavigationLink):PageKind{
 function depth(path:string):number{
  try{return new URL(path,'https://source.example/').pathname.split('/').filter(Boolean).length}catch{return 100}
 }
+function canonicalSection(path:string):number{
+ return /^\/(?:products?|shop|catalog|collections?|categories|departments?|services?|experiences?|about|contact|support|help|locations|parks|movies|destinations)\/?$/i.test(path)?0:1;
+}
 /** Prioritize one page from each observed area; fill remaining slots in source order. */
 export function selectRepresentativeSourcePages<T extends SourceNavigationLink>(links:readonly T[],limit=4):T[]{
  const safeLimit=Math.max(0,Math.min(30,Math.floor(Number.isFinite(limit)?limit:0)));
@@ -25,7 +28,7 @@ export function selectRepresentativeSourcePages<T extends SourceNavigationLink>(
  const selected:T[]=[];const used=new Set<string>();
  for(const group of ['catalog','experiences','company','support'] as const){
   const options=unique.map((item,index)=>({item,index})).filter(x=>pageKind(x.item)===group&&!used.has(x.item.path));
-  options.sort((a,b)=>depth(a.item.path)-depth(b.item.path)||a.index-b.index);
+  options.sort((a,b)=>canonicalSection(a.item.path)-canonicalSection(b.item.path)||depth(a.item.path)-depth(b.item.path)||a.index-b.index);
   if(options.length){selected.push(options[0].item);used.add(options[0].item.path)}
   if(selected.length>=safeLimit)return selected;
  }
