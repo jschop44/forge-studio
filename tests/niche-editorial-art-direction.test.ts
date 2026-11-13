@@ -21,6 +21,20 @@ test('business identity selects a palette and story for actual niche, not generi
  }
 });
 
+test('niche-specific additions do not hijack established industries with similar words',()=>{
+ const cases:[string,string][]=[
+  ['Accounting and bookkeeping','finance'],
+  ['Aircraft manufacturing','industry'],
+  ['Medical instruments','clinical'],
+  ['Baseball sporting goods','baseball'],
+  ['Software and technology','technology'],
+  ['Fruit stand fresh','produce'],
+  ['Independent bookshop','books'],
+  ['Piano tuning','music']
+ ];
+ for(const [industry,key]of cases)assert.equal(businessArtDirection(industry,'Example').key,key,industry);
+});
+
 test('each page uses purposeful, distinct niche-specific headings and matching editorial theme',()=>{
  for(const entry of businesses){
   const visualAssets=Array.from({length:8},(_,index)=>({
