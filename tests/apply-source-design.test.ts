@@ -160,3 +160,14 @@ test('escaped retail category labels match their actual source photographs',()=>
  assert.match(result.pages[0].html,/src="https:\/\/example.com\/tv.jpg"/);
  assert.match(result.pages[0].html,/src="https:\/\/example.com\/computer.jpg"/);
 });
+
+test('interior-page image evidence rejects unknown-size beacons while retaining Pixel product shots',()=>{
+ const homepage=extractWebsiteDesignDna('<img src="/logo.png" alt="Retailer logo">','https://retailer.example/');
+ const merged=mergeSourcePageImages(homepage,[{path:'/phones',images:[
+  {url:'https://retailer.example/akam/13/pixel_62c5ef83',alt:'',role:'content',sourcePage:'https://retailer.example/phones'},
+  {url:'https://retailer.example/products/pixel-9.jpg',alt:'Google Pixel 9 phone',role:'content',sourcePage:'https://retailer.example/phones'}
+ ]}]);
+ assert.deepEqual(merged.images.map(image=>image.url),[
+  'https://retailer.example/logo.png','https://retailer.example/products/pixel-9.jpg'
+ ]);
+});
