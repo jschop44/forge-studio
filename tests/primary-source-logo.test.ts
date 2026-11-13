@@ -33,3 +33,20 @@ test('single-brand campaign banners remain usable as content but not as logos',(
  assert.match(result.pages[0].html,/src="https:\/\/disney.com\/official-logo.png"/);
  assert.doesNotMatch(result.pages[0].html,/class="source-brand-logo"[^>]*bundle/);
 });
+
+
+test('Fortnite | Disney branded campaign artwork is not the Disney header logo',()=>{
+ const asset='https://lumiere-a.akamaihd.net/v1/images/cg_dcp_fortnitexdisney_hz_desktop_crop_b4ef4da3.jpeg?region=0,0,1460,600';
+ const source=extractWebsiteDesignDna('<meta property="og:site_name" content="Disney Home"><img src="'+asset+'" alt="Fortnite | Disney logo">','https://disney.com/');
+ assert.equal(source.images[0]?.role,'logo','source labelled the image as a logo');
+ const result=applySourceDesign(page('Disney Home'),source,'inspired');
+ assert.doesNotMatch(result.pages[0].html,/class="source-brand-logo"/);
+ assert.match(result.pages[0].html,/>Disney Home<\/a>/,'preserve the company wordmark');
+ assert.ok(result.warnings.some(warning=>warning.includes('Co-branded')));
+});
+
+test('a normal source mark using a pipe as a decorative label is not removed',()=>{
+ const source=extractWebsiteDesignDna('<img src="/logo.png" alt="Disney | Official Logo">','https://disney.com/');
+ const result=applySourceDesign(page('Disney Home'),source,'redesign');
+ assert.match(result.pages[0].html,/class="source-brand-logo"/);
+});
