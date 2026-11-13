@@ -50,3 +50,34 @@ test('a normal source mark using a pipe as a decorative label is not removed',()
  const result=applySourceDesign(page('Disney Home'),source,'redesign');
  assert.match(result.pages[0].html,/class="source-brand-logo"/);
 });
+
+
+test('Disney holiday campaign artwork with logo in its alt is not the corporate logo',()=>{
+ const holiday='https://lumiere-a.akamaihd.net/v1/images/celebrate-the-magic-horizontal-logo-800_b926123c.png?region=0,0,800,179';
+ const source=extractWebsiteDesignDna(
+  '<meta property="og:site_name" content="Disney Home">'+
+  '<img src="'+holiday+'" alt="Make the Holidays Magic logo">',
+  'https://www.disney.com/');
+ assert.equal(source.logo?.alt,'Make the Holidays Magic logo');
+ const output=applySourceDesign(page('Disney Home'),source,'inspired');
+ assert.doesNotMatch(output.pages[0].html,/class="source-brand-logo"/);
+ assert.match(output.pages[0].html,/>Disney Home<\/a>/);
+ assert.ok(output.warnings.some(warning=>warning.includes('non-company')));
+});
+
+test('primary brand matches actual company even when retail page shows other manufacturer logos',()=>{
+ const source=extractWebsiteDesignDna(
+  '<meta property="og:site_name" content="Best Buy">'+
+  '<img src="/apple-logo.png" alt="Apple logo">'+
+  '<img src="/bestbuy-logo.png" alt="Best Buy logo">',
+  'https://www.bestbuy.com/');
+ const result=applySourceDesign(page('Best Buy'),source,'redesign');
+ assert.match(result.pages[0].html,/class="source-brand-logo"[^>]*bestbuy-logo\.png/);
+ assert.doesNotMatch(result.pages[0].html,/class="source-brand-logo"[^>]*apple-logo\.png/);
+});
+
+test('unknown example-domain fixtures retain their observed primary marks',()=>{
+ const source=extractWebsiteDesignDna('<img src="/brand.png" alt="Pizza logo">','https://example.com/');
+ const result=applySourceDesign(page('Pizza'),source,'redesign');
+ assert.match(result.pages[0].html,/class="source-brand-logo"/);
+});
