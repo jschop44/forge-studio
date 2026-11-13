@@ -207,3 +207,19 @@ test('a generic retail redesign uses an advertised source category photo as its 
  const preserved=applySourceDesign([{slug:'index',title:'Home',html:home}],source,'inspired');
  assert.doesNotMatch(preserved.pages[0].html,/data-forge-source-figure/);
 });
+
+
+test('enclosing observed retail catalog labels recover distinct offering photographs with blank alt text',()=>{
+ const source=extractWebsiteDesignDna(
+  '<a href="/headphones" aria-label="Shop Wireless Headphones"><img src="/headphones.webp" alt=""></a>'+
+  '<a href="/appliances" aria-label="Small Kitchen Appliances"><img src="/appliances.webp" alt=""></a>'+
+  '<a href="/unrelated" aria-label="Fruit Bowls"><img src="/fruit.webp" alt=""></a>',
+  'https://retail.example/');
+ const site=applySourceDesign([{slug:'services',title:'Products',html:wrap(
+  '<article class="service-card"><h2>Wireless Headphones</h2></article>'+
+  '<article class="service-card"><h2>Kitchen Appliances</h2></article>')}],source,'redesign').pages[0].html;
+ assert.match(site,/src="https:\/\/retail\.example\/headphones\.webp"/);
+ assert.match(site,/src="https:\/\/retail\.example\/appliances\.webp"/);
+ assert.doesNotMatch(site,/src="https:\/\/retail\.example\/fruit\.webp"/);
+ assert.equal((site.match(/data-forge-source-image/g)||[]).length,2);
+});
