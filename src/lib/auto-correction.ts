@@ -2,8 +2,8 @@
  * Run after generation and before publication. No network access, paid API, or untrusted execution.
  * Browser/Playwright visual evidence can be supplied by a separate worker.
  */
-export type PageEvidence={slug:string;html:string;brokenImages?:string[];brokenLinks?:string[];overflowPx?:number};
-export type QualityFinding={slug:string;kind:'missing-image'|'broken-image'|'broken-link'|'horizontal-overflow'|'missing-title'|'accessibility';detail:string};
+export type PageEvidence={slug:string;html:string;brokenImages?:string[];brokenLinks?:string[];clippedHeadings?:string[];overflowPx?:number};
+export type QualityFinding={slug:string;kind:'missing-image'|'broken-image'|'broken-link'|'horizontal-overflow'|'clipped-heading'|'missing-title'|'accessibility';detail:string};
 export type CorrectionResult={pages:PageEvidence[];findings:QualityFinding[];attempts:number;passed:boolean};
 const localHref=(href:string)=>!href.startsWith('#')&&!/^(?:https?:|mailto:|tel:|data:|javascript:)/i.test(href);
 const destination=(href:string)=>href.split(/[?#]/)[0].replace(/^\.\//,'').replace(/^\//,'')||'index.html';
@@ -15,6 +15,7 @@ export function inspectGeneratedPages(pages:PageEvidence[]):QualityFinding[]{
   if(!/<img\b/i.test(page.html))findings.push({slug:page.slug,kind:'missing-image',detail:'Page contains no image'});
   for(const src of page.brokenImages||[])findings.push({slug:page.slug,kind:'broken-image',detail:src});
   for(const href of page.brokenLinks||[])findings.push({slug:page.slug,kind:'broken-link',detail:href});
+  for(const heading of (page.clippedHeadings||[]).slice(0,20))findings.push({slug:page.slug,kind:'clipped-heading',detail:String(heading).slice(0,150)});
   for(const match of page.html.matchAll(/<a\b[^>]*\bhref=["']([^"']+)["']/gi)){
    const href=match[1];if(localHref(href)&&!slugs.has(destination(href)))findings.push({slug:page.slug,kind:'broken-link',detail:href});
   }
