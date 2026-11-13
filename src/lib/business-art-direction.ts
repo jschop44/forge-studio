@@ -3,6 +3,11 @@ export function businessArtDirection(industry:string,businessName:string){
  const term=industry.toLowerCase();
  const profiles=[
   {match:/\btoys?\b/,key:'toys',paper:'#fff8ef',ink:'#183c3a',accent:'#b53d47',night:'#102b2a',font:'Arial',mood:'Play, curiosity and colorful discovery'},
+  {match:/fruits?|fresh produce|produce (?:retail|market|shop|store)|greengrocer|farmers? market|farm stand|grocery|food market/,key:'produce',paper:'#fffaf0',ink:'#23382a',accent:'#bb582e',night:'#172a1d',font:'Georgia',mood:'Freshness, seasonality and approachable market browsing'},
+  {match:/books?|stationery|publishing|library/,key:'books',paper:'#f5efe4',ink:'#293646',accent:'#8e6243',night:'#1d2835',font:'Georgia',mood:'Discovery, reading and thoughtful collections'},
+  {match:/music|instruments?|piano|orchestra|sound studio/,key:'music',paper:'#f2f0ed',ink:'#29273c',accent:'#7963a6',night:'#171527',font:'Georgia',mood:'Expression, rhythm and attentive craft'},
+  {match:/marine|boating|sailing|yacht|watercraft/,key:'marine',paper:'#edf5f4',ink:'#1e3d47',accent:'#327e8c',night:'#112e39',font:'Georgia',mood:'Water, navigation and precision'},
+  {match:/crafts?|artisan|handmade|pottery|ceramics/,key:'artisan',paper:'#f4eee7',ink:'#463128',accent:'#9e6240',night:'#2c211c',font:'Georgia',mood:'Material, detail and handmade craftsmanship'},
   {match:/coffee|café|cafe|roast/,key:'coffee',paper:'#f4eee4',ink:'#30271f',accent:'#b5572c',night:'#17120f',font:'Georgia',mood:'Warm craft and neighborhood hospitality'},
   {match:/baseball|softball/,key:'baseball',paper:'#f4f2e9',ink:'#102a37',accent:'#bd3e28',night:'#071d29',font:'Arial Black',mood:'Field lights, team identity and sporting craft'},
   {match:/soccer|football|basketball|sports?|athletic/,key:'sport',paper:'#f0f3e8',ink:'#12271d',accent:'#467b24',night:'#081c15',font:'Arial Black',mood:'Movement, competition and team spirit'},
