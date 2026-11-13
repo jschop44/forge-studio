@@ -142,3 +142,9 @@ test('preserve applies CSS-hosted company logo and resolved background without e
  assert.match(html,/body\{background:#f8f3e9;color:#151515\}/);
  assert.doesNotMatch(html,/var\(--brand-surface\)|background-image:url/,'source CSS remains unexecuted evidence');
 });
+
+test('unavailable source webfonts retain a readable system fallback',()=>{
+ const dna=extractWebsiteDesignDna('<style>body{font-family:InspireTWDC}</style>','https://example.com');
+ const result=applySourceDesign([{slug:'index',title:'Home',html:'<!doctype html><html><head></head><body><main><h1>Home</h1></main></body></html>'}],dna,'inspired');
+ assert.match(result.pages[0].html,/font-family:"InspireTWDC",system-ui,sans-serif/);
+});

@@ -1,6 +1,6 @@
 import {test} from 'node:test';
 import assert from 'node:assert/strict';
-import {matchingSourceBusiness,resolveGenerationSourceMode,usefulSourcePage} from '../src/lib/source-reuse-policy';
+import {observedCatalogOfferings,matchingSourceBusiness,resolveGenerationSourceMode,usefulSourcePage} from '../src/lib/source-reuse-policy';
 import {createExtractedPages} from '../src/lib/extracted-pages';
 test('unrelated business identities cannot reuse source branding',()=>{
  assert.equal(matchingSourceBusiness('Baseball','Disney'),false);
@@ -28,4 +28,11 @@ test('an unrelated inspected business switches to clean creation instead of bloc
  }
  assert.deepEqual(resolveGenerationSourceMode('new','Fruit stand','Disney Home'),{mode:'new',discardUnrelatedSource:false});
  assert.deepEqual(resolveGenerationSourceMode('redesign','','Disney Home'),{mode:'redesign',discardUnrelatedSource:false});
+});
+
+test('observed catalog survives broad recognition without inventing offerings',()=>{
+ const navigation=[{label:'Shop now',path:'/sale'},{label:'TV & Home Theater',path:'/tv'},{label:'Computers & Tablets',path:'/computers'},{label:'Support',path:'/support'},{label:'Exclusive Member Deals',path:'/members'}];
+ const images=navigation.filter(p=>p.label!=='Support').map(p=>({alt:p.label,role:'content'}));
+ assert.deepEqual(observedCatalogOfferings(navigation,images),['TV & Home Theater','Computers & Tablets']);
+ assert.deepEqual(observedCatalogOfferings(navigation,[{alt:'Computers & Tablets',role:'logo'}]),[]);
 });

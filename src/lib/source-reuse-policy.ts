@@ -23,3 +23,14 @@ export function resolveGenerationSourceMode(mode:'new'|'inspired'|'redesign',ent
  const discardUnrelatedSource=mode!=='new'&&Boolean(observed?.trim()&&entered.trim())&&!matchingSourceBusiness(entered,observed||'');
  return {mode:discardUnrelatedSource?'new':mode,discardUnrelatedSource};
 }
+
+/** Retain catalog labels supported by BOTH source navigation and a described
+ * source image. Recognition may identify a sector, but must not collapse a real
+ * catalog into a generic offering such as "Technology".
+ */
+export function observedCatalogOfferings(navigation:readonly {label:string;path:string}[],images:readonly {alt:string;role:string}[]):string[]{
+ const key=(value:string)=>value.toLowerCase().replace(/[^a-z0-9]+/g,' ').trim();
+ const labels=new Set(images.filter(image=>image.role==='content').map(image=>key(image.alt)));
+ return navigation.filter(link=>usefulSourcePage(link)&&link.label.length<=80&&labels.has(key(link.label))&&!/\b(?:deals?|members?|shop|sale|offers?)\b/i.test(link.label))
+  .map(link=>link.label).filter((label,index,all)=>all.findIndex(other=>key(other)===key(label))===index).slice(0,8);
+}
