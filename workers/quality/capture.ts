@@ -43,7 +43,7 @@ export async function captureWithCrawlee(source:string,hosts:string[]){
     // Capture inert measurements only. Unsupported units and large overlays are
     // omitted instead of copying source CSS or guessing mobile geometry.
     const boundedPx=(value:string|undefined,max:number)=>{
-      if(!value||!/^\\d{1,4}(?:\\.\\d{1,3})?px$/.test(value))return;
+      if(!value||!/^\d{1,4}(?:\.\d{1,3})?px$/.test(value))return;
       const number=Math.round(Number.parseFloat(value));
       return number>=0&&number<=max?number+'px':undefined;
     };
