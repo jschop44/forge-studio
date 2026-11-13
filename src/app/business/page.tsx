@@ -1,5 +1,5 @@
 'use client';
-import {matchingSourceBusiness,resolveGenerationSourceMode} from '../../lib/source-reuse-policy';
+import {observedCatalogOfferings,matchingSourceBusiness,resolveGenerationSourceMode} from '../../lib/source-reuse-policy';
 import {parseGeneratorEditorState,serializeGeneratorEditorState} from '../../lib/editor-generator-state';
 import {extractWebsiteDesignDna,mergeSourcePageImages,type WebsiteDesignDna,type SourceImage} from '../../lib/website-design-dna';
 import {applySourceDesign} from '../../lib/apply-source-design';
@@ -341,6 +341,8 @@ export default function BusinessGenerator(){
    const designDecision=planAdaptiveDesign({businessName:inferred.businessName,industry:inferred.industry,mode:visualDesignMode,patternId:visualDesignMode==='library'?visualPatternId:undefined,immersive3d:autoImmersive});
    const selectedExperience:WebsiteExperience=experienceStyle==='object-navigation'||autoImmersive&&designDecision.immersive3d?'immersive':experienceStyle;
    const input={...inferred,experienceStyle:selectedExperience,visualAssets:[] as VisualAsset[],...(intelligence&&intelligence.confidence!=='low'?{...(!explicitIndustry&&!recognizedActivity?{industry:intelligence.industry}:{}),...(!explicitOfferings&&!recognizedActivity?{services:intelligence.services}:{})}:{}),designMode:generationMode,...(generationMode!=='new'&&evidence?.visualSignals?{visualSignals:evidence.visualSignals}:{}),...(generationContactEmail?{contactEmail:generationContactEmail}:{}),...(generationMode==='inspired'?{styleReference:appearance}:{})};
+   const observedOfferings=evidence&&sourceDna&&generationMode!=='new'&&!explicitOfferings?observedCatalogOfferings(evidence.navigation||[],sourceDna.images):[];
+   if(observedOfferings.length>=2)input.services=observedOfferings;
    input.services=normalizeBusinessOfferings(input.industry,input.services);
    let visualNotice='';
    const missingOfferings=specificVisualOfferings(input.services.filter(service=>!offeringPhotoCandidates(service,input.industry).length));

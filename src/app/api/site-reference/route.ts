@@ -64,7 +64,7 @@ export async function POST(req:NextRequest){
    const pageUrl=new URL(item.path,url);
    const pageResult=await fetchPublicText(pageUrl,{beforeRequest,timeout:4500,maxBytes:180000,maxDownloadBytes:3000000,selectiveHtml:true,accept:'text/html'});
    const pageHtml=pageResult.body;
-   if(!usefulSourcePage({...item,title:clean(pageHtml.match(/<title[^>]*>([\s\S]*?)<\/title>/i)?.[1]||''),headings:[...pageHtml.matchAll(/<h1\b[^>]*>([\s\S]*?)<\/h1>/gi)].map(m=>clean(m[1]))}))continue;
+   if(!usefulSourcePage({...item,title:clean(pageHtml.match(/<title[^>]*>([\s\S]*?)<\/title>/i)?.[1]||''),headings:[...pageHtml.matchAll(/<h([1-3])\b[^>]*>([\s\S]*?)<\/h\1>/gi)].map(m=>clean(m[2]))})){warnings.push('Interstitial or unavailable destination omitted: '+item.path);continue;}
    const pageDna=extractWebsiteDesignDna(pageHtml,pageResult.url.href);
    const mainHtml=pageHtml.match(/<main\b[^>]*>([\s\S]*?)<\/main>/i)?.[1]||pageHtml;
    const paragraphs=[...mainHtml.matchAll(/<p\b[^>]*>([\s\S]*?)<\/p>/gi)].map(m=>clean(m[1])).filter(p=>p.length>=20).filter((p,i,all)=>all.indexOf(p)===i).slice(0,12);
