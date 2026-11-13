@@ -10,6 +10,7 @@ import {generateComfyVisual} from './visual-generation';
 import {auditForgePerformance} from './performance-audit';
 import {pathToFileURL} from 'node:url';
 import {collectBrowserQualityEvidence} from '../../src/lib/browser-quality-evidence';
+import {applyMobileHeadingRepair} from '../../src/lib/heading-overflow-repair';
 import {inspectGeneratedPages,type PageEvidence,type QualityFinding} from '../../src/lib/auto-correction';
 
 async function bounded<T>(operation:Promise<T>,ms:number):Promise<T>{
@@ -55,7 +56,11 @@ export const qualityGraph=new StateGraph(State)
  })
  .addNode('repair',state=>({attempts:state.attempts+1,pages:state.pages.map(page=>{
   let html=page.html;
-  // Only fix metadata; preserve branding, links, content, and interaction scripts.
+  // A single fixed CSS correction is allowed only after the actual phone
+  // browser reported a clipped headline. Re-inspect; never invent a layout.
+  const phoneClipped=state.findings.some(f=>f.slug===page.slug&&f.kind==='clipped-heading'&&f.detail.includes('390px'));
+  if(phoneClipped)html=applyMobileHeadingRepair(html);
+  // Preserve branding, links, business copy and interaction scripts.
   if(state.findings.some(f=>f.slug===page.slug&&f.kind==='missing-title')){
    const title=page.title.replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]!));
    html=/<title\b[^>]*>[\s\S]*?<\/title>/i.test(html)?html.replace(/<title\b[^>]*>[\s\S]*?<\/title>/i,'<title>'+title+'</title>'):html.replace(/<head\b[^>]*>/i,head=>head+'<title>'+title+'</title>');
@@ -63,7 +68,8 @@ export const qualityGraph=new StateGraph(State)
   return {...page,html};
  })}))
  .addEdge(START,'inspect')
- .addConditionalEdges('inspect',s=>s.findings.some(f=>f.kind==='missing-title')&&s.attempts<2?'repair':END)
+ .addConditionalEdges('inspect',s=>s.attempts<2&&s.findings.some(f=>f.kind==='missing-title'
+  ||f.kind==='clipped-heading'&&f.detail.includes('390px')&&s.pages.some(p=>p.slug===f.slug&&!p.html.includes('id="forge-mobile-heading-repair"')))?'repair':END)
  .addEdge('repair','inspect').compile();
 export function startQualityServer(){
 let active=false;

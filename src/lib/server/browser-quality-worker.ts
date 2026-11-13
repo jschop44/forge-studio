@@ -1,4 +1,5 @@
 import {z} from 'zod';
+import {applyMobileHeadingRepair} from '../heading-overflow-repair';
 import type {GeneratedPage} from '../business-site';
 
 const Page=z.object({slug:z.string().min(1).max(64),title:z.string().max(200),html:z.string().min(1).max(250000)});
@@ -24,7 +25,12 @@ export async function reviewWithBrowserWorker(pages:GeneratedPage[]):Promise<{pa
   for(let i=0;i<pages.length;i++){
    const before=pages[i].html,after=result.pages[i].html;
    if(after===before)continue;
-   if(withoutTitles(after)!==withoutTitles(before))throw Error('Worker changed page content');
+   // The only permitted style change is our own exact, immutable phone
+   // heading patch. Comparing the whole document after removing titles
+   // ensures an optional worker cannot rewrite CSS, links, scripts or copy.
+   const sanitizedAfter=withoutTitles(after);
+   if(sanitizedAfter!==withoutTitles(before)&&sanitizedAfter!==withoutTitles(applyMobileHeadingRepair(before)))
+    throw Error('Worker changed page content');
    if(!after.includes(titleMarkup(pages[i].title)))throw Error('Worker supplied invalid title repair');
   }
   if(result.passed&&result.findings.length)throw Error('Inconsistent quality result');
