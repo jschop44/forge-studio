@@ -138,3 +138,32 @@ test('picture sources belong only to their nested image and preserve filename-ba
  assert.equal(dna.logo?.url,'https://shop.example/logo-large.webp');
  assert.equal(dna.images[1].url,'https://shop.example/regular-product.jpg');
 });
+
+
+test('late source logo displaces an excess category image rather than vanishing at the evidence limit',()=>{
+ const gallery=Array.from({length:40},(_,i)=>'<img src="/products/item-'+i+'.jpg" alt="Retail product '+i+'">').join('');
+ const dna=extractWebsiteDesignDna(gallery+'<header><img src="/assets/official-logo.svg" alt="Retailer logo"></header>','https://retail.example/');
+ assert.equal(dna.images.length,30);
+ assert.equal(dna.logo?.url,'https://retail.example/assets/official-logo.svg');
+ assert.equal(dna.images[0].role,'logo');
+ assert.equal(dna.images.filter(asset=>asset.role==='content').length,29);
+ assert.equal(dna.images.some(asset=>asset.url.includes('item-29.jpg')),false);
+});
+test('first-party published touch icon can supply a source-backed fallback when no logo URL exists',()=>{
+ const gallery=Array.from({length:35},(_,i)=>'<img src="/products/item-'+i+'.jpg" alt="Product '+i+'">').join('');
+ const source='<link rel="icon" href="https://other.example/unrelated.svg">'+
+  '<link rel="shortcut icon" href="/favicon.ico">'+
+  '<link rel="apple-touch-icon" href="/assets/touch-180.png">'+gallery;
+ const dna=extractWebsiteDesignDna(source,'https://retail.example/');
+ assert.equal(dna.logo?.url,'https://retail.example/assets/touch-180.png');
+ assert.equal(dna.logo?.alt,'Source website icon');
+ assert.equal(dna.images.length,30);
+ assert.equal(dna.images.filter(asset=>asset.role==='logo').length,1);
+ assert.equal(dna.images.some(asset=>asset.url.includes('unrelated.svg')),false);
+ assert.equal(extractWebsiteDesignDna('<link rel="icon" href="//other.example/icon.png">','https://retail.example/').logo,undefined);
+});
+test('source logo takes precedence over its favicon when both are publicly observed',()=>{
+ const dna=extractWebsiteDesignDna('<link rel="apple-touch-icon" href="/touch.png"><img class="brand-logo" src="/brand.svg" alt="Business logo">','https://retail.example/');
+ assert.equal(dna.logo?.url,'https://retail.example/brand.svg');
+ assert.equal(dna.images.some(asset=>asset.url.endsWith('/touch.png')),false);
+});
