@@ -44,8 +44,10 @@ export async function captureWithCrawlee(source:string,hosts:string[]){
       ...(['left','center','right'].includes(alignment)?{heroTextAlign:alignment as 'left'|'center'|'right'}:{}),
       ...(heroStyle?.display==='grid'&&tracks.length>0?{heroLayout:tracks.length>=2?'split' as const:'stacked' as const}:heroStyle?.display==='flex'?{heroLayout:heroStyle.flexDirection.startsWith('column')?'stacked' as const:'split' as const}:{}),
       ...(mainWidth>=320&&mainWidth<=1800?{contentMaxWidth:mainWidth+'px'}:{}),
-      ...(ctaStyle?{buttonRadius:Math.min(64,Math.max(0,Number.parseFloat(ctaStyle.borderTopLeftRadius)||0))+'px',buttonBackgroundColor:ctaStyle.backgroundColor,buttonTextColor:ctaStyle.color}:{}),
-      ...(navStyle?{headerBackgroundColor:navStyle.backgroundColor}:{})
+      ...(ctaStyle?{buttonRadius:Math.min(64,Math.max(0,Number.parseFloat(ctaStyle.borderTopLeftRadius)||0))+'px'}:{}),
+      ...(ctaStyle&&(ctaStyle.backgroundColor.startsWith('rgb(')||ctaStyle.backgroundColor.startsWith('rgba(')||ctaStyle.backgroundColor.startsWith('#'))?{buttonBackgroundColor:ctaStyle.backgroundColor}:{}),
+      ...(ctaStyle&&(ctaStyle.color.startsWith('rgb(')||ctaStyle.color.startsWith('rgba(')||ctaStyle.color.startsWith('#'))?{buttonTextColor:ctaStyle.color}:{}),
+      ...(navStyle&&(navStyle.backgroundColor.startsWith('rgb(')||navStyle.backgroundColor.startsWith('rgba(')||navStyle.backgroundColor.startsWith('#'))?{headerBackgroundColor:navStyle.backgroundColor}:{})
     };
     const links=[...document.querySelectorAll('a[href]')].slice(0,80).map(n=>({kind:'link' as const,label:clean(n.textContent).slice(0,200),target:(n.getAttribute('href')||'').slice(0,500),verified:false}));
     return {title:document.title.slice(0,500),landmarks:[...document.querySelectorAll('h1,h2,nav,main')].slice(0,40).map(n=>({role:n.tagName.toLowerCase(),text:clean(n.textContent).slice(0,500)})),interactions:links,designTokens:{backgroundColor:body.backgroundColor,textColor:body.color,fontFamily:body.fontFamily,headingFontFamily:h.fontFamily,headingFontSize:h.fontSize,baseFontSize:body.fontSize,...layoutTokens}};
