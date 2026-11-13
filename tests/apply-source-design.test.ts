@@ -148,3 +148,8 @@ test('unavailable source webfonts retain a readable system fallback',()=>{
  const result=applySourceDesign([{slug:'index',title:'Home',html:'<!doctype html><html><head></head><body><main><h1>Home</h1></main></body></html>'}],dna,'inspired');
  assert.match(result.pages[0].html,/font-family:"InspireTWDC",system-ui,sans-serif/);
 });
+
+test('source tracking beacons do not become duplicate business photographs',()=>{
+ const dna=extractWebsiteDesignDna('<img src="/akam/13/pixel_62c5ef83"><img src="/products/pixel-9.jpg" alt="Google phone">','https://example.com');
+ assert.deepEqual(dna.images.map(image=>image.url),['https://example.com/products/pixel-9.jpg']);
+});
