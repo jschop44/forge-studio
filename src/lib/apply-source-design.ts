@@ -47,8 +47,14 @@ function promotionalPartnerLogo(image:SourceImage):boolean{
  let path='';
  try{path=new URL(image.url).pathname}catch{}
  const multiBrand=/\+\s*(?!logo\b|icon\b|brand\b)[a-z][\w-]{1,}(?:\s+[a-z][\w-]{1,}){0,2}\s+(?:logo|icon|brand)\b/i.test(label);
+ // A pipe often joins two distinct brand marks on a promotional banner,
+ // e.g. "Fortnite | Disney logo" on Disney.com. Neither mark alone proves
+ // that the combined promotional image is the site's primary identity.
+ const partnerNames=label.split(/\s*\|\s*/).map(part=>part.trim()).filter(Boolean);
+ const genericMark=/^(?:(?:official|site|website|home|brand)\s+)*(?:logo|icon|mark)$/i;
+ const partnerPipe=partnerNames.length>=2&&partnerNames.every(part=>/[a-z0-9]{2,}/i.test(part)&&!genericMark.test(part));
  const campaignAsset=/\bbundle.{0,48}(?:banner|logo)\b/i.test(path.replace(/[_-]/g,' '));
- return multiBrand||campaignAsset;
+ return multiBrand||partnerPipe||campaignAsset;
 }
 function sourceImage(image:SourceImage,className='source-photo',eager=false){return '<img class="'+className+'" data-forge-source-image src="'+esc(image.url)+'" alt="'+esc(image.alt)+'" loading="'+(eager?'eager':'lazy')+'"'+(eager?' fetchpriority="high"':'')+' decoding="async"'+(image.width?' width="'+image.width+'"':'')+(image.height?' height="'+image.height+'"':'')+'>'}
 function foreground(background:string){const rgb=(background.length===4?background.slice(1).split('').map(c=>c+c).join(''):background.slice(1)).match(/../g)!.map(c=>parseInt(c,16));return rgb[0]*.299+rgb[1]*.587+rgb[2]*.114>150?'#151515':'#f8f8f8'}
