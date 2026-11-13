@@ -48,6 +48,9 @@ function appearanceRules(tokens:unknown):string{
  const bodySize=pixels(t.baseFontSize,12,24),headingSize=pixels(t.headingFontSize,24,96),lineHeight=pixels(t.lineHeight,12,72),headingLineHeight=pixels(t.headingLineHeight,20,150);
  const contentWidth=pixels(t.contentMaxWidth,320,1800);
  const radius=pixels(t.buttonRadius,0,64);
+ const headerTop=pixels(t.headerPaddingTop,0,96),headerBottom=pixels(t.headerPaddingBottom,0,96);
+ const heroGap=pixels(t.heroGap,0,120),heroTop=pixels(t.heroPaddingTop,0,240),heroBottom=pixels(t.heroPaddingBottom,0,240);
+ const mediaRadius=pixels(t.heroMediaRadius,0,64);
  const heroAlignment=['left','center','right'].includes(String(t.heroTextAlign))?String(t.heroTextAlign):'';
  const heroLayout=['stacked','split'].includes(String(t.heroLayout))?String(t.heroLayout):'';
  const navBg=safeColor(t.headerBackgroundColor);
@@ -65,6 +68,13 @@ function appearanceRules(tokens:unknown):string{
   navBg?'body>nav{background:'+navBg+';color:'+readableInk(navBg)+'}body>nav a{color:inherit}':'',
   buttonBg?'body .button{background:'+buttonBg+';color:'+buttonInk+'}':'',
   radius!==undefined?'body .button{border-radius:'+radius+'px}':'',
+  headerTop!==undefined?'body>nav{padding-top:'+headerTop+'px}':'',
+  headerBottom!==undefined?'body>nav{padding-bottom:'+headerBottom+'px}':'',
+  mediaRadius!==undefined?'body main .site-hero .editorial-photo img,body main .extracted-hero img{border-radius:'+mediaRadius+'px}':'',
+  // Only copy desktop geometry to desktop: actual source phone geometry was not captured.
+  heroGap!==undefined?'@media(min-width:701px){body main .site-hero,body main .extracted-hero{column-gap:'+heroGap+'px}}':'',
+  heroTop!==undefined?'@media(min-width:701px){body main .site-hero,body main .extracted-hero{padding-top:'+heroTop+'px}}':'',
+  heroBottom!==undefined?'@media(min-width:701px){body main .site-hero,body main .extracted-hero{padding-bottom:'+heroBottom+'px}}':'',
   heroAlignment?'body main .site-hero>div{text-align:'+heroAlignment+'}body main .extracted-hero>div{text-align:'+heroAlignment+'}':'',
   heroLayout==='stacked'?'body main .site-hero:not(.text-led){grid-template-columns:minmax(0,1fr);min-height:0}body main .extracted-hero:has(figure){grid-template-columns:minmax(0,1fr);min-height:0}body main .extracted-hero:has(figure)>figure{width:100%;max-width:100%}':'',
   heroLayout==='split'?'@media(min-width:701px){body main .site-hero:not(.text-led){grid-template-columns:minmax(0,1fr) minmax(0,1fr)}}@media(min-width:701px){body main .extracted-hero:has(figure){grid-template-columns:minmax(0,1fr) minmax(0,1fr)}}':'',
