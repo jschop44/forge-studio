@@ -20,6 +20,13 @@ export type CapturedDesignTokens={
  buttonBackgroundColor?:string;
  buttonTextColor?:string;
  headerBackgroundColor?:string;
+ /** Observed spacing and image treatment, measured on the rendered source DOM. */
+ headerPaddingTop?:string;
+ headerPaddingBottom?:string;
+ heroGap?:string;
+ heroPaddingTop?:string;
+ heroPaddingBottom?:string;
+ heroMediaRadius?:string;
 };
 const computedColor=(value:unknown):value is string=>typeof value==='string'&&value.length<=90&&/^(?:#[0-9a-f]{3,8}|rgba?\([0-9.,%\s/]+\))$/i.test(value);
 const computedFont=(value:unknown):value is string=>typeof value==='string'&&value.length>0&&value.length<=180&&/^[a-z0-9\s,'"._-]+$/i.test(value);
@@ -43,7 +50,13 @@ export function validCapturedDesignTokens(value:unknown):value is CapturedDesign
   &&(tokens.buttonRadius===undefined||boundedPixels(tokens.buttonRadius,0,64))
   &&(tokens.buttonBackgroundColor===undefined||computedColor(tokens.buttonBackgroundColor))
   &&(tokens.buttonTextColor===undefined||computedColor(tokens.buttonTextColor))
-  &&(tokens.headerBackgroundColor===undefined||computedColor(tokens.headerBackgroundColor));
+  &&(tokens.headerBackgroundColor===undefined||computedColor(tokens.headerBackgroundColor))
+  &&(tokens.headerPaddingTop===undefined||boundedPixels(tokens.headerPaddingTop,0,96))
+  &&(tokens.headerPaddingBottom===undefined||boundedPixels(tokens.headerPaddingBottom,0,96))
+  &&(tokens.heroGap===undefined||boundedPixels(tokens.heroGap,0,120))
+  &&(tokens.heroPaddingTop===undefined||boundedPixels(tokens.heroPaddingTop,0,240))
+  &&(tokens.heroPaddingBottom===undefined||boundedPixels(tokens.heroPaddingBottom,0,240))
+  &&(tokens.heroMediaRadius===undefined||boundedPixels(tokens.heroMediaRadius,0,64));
 }
 /** Input must be validated before interpolation. No URLs, selectors, or source CSS permitted. */
 export function capturedTokensPreviewStyle(tokens:CapturedDesignTokens):string{
