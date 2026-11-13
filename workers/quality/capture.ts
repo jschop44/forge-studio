@@ -38,7 +38,7 @@ export async function captureWithCrawlee(source:string,hosts:string[]){
     const heroStyle=hero?getComputedStyle(hero):null,nav=document.querySelector('body>nav,body>header,header');
     const navStyle=nav?getComputedStyle(nav):null,cta=document.querySelector('main a.button,main [role="button"],main button');
     const ctaStyle=cta?getComputedStyle(cta):null,mainWidth=main?Math.round(main.getBoundingClientRect().width):0;
-    const tracks=(heroStyle?.gridTemplateColumns||'').match(/\\d+(?:\\.\\d+)?px/g)||[];
+    const tracks=(heroStyle?.gridTemplateColumns||'').split(' ').filter(value=>value.endsWith('px'));
     const alignment=heading?getComputedStyle(heading).textAlign:'';
     const layoutTokens={
       ...(['left','center','right'].includes(alignment)?{heroTextAlign:alignment as 'left'|'center'|'right'}:{}),
