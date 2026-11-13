@@ -5,11 +5,13 @@ import {publicSiteUrl} from '../../src/lib/server/public-site-fetch';
 import {publicResearchPolicy} from '../../src/lib/server/public-site-policy';
 import {assertPublicDns} from '../public-network-policy.mjs';
 import {isSafeNavigationProbe} from '../navigation-probe-policy.mjs';
+import {approvedCaptureHosts} from './capture-host-policy';
 import {validateBrowserEvidence,type BrowserEvidence} from '../../src/lib/browser-evidence';
 /** Crawlee schedules permitted, same-origin pages; existing DNS/robots policies remain authoritative. */
 export async function captureWithCrawlee(source:string,hosts:string[]){
- const target=publicSiteUrl(source);if(!hosts.includes(target.hostname)||!isSafeNavigationProbe(target.href,target.origin))throw Error('Capture source is not authorized');
- await Promise.all(hosts.map(assertPublicDns));
+ const target=publicSiteUrl(source);const permittedHosts=approvedCaptureHosts(target.href,hosts);
+ if(!isSafeNavigationProbe(target.href,target.origin))throw Error('Capture source is not authorized');
+ await Promise.all(permittedHosts.map(assertPublicDns));
  const beforeRequest=publicResearchPolicy();await beforeRequest(target);
  const pages:BrowserEvidence['pages']=[],warnings:string[]=[];const seen=new Set<string>();
  const crawler=new PlaywrightCrawler({
@@ -21,7 +23,7 @@ export async function captureWithCrawlee(source:string,hosts:string[]){
    await page.context().clearCookies();await page.setViewportSize({width:1280,height:800});
    await page.context().route('**/*',async route=>{
     const url=new URL(route.request().url());
-    if(url.protocol!=='https:'||url.port||url.username||url.password||!hosts.includes(url.hostname)||!['GET','HEAD'].includes(route.request().method()))return route.abort();
+    if(url.protocol!=='https:'||url.port||url.username||url.password||!permittedHosts.includes(url.hostname)||!['GET','HEAD'].includes(route.request().method()))return route.abort();
     if(route.request().isNavigationRequest()&&(!isSafeNavigationProbe(url.href,target.origin)||url.origin!==target.origin))return route.abort();
     try{await assertPublicDns(url.hostname)}catch{return route.abort()}
     return route.continue();
