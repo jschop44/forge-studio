@@ -81,7 +81,7 @@ export function extractWebsiteDesignDna(input:string,sourceUrl:string,stylesheet
   const last=opens.at(-1);
   if(!last)return '';
   const closed=[...prefix.matchAll(/<\/a\s*>/gi)].at(-1);
-  if(closed&&closed.index!>last.index!)return '';
+  if(closed&&(closed.index??-1)>(last.index??-1))return '';
   const observed=attribute(last[0],'aria-label')||attribute(last[0],'title');
   const label=text(observed);
   return label.length>=4&&label.length<=110&&!/^(?:image|photo|picture|graphic|banner|shop now|click here|learn more|view all|open)$/i.test(label)?label:'';
