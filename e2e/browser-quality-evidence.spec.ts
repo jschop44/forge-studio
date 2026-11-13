@@ -16,3 +16,17 @@ test('browser quality collector accepts valid visual pages',async({page})=>{
  expect(evidence.brokenLinks).toEqual([]);
  expect(evidence.overflowPx).toBe(0);
 });
+
+test('browser quality reports visually clipped headlines even when the page has no horizontal overflow',async({page})=>{
+ await page.setViewportSize({width:390,height:844});
+ await page.setContent('<!doctype html><html><body style="margin:0"><main style="width:320px;margin:20px auto"><h1 style="width:190px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">Recovery wraps and detailed product collections</h1><section style="width:180px;overflow:hidden"><h2 style="width:360px">Hidden product heading</h2></section></main></body></html>');
+ const evidence=await page.evaluate(collectBrowserQualityEvidence);
+ expect(evidence.overflowPx).toBe(0);
+ expect(evidence.clippedHeadings).toEqual(expect.arrayContaining(['h1 heading 1 is clipped','h2 heading 2 is clipped']));
+});
+test('headings below the fold and readable wrapped titles are not mistaken for clipping',async({page})=>{
+ await page.setViewportSize({width:390,height:844});
+ await page.setContent('<!doctype html><html><body style="margin:0"><main style="max-width:100%;padding:20px"><h1 style="white-space:normal;overflow-wrap:anywhere">Recovery wraps and detailed product collections</h1><div style="height:1700px"></div><h2>Below the fold and still readable</h2></main></body></html>');
+ const evidence=await page.evaluate(collectBrowserQualityEvidence);
+ expect(evidence.clippedHeadings).toEqual([]);
+});

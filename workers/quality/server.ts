@@ -33,7 +33,7 @@ export const qualityGraph=new StateGraph(State)
     await context.route('**/*',route=>route.abort());
     try{
      const tab=await context.newPage();
-     const observed={brokenImages:[] as string[],brokenLinks:[] as string[],overflowPx:0};
+     const observed={brokenImages:[] as string[],brokenLinks:[] as string[],clippedHeadings:[] as string[],overflowPx:0};
      for(const width of [1280,390]){
       await tab.setViewportSize({width,height:900});
       await tab.setContent('<!doctype html><meta http-equiv="Content-Security-Policy" content="script-src &#39;none&#39;; object-src &#39;none&#39;; frame-src &#39;none&#39;; connect-src &#39;none&#39;">'+page.html,{waitUntil:'domcontentloaded',timeout:4000});
@@ -44,9 +44,10 @@ export const qualityGraph=new StateGraph(State)
       // Network requests are blocked; only embedded images can be tested here.
       observed.brokenImages.push(...evidence.brokenImages.filter(src=>src.startsWith('data:')));
       observed.brokenLinks.push(...evidence.brokenLinks);
+      observed.clippedHeadings.push(...evidence.clippedHeadings.map(detail=>detail+' at '+width+'px'));
       observed.overflowPx=Math.max(observed.overflowPx,evidence.overflowPx);
      }
-     pages.push({...page,...observed,brokenLinks:[...new Set(observed.brokenLinks)]});
+     pages.push({...page,...observed,brokenLinks:[...new Set(observed.brokenLinks)],clippedHeadings:[...new Set(observed.clippedHeadings)].slice(0,20)});
     }finally{await context.close()}
    }
    return {pages,findings:[...inspectGeneratedPages(pages),...accessibility]};

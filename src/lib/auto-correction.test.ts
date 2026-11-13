@@ -18,3 +18,9 @@ test('stops on persistent quality defects',async()=>{
 test('rejects a repair that removes pages',async()=>{
  await assert.rejects(correctGeneratedPages([page('<title>Site</title>')],async()=>[]),/preserve page identities/);
 });
+
+test('inert quality findings include clipped headings without rewriting a business page',()=>{
+ const html='<html><head><title>Shop</title></head><body><h1>Recovery wraps</h1><img alt="Wrap" src="data:image/svg+xml,ok"></body></html>';
+ const findings=inspectGeneratedPages([{slug:'index',html,clippedHeadings:['h1 heading 1 is clipped at 390px']}]);
+ assert.ok(findings.some(f=>f.kind==='clipped-heading'&&f.detail.includes('390px')));
+});
