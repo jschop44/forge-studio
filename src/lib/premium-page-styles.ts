@@ -39,7 +39,7 @@ export const premiumEditorialStyles=[
  'body[data-forge-business="produce"][data-forge-experience="standard"] .site-hero .editorial-photo{border-radius:49% 49% 10px 10px;aspect-ratio:4/5}',
  'body[data-forge-business="produce"][data-forge-experience="standard"] .service-card{border:1px solid #44523c2b;border-radius:20px 20px 8px 8px;background:#fffdf5;box-shadow:0 13px 33px #34482d12}',
  'body[data-forge-business="produce"] .forge-editorial__photo{border-radius:22px 7px 20px 7px}',
- 'body[data-forge-business="produce"] .forge-editorial__heading .eyebrow{color:#7f4a27}',
+ 'body[data-forge-business="produce"][data-forge-experience="standard"] .forge-editorial__heading .eyebrow{color:#7f4a27}',
  'body[data-forge-business="produce"] .forge-editorial__foot a{display:inline-flex;align-items:center;justify-content:center;min-height:44px;padding:11px 18px;border:1px solid currentColor;border-radius:50px;text-decoration:none}',
  'body[data-forge-business="books"] .forge-editorial__photo{border-radius:3px;box-shadow:12px 16px 0 color-mix(in srgb,var(--business-ink) 8%,transparent)}',
  'body[data-forge-business="music"] .forge-editorial__photo{border-radius:18px 5px 18px 5px}',
