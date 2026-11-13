@@ -16,7 +16,9 @@ export function inspectExportedBranding(html,business){
  // wordmark with no observed official logo is acceptable.
  const promotional=business==='Disney'
   ?labels.some(label=>/\b(?:fortnite|hulu|bundle|espn|pixar|marvel)\b/i.test(label))||
-   paths.some(path=>/(?:fortnite|hulu|disneybundle)/i.test(path))
+   labels.some(label=>Boolean(label)&&!/\bdisney\b/i.test(label)&&
+    !/^(?:source website (?:logo|icon)|official site (?:logo|icon))$/i.test(label))||
+   paths.some(path=>/(?:fortnite|hulu|disneybundle|celebrate[-_]?the[-_]?magic)/i.test(path))
   :false;
  const joinedBrand=labels.some(label=>/\s\|\s/.test(label)&&!/\|\s*(?:official\s+)?(?:logo|icon|wordmark)\s*$/i.test(label));
  return {
