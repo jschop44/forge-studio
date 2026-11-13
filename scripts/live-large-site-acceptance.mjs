@@ -94,12 +94,22 @@ async function runOne(browser,item,index){
   await page.goto(BASE+'/business',{waitUntil:'domcontentloaded',timeout:35000});
   const mode=page.getByRole('combobox',{name:/^Design approach/});
   await mode.waitFor({state:'visible',timeout:30000});
-  await mode.selectOption(item.mode);
-  const sourceInput=page.getByRole('textbox',{name:'Existing website address'});
-  // A cold first paint can display pre-hydration controls. Retry UI setup once,
-  // not source inspection or generation, if the conditional address field is absent.
-  try{await sourceInput.waitFor({state:'visible',timeout:8000})}
-  catch{await page.reload({waitUntil:'domcontentloaded'});await mode.selectOption(item.mode);await sourceInput.waitFor({state:'visible',timeout:12000})}
+  // Changing a select before React hydration modifies the DOM without updating state.
+  await page.waitForFunction(()=>{
+   const input=[...document.querySelectorAll('select')].find(el=>el.closest('label')?.textContent?.includes('Design approach'));
+   return !!input&&Object.keys(input).some(key=>key.startsWith('__reactFiber$'));
+  },null,{timeout:20000});
+  const sourceInput=page.locator('input[placeholder="e.g. disney.com"]');
+  for(let attempt=0;attempt<3;attempt++){
+   await mode.selectOption(item.mode);
+   if(await sourceInput.isVisible().catch(()=>false))break;
+   if(attempt===1)await page.reload({waitUntil:'domcontentloaded'});
+   await page.waitForTimeout(500);
+  }
+  if(!await sourceInput.isVisible()){
+   const actual=await mode.inputValue().catch(()=>'unknown');
+   throw Error('Expected website address field absent after hydration; selected design approach='+actual);
+  }
   await sourceInput.fill(item.url);
   const extractLabel=item.mode==='redesign'?'Extract website details for redesign':'Extract website appearance';
   await page.getByRole('button',{name:extractLabel,exact:true}).click();
