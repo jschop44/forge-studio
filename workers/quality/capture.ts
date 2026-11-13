@@ -40,10 +40,25 @@ export async function captureWithCrawlee(source:string,hosts:string[]){
     const ctaStyle=cta?getComputedStyle(cta):null,mainWidth=main?Math.round(main.getBoundingClientRect().width):0;
     const tracks=(heroStyle?.gridTemplateColumns||'').split(' ').filter(value=>value.endsWith('px'));
     const alignment=heading?getComputedStyle(heading).textAlign:'';
+    // Capture inert measurements only. Unsupported units and large overlays are
+    // omitted instead of copying source CSS or guessing mobile geometry.
+    const boundedPx=(value:string|undefined,max:number)=>{
+      if(!value||!/^\d{1,4}(?:\.\d{1,3})?px$/.test(value))return;
+      const number=Math.round(Number.parseFloat(value));
+      return number>=0&&number<=max?number+'px':undefined;
+    };
+    const heroImage=hero?.querySelector('picture img,img');
+    const mediaRadius=heroImage?getComputedStyle(heroImage).borderTopLeftRadius:undefined;
     const layoutTokens={
       ...(['left','center','right'].includes(alignment)?{heroTextAlign:alignment as 'left'|'center'|'right'}:{}),
       ...(heroStyle?.display==='grid'&&tracks.length>0?{heroLayout:tracks.length>=2?'split' as const:'stacked' as const}:heroStyle?.display==='flex'?{heroLayout:heroStyle.flexDirection.startsWith('column')?'stacked' as const:'split' as const}:{}),
       ...(mainWidth>=320&&mainWidth<=1800?{contentMaxWidth:mainWidth+'px'}:{}),
+      ...(boundedPx(navStyle?.paddingTop,96)?{headerPaddingTop:boundedPx(navStyle?.paddingTop,96)}:{}),
+      ...(boundedPx(navStyle?.paddingBottom,96)?{headerPaddingBottom:boundedPx(navStyle?.paddingBottom,96)}:{}),
+      ...(boundedPx(heroStyle?.columnGap,120)?{heroGap:boundedPx(heroStyle?.columnGap,120)}:{}),
+      ...(boundedPx(heroStyle?.paddingTop,240)?{heroPaddingTop:boundedPx(heroStyle?.paddingTop,240)}:{}),
+      ...(boundedPx(heroStyle?.paddingBottom,240)?{heroPaddingBottom:boundedPx(heroStyle?.paddingBottom,240)}:{}),
+      ...(boundedPx(mediaRadius,64)?{heroMediaRadius:boundedPx(mediaRadius,64)}:{}),
       ...(ctaStyle?{buttonRadius:Math.min(64,Math.max(0,Number.parseFloat(ctaStyle.borderTopLeftRadius)||0))+'px'}:{}),
       ...(ctaStyle&&(ctaStyle.backgroundColor.startsWith('rgb(')||ctaStyle.backgroundColor.startsWith('rgba(')||ctaStyle.backgroundColor.startsWith('#'))?{buttonBackgroundColor:ctaStyle.backgroundColor}:{}),
       ...(ctaStyle&&(ctaStyle.color.startsWith('rgb(')||ctaStyle.color.startsWith('rgba(')||ctaStyle.color.startsWith('#'))?{buttonTextColor:ctaStyle.color}:{}),
