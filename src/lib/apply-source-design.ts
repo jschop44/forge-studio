@@ -36,13 +36,28 @@ function observedRetailHero(html:string,images:SourceImage[],used:Set<string>){
   }).filter(x=>x.categoryHits.length>0)
   .sort((a,b)=>b.categoryHits.length-a.categoryHits.length||a.extra-b.extra)[0]?.image;
 }
+/** A promotional partner or bundle graphic is not the site's company logo.
+ * Source crawls can see "Disney+ Hulu logo" inside a Disney hero promotion:
+ * its image role is legitimate evidence, but not evidence of primary branding.
+ * Do not replace a business wordmark with a co-branded campaign image.
+ */
+function promotionalPartnerLogo(image:SourceImage):boolean{
+ if(image.role!=='logo')return false;
+ const label=decodeSourceEntities(image.alt||'').trim();
+ let path='';
+ try{path=new URL(image.url).pathname}catch{}
+ const multiBrand=/\+\s*(?!logo\b|icon\b|brand\b)[a-z][\w-]{1,}(?:\s+[a-z][\w-]{1,}){0,2}\s+(?:logo|icon|brand)\b/i.test(label);
+ const campaignAsset=/\bbundle.{0,48}(?:banner|logo)\b/i.test(path.replace(/[_-]/g,' '));
+ return multiBrand||campaignAsset;
+}
 function sourceImage(image:SourceImage,className='source-photo',eager=false){return '<img class="'+className+'" data-forge-source-image src="'+esc(image.url)+'" alt="'+esc(image.alt)+'" loading="'+(eager?'eager':'lazy')+'"'+(eager?' fetchpriority="high"':'')+' decoding="async"'+(image.width?' width="'+image.width+'"':'')+(image.height?' height="'+image.height+'"':'')+'>'}
 function foreground(background:string){const rgb=(background.length===4?background.slice(1).split('').map(c=>c+c).join(''):background.slice(1)).match(/../g)!.map(c=>parseInt(c,16));return rgb[0]*.299+rgb[1]*.587+rgb[2]*.114>150?'#151515':'#f8f8f8'}
 /** Reuse observed assets and bounded design tokens without executing source HTML/CSS. */
 export function applySourceDesign(pages:GeneratedPage[],dna:WebsiteDesignDna|undefined,mode:string):{pages:GeneratedPage[];warnings:string[]}{
  if(mode==='new'||!dna)return {pages,warnings:[]};
  const images=(dna.images||[]).slice(0,30).flatMap(image=>{const url=publicSourceAsset(image.url,dna.sourceUrl);return url?[{...image,url,alt:String(image.alt||'').slice(0,350),width:Number.isInteger(image.width)&&image.width!>0&&image.width!<=20000?image.width:undefined,height:Number.isInteger(image.height)&&image.height!>0&&image.height!<=20000?image.height:undefined}]:[]});
- const logo=images.find(image=>image.role==='logo');
+ const rejectedCampaignLogos=images.filter(promotionalPartnerLogo);
+ const logo=images.find(image=>image.role==='logo'&&!promotionalPartnerLogo(image));
  const emails=(dna.contact?.emails||[]).filter(email=>/^[\w.!#$%&'*+/=?^`{|}~-]+@[\w.-]+\.[a-z]{2,}$/i.test(email)).slice(0,3);
  const phones=(dna.contact?.phones||[]).filter(phone=>/^\+?[\d(). -]{7,30}$/.test(phone)).slice(0,3);
  const contact=[...emails.map(email=>'<a href="mailto:'+esc(email)+'">'+esc(email)+'</a>'),...phones.map(phone=>'<a href="tel:'+esc(phone.replace(/[(). -]/g,''))+'">'+esc(phone)+'</a>')].join(' · ');
@@ -117,6 +132,7 @@ export function applySourceDesign(pages:GeneratedPage[],dna:WebsiteDesignDna|und
   return {...page,html:html.replace(/<\/head>/i,'<style id="forge-source-design">'+css+'</style></head>')};
  });
  const warnings=['Original asset URLs were discovered in source HTML; availability and usage authorization still require verification.'];
+ if(rejectedCampaignLogos.length)warnings.push('Co-branded or promotional source graphics were not treated as the company logo.');
  if(suppressedUnverifiedMarks)warnings.push('No official source logo could be observed; preserved the business-name wordmark without fabricating a logo.');
  if(!assigned)warnings.push('No source images could be matched to generated sections; provide descriptive, authorized business imagery.');
  if(preserve)warnings.push('Source colors, available font names and representative images were reused. Exact layout, downloaded fonts and browser visual fidelity remain unverified.');
