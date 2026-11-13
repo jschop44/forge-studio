@@ -46,6 +46,13 @@ function appearanceRules(tokens:unknown):string{
  const ink=background?readableInk(background,safeColor(t.textColor)):undefined;
  const bodyFont=family(t.fontFamily),headingFont=family(t.headingFontFamily);
  const bodySize=pixels(t.baseFontSize,12,24),headingSize=pixels(t.headingFontSize,24,96),lineHeight=pixels(t.lineHeight,12,72),headingLineHeight=pixels(t.headingLineHeight,20,150);
+ const contentWidth=pixels(t.contentMaxWidth,320,1800);
+ const radius=pixels(t.buttonRadius,0,64);
+ const heroAlignment=['left','center','right'].includes(String(t.heroTextAlign))?String(t.heroTextAlign):'';
+ const heroLayout=['stacked','split'].includes(String(t.heroLayout))?String(t.heroLayout):'';
+ const navBg=safeColor(t.headerBackgroundColor);
+ const buttonBg=safeColor(t.buttonBackgroundColor);
+ const buttonInk=buttonBg?readableInk(buttonBg,safeColor(t.buttonTextColor)):undefined;
  return [
   background?':root{--business-paper:'+background+';--business-ink:'+ink+'}body{background:'+background+';color:'+ink+'}main:before{background:'+background+'}p,main p,.card p,body>nav,body>footer{color:'+ink+'}':'',
   bodyFont?'body{font-family:'+bodyFont+'}':'',
@@ -53,7 +60,14 @@ function appearanceRules(tokens:unknown):string{
   lineHeight?'body{line-height:'+lineHeight+'px}':'',
   headingFont?'h1,h2,h3{font-family:'+headingFont+'}':'',
   headingSize?'h1{font-size:clamp(2rem,6vw,'+headingSize+'px)}':'',
-  headingLineHeight?'h1{line-height:'+headingLineHeight+'px}':''
+  headingLineHeight?'h1{line-height:'+headingLineHeight+'px}':'',
+  contentWidth?'body main{max-width:'+contentWidth+'px;width:100%;margin-inline:auto}':'',
+  navBg?'body>nav{background:'+navBg+';color:'+readableInk(navBg)+'}body>nav a{color:inherit}':'',
+  buttonBg?'body .button{background:'+buttonBg+';color:'+buttonInk+'}':'',
+  radius!==undefined?'body .button{border-radius:'+radius+'px}':'',
+  heroAlignment?'body main .site-hero>div{text-align:'+heroAlignment+'}':'',
+  heroLayout==='stacked'?'body main .site-hero:not(.text-led){grid-template-columns:minmax(0,1fr);min-height:0}':'',
+  heroLayout==='split'?'@media(min-width:701px){body main .site-hero:not(.text-led){grid-template-columns:minmax(0,1fr) minmax(0,1fr)}}':''
  ].join('');
 }
 /** CSS-only, strictly bounded computed style reuse. Source CSS and scripts are never executed. */
@@ -70,7 +84,7 @@ export function applyCapturedAppearance<T extends HtmlPage>(
  const selected=capture.pages.find(page=>page.path===expectedPath);
  if(!selected)return {pages,warnings:['Browser appearance evidence did not include the inspected source page.']};
  const rules=appearanceRules(selected.designTokens);
- const warnings=['Applied bounded browser-observed colors and typography. Downloaded fonts, responsive layout fidelity and source-site behavior remain unverified.'];
+ const warnings=['Applied bounded browser-observed colors, typography and available layout details. Exact CSS, responsive fidelity, downloaded fonts and source-site behavior remain unverified.'];
  let applied=0;
  const styled=pages.map(page=>{
   let pageRules=rules;
