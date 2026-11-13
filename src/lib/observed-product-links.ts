@@ -22,7 +22,7 @@ export function linkObservedOfferingDestinations(
  const destinations=new Map<string,string>();
  for(const item of navigation.slice(0,80)){
   if(!item||typeof item.label!=='string'||typeof item.path!=='string'||item.path.length>400)continue;
-  if(!item.path.startsWith('/')||item.path.startsWith('//')||!usefulSourcePage({path:item.path,label:item.label}))continue;
+  if(!item.path.startsWith('/')||item.path.startsWith('//')||/\/(?:exit-interstitial|exit|redirect|outbound|leaving)(?:\/|$|\?)/i.test(item.path)||!usefulSourcePage({path:item.path,label:item.label}))continue;
   let url:URL;
   try{url=new URL(item.path,source)}catch{continue}
   if(url.origin!==source.origin||url.protocol!=='https:'||url.username||url.password)continue;
