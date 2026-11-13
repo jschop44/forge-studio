@@ -162,7 +162,7 @@ export function applySourceDesign(pages:GeneratedPage[],dna:WebsiteDesignDna|und
   return {...page,html:html.replace(/<\/head>/i,'<style id="forge-source-design">'+css+'</style></head>')};
  });
  const warnings=['Original asset URLs were discovered in source HTML; availability and usage authorization still require verification.'];
- if(rejectedCampaignLogos.length)warnings.push('Promotional, co-branded or non-company source graphics were not treated as the primary logo.');
+ if(rejectedCampaignLogos.length)warnings.push('Co-branded, promotional or non-company source graphics were not treated as the primary company logo.');
  if(suppressedUnverifiedMarks)warnings.push('No official source logo could be observed; preserved the business-name wordmark without fabricating a logo.');
  if(!assigned)warnings.push('No source images could be matched to generated sections; provide descriptive, authorized business imagery.');
  if(preserve)warnings.push('Source colors, available font names and representative images were reused. Exact layout, downloaded fonts and browser visual fidelity remain unverified.');
