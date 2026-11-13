@@ -23,12 +23,20 @@ function matchingImage(subject:string,images:SourceImage[],used:Set<string>){
  * source photograph when its distinctive advertised category occurs in the
  * actual homepage copy. Never consume photos reserved for specific products.
  */
+/** Text-bearing marketing artwork is not suitable as a cropped editorial hero.
+ * The source asset may still be retained as evidence, but clipping embedded
+ * price/offer lettering makes a generated homepage unusable on narrow screens.
+ */
+function textHeavyRetailPromotion(image:SourceImage):boolean{
+ const alt=decodeSourceEntities(image.alt||'');
+ return /\b(?:save\s+(?:up to\s+)?\d{1,3}\s*%|\d{1,3}\s*%\s*off|terms(?: and conditions)? apply|members?\s+(?:get|save)\s+additional savings|limited[- ]time offer|(?:coupon|promo)\s+code)\b/i.test(alt);
+}
 function observedRetailHero(html:string,images:SourceImage[],used:Set<string>){
  const main=html.match(/<main\b[^>]*>([\s\S]*?)<\/main>/i)?.[1]||'';
  const readable=decodeSourceEntities(main.replace(/<[^>]*>/g,' '));
  if(!/\b(?:retail|electronics|department store|online store)\b/i.test(readable))return;
  const publicTerms=new Set(terms(readable));
- return images.filter(image=>image.role==='content'&&!used.has(image.url)&&image.alt.trim().length>5)
+ return images.filter(image=>image.role==='content'&&!used.has(image.url)&&image.alt.trim().length>5&&!textHeavyRetailPromotion(image))
   .map(image=>{
    const words=[...new Set(terms(image.alt))];
    const categoryHits=words.filter(word=>word.length>=6&&publicTerms.has(word));
