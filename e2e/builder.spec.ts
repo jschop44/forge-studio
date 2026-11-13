@@ -2,13 +2,14 @@ import { test, expect, type Page } from "@playwright/test";
 import {generateBusinessWebsite} from '../src/lib/business-site';
 
 // Browser UI fixture only. Real inference is verified by the separate AI smoke workflows.
-async function fixtureGeneration(page:Page){
+async function fixtureGeneration(page:Page,tall=false){
  await page.route('**/api/ai/business',async route=>{
   expect(route.request().method()).toBe('POST');
   const input=route.request().postDataJSON();
   expect(input.businessName).toBe('Northstar Coffee');
   const draft={businessName:input.businessName,industry:input.industry,description:'Freshly roasted coffee and welcoming service for our local community.',services:input.services};
-  await route.fulfill({status:200,json:{draft,provider:'browser-test-fixture',pages:generateBusinessWebsite({...draft,experienceStyle:input.experienceStyle}).pages}});
+  const pages=generateBusinessWebsite({...draft,experienceStyle:input.experienceStyle}).pages.map(p=>tall?{...p,html:p.html.replace('</head>','<style>main{min-height:5000px}</style></head>')}:p);
+  await route.fulfill({status:200,json:{draft,provider:'browser-test-fixture',pages}});
  });
 }
 
@@ -17,6 +18,18 @@ test("home page loads with an accessible document heading", async ({ page }) => 
   await page.goto("/");
   await expect(page.locator("body")).toBeVisible();
   await expect(page.locator("h1").first()).toBeVisible();
+});
+
+test('phone preview retains 390 content pixels while a long page scrolls',async({page})=>{
+ await fixtureGeneration(page,true);
+ await page.goto('/business');
+ await page.getByPlaceholder('e.g. Northstar Coffee').fill('Northstar Coffee');
+ await page.getByRole('button',{name:/generate my website/i}).click();
+ await expect(page.getByRole('navigation',{name:'Website pages'})).toBeVisible({timeout:30000});
+ await page.getByRole('button',{name:/switch to 390 pixel mobile website preview/i}).click();
+ const root=page.frameLocator('iframe').locator('html');
+ await expect.poll(()=>root.evaluate(el=>el.clientWidth)).toBe(390);
+ expect(await root.evaluate(el=>el.scrollHeight>el.clientHeight)).toBe(true);
 });
 
 test("business builder loads and exposes a website generation control", async ({ page }) => {

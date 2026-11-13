@@ -44,9 +44,12 @@ function previewRuntime(slugs:string[],current:string,anchor:string,resolve:type
  },{once:true});
  addEventListener('load',()=>dispatchEvent(new Event('forge-preview-measure')),{once:true});
 }
-export function businessPreviewHtml(page:GeneratedPage|undefined,pages:GeneratedPage[],anchor=''):string{
+export function businessPreviewHtml(page:GeneratedPage|undefined,pages:GeneratedPage[],anchor='',mobile=false):string{
  if(!page)return '';
  const json=(value:unknown)=>JSON.stringify(value).replace(/</g,'\\u003c');
  const script='<script id="forge-preview-navigation">('+previewRuntime.toString()+')('+json(pages.map(p=>p.slug))+','+json(page.slug)+','+json(anchor)+','+previewDestination.toString()+');</script>';
- return page.html.replace(/<head(?:\s[^>]*)?>/i,match=>match+script);
+ // Desktop scrollbars consume layout width inside a phone-sized iframe.
+ // Keep scrolling enabled while matching a phone's overlay-scrollbar viewport.
+ const phoneStyle=mobile?'<style id="forge-phone-scrollbars">html{scrollbar-width:none}html::-webkit-scrollbar{display:none}</style>':'';
+ return page.html.replace(/<head(?:\s[^>]*)?>/i,match=>match+phoneStyle+script);
 }
