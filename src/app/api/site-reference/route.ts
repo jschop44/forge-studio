@@ -1,5 +1,6 @@
 import {cleanSourceText as clean} from '../../../lib/source-text';
 import {usefulSourcePage} from '../../../lib/source-reuse-policy';
+import {selectRepresentativeSourcePages} from '../../../lib/source-navigation';
 import {NextRequest,NextResponse} from 'next/server';
 import {captureWithBrowserWorker} from '../../../lib/server/browser-capture-worker';
 import {publicResearchPolicy} from '../../../lib/server/public-site-policy';
@@ -41,7 +42,11 @@ export async function POST(req:NextRequest){
  const fontFamily=styles.match(/font-family\s*:\s*['"]?(Georgia|Arial|Verdana|Tahoma|Trebuchet MS|Times New Roman|system-ui|sans-serif|serif)/i)?.[1];
  const visualSignals={navigationLinks:(html.match(/<nav\b/gi)||[]).length,heroSections:(html.match(/(?:class|id)\s*=\s*["'][^"']*(?:hero|banner|masthead)[^"']*["']/gi)||[]).length,imageCount:(html.match(/<img\b/gi)||[]).length,sectionCount:(html.match(/<section\b/gi)||[]).length,buttonCount:(html.match(/<button\b/gi)||[]).length,hasVideo:/<video\b/i.test(html),hasCanvas:/<canvas\b/i.test(html)};
 
- const navigation=[...html.matchAll(/<a\b([^>]*?)href\s*=\s*["']([^"']+)["']([^>]*)>([\s\S]*?)<\/a>/gi)].slice(0,250).map(match=>{try{const link=new URL(match[2],url);if(link.origin!==url.origin||link.protocol!=='https:'||/\.(?:pdf|png|jpe?g|gif|svg|webp|mp4|zip)$/i.test(link.pathname))return null;const attrs=match[1]+' '+match[3];const aria=attrs.match(/aria-label\s*=\s*["']([^"']+)["']/i)?.[1]||'';const label=(clean(match[4])||clean(aria)||decodeURIComponent(link.pathname.split('/').filter(Boolean).pop()||'')).slice(0,60);return {label,path:link.pathname}}catch{return null}}).filter((item):item is {label:string;path:string}=>Boolean(item&&item.label.length>=2&&item.path!=='/'&&item.path.length<=140&&!/^(sign in|log in|logout|register|account|privacy|terms|cookies|accessibility)$/i.test(item.label))).filter((item,index,all)=>all.findIndex(other=>other.path===item.path)===index).slice(0,12);
+ const navigationCandidates=[...html.matchAll(/<a\b([^>]*?)href\s*=\s*["']([^"']+)["']([^>]*)>([\s\S]*?)<\/a>/gi)].slice(0,250).map(match=>{try{const link=new URL(match[2],url);if(link.origin!==url.origin||link.protocol!=='https:'||/\.(?:pdf|png|jpe?g|gif|svg|webp|mp4|zip)$/i.test(link.pathname))return null;const attrs=match[1]+' '+match[3];const aria=attrs.match(/aria-label\s*=\s*["']([^"']+)["']/i)?.[1]||'';const label=(clean(match[4])||clean(aria)||decodeURIComponent(link.pathname.split('/').filter(Boolean).pop()||'')).slice(0,60);return {label,path:link.pathname}}catch{return null}}).filter((item):item is {label:string;path:string}=>Boolean(item&&item.label.length>=2&&item.path!=='/'&&item.path.length<=140&&!/^(sign in|log in|logout|register|account|privacy|terms|cookies|accessibility)$/i.test(item.label))).filter((item,index,all)=>all.findIndex(other=>other.path===item.path)===index);
+ const chosenNavigation=new Set(selectRepresentativeSourcePages(navigationCandidates,12).map(item=>item.path));
+ // Preserve the original menu order for reconstruction; only the inspection
+ // candidate selection is prioritized by broad business page category.
+ const navigation=navigationCandidates.filter(item=>chosenNavigation.has(item.path));
  if(navigation.length<3){
   try{
    const sitemapUrl=new URL('/sitemap.xml',url);
@@ -53,7 +58,7 @@ export async function POST(req:NextRequest){
   }catch{/* Optional sitemap discovery; retain homepage navigation on failure. */}
  }
  const pageSummaries:{path:string;label:string;title:string;description:string;headings:string[];paragraphs:string[];images:SourceImage[]}[]=[];
- for(const item of navigation.slice(0,4)){
+ for(const item of selectRepresentativeSourcePages(navigation,4)){
   try{
    if(!usefulSourcePage(item))continue;
    const pageUrl=new URL(item.path,url);
