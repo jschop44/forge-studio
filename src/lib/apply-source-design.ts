@@ -56,14 +56,38 @@ function promotionalPartnerLogo(image:SourceImage):boolean{
  const campaignAsset=/\bbundle.{0,48}(?:banner|logo)\b/i.test(path.replace(/[_-]/g,' '));
  return multiBrand||partnerPipe||campaignAsset;
 }
+/** A retailer/entertainment site may publish many other brands' \"logos\".
+ * Prefer a wordmark over treating an unrelated holiday, partner or product
+ * campaign as the domain owner's primary company identity.
+ * Require a recognizable domain brand only when the domain is brand-specific;
+ * example/test hosts and generic site-builder domains remain unrestricted.
+ */
+function matchesPrimaryBrand(image:SourceImage,dna:WebsiteDesignDna):boolean{
+ if(image.role!=='logo'||promotionalPartnerLogo(image))return false;
+ const label=decodeSourceEntities(image.alt||'').trim();
+ if(/^(?:source website (?:logo|icon)|official site (?:logo|icon))$/i.test(label))return true;
+ let hostname='';
+ try{hostname=new URL(dna.sourceUrl).hostname.toLowerCase().replace(/^www\./,'')}catch{return true}
+ if(/\.(?:example|test|localhost)$/i.test(hostname))return true;
+ const segments=hostname.split('.');
+ let stem=(segments.at(-2)||'').replace(/[^a-z0-9]/g,'');
+ if(['co','com','net','org'].includes(stem)&&segments.length>=3)stem=(segments.at(-3)||'').replace(/[^a-z0-9]/g,'');
+ if(stem.length<5||/^(?:example|website|retail|shop|store|business|company|site|restaurant|market|hosting|pages|workers|onrender)$/.test(stem))return true;
+ const siteName=decodeSourceEntities(dna.businessName||'').toLowerCase().replace(/[^a-z0-9]/g,'');
+ // When published source identity conflicts with the domain, avoid inferring
+ // that domain text must occur in its legitimate logo.
+ if(siteName&&!siteName.includes(stem))return true;
+ const observed=label.toLowerCase().replace(/[^a-z0-9]/g,'');
+ return observed.includes(stem);
+}
 function sourceImage(image:SourceImage,className='source-photo',eager=false){return '<img class="'+className+'" data-forge-source-image src="'+esc(image.url)+'" alt="'+esc(image.alt)+'" loading="'+(eager?'eager':'lazy')+'"'+(eager?' fetchpriority="high"':'')+' decoding="async"'+(image.width?' width="'+image.width+'"':'')+(image.height?' height="'+image.height+'"':'')+'>'}
 function foreground(background:string){const rgb=(background.length===4?background.slice(1).split('').map(c=>c+c).join(''):background.slice(1)).match(/../g)!.map(c=>parseInt(c,16));return rgb[0]*.299+rgb[1]*.587+rgb[2]*.114>150?'#151515':'#f8f8f8'}
 /** Reuse observed assets and bounded design tokens without executing source HTML/CSS. */
 export function applySourceDesign(pages:GeneratedPage[],dna:WebsiteDesignDna|undefined,mode:string):{pages:GeneratedPage[];warnings:string[]}{
  if(mode==='new'||!dna)return {pages,warnings:[]};
  const images=(dna.images||[]).slice(0,30).flatMap(image=>{const url=publicSourceAsset(image.url,dna.sourceUrl);return url?[{...image,url,alt:String(image.alt||'').slice(0,350),width:Number.isInteger(image.width)&&image.width!>0&&image.width!<=20000?image.width:undefined,height:Number.isInteger(image.height)&&image.height!>0&&image.height!<=20000?image.height:undefined}]:[]});
- const rejectedCampaignLogos=images.filter(promotionalPartnerLogo);
- const logo=images.find(image=>image.role==='logo'&&!promotionalPartnerLogo(image));
+ const rejectedCampaignLogos=images.filter(image=>image.role==='logo'&&!matchesPrimaryBrand(image,dna));
+ const logo=images.find(image=>matchesPrimaryBrand(image,dna));
  const emails=(dna.contact?.emails||[]).filter(email=>/^[\w.!#$%&'*+/=?^`{|}~-]+@[\w.-]+\.[a-z]{2,}$/i.test(email)).slice(0,3);
  const phones=(dna.contact?.phones||[]).filter(phone=>/^\+?[\d(). -]{7,30}$/.test(phone)).slice(0,3);
  const contact=[...emails.map(email=>'<a href="mailto:'+esc(email)+'">'+esc(email)+'</a>'),...phones.map(phone=>'<a href="tel:'+esc(phone.replace(/[(). -]/g,''))+'">'+esc(phone)+'</a>')].join(' · ');
@@ -138,7 +162,7 @@ export function applySourceDesign(pages:GeneratedPage[],dna:WebsiteDesignDna|und
   return {...page,html:html.replace(/<\/head>/i,'<style id="forge-source-design">'+css+'</style></head>')};
  });
  const warnings=['Original asset URLs were discovered in source HTML; availability and usage authorization still require verification.'];
- if(rejectedCampaignLogos.length)warnings.push('Co-branded or promotional source graphics were not treated as the company logo.');
+ if(rejectedCampaignLogos.length)warnings.push('Promotional, co-branded or non-company source graphics were not treated as the primary logo.');
  if(suppressedUnverifiedMarks)warnings.push('No official source logo could be observed; preserved the business-name wordmark without fabricating a logo.');
  if(!assigned)warnings.push('No source images could be matched to generated sections; provide descriptive, authorized business imagery.');
  if(preserve)warnings.push('Source colors, available font names and representative images were reused. Exact layout, downloaded fonts and browser visual fidelity remain unverified.');
