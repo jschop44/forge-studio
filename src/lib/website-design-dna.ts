@@ -15,7 +15,19 @@ export function extractWebsiteDesignDna(input:string,sourceUrl:string,stylesheet
  const images:SourceImage[]=[],seen=new Set<string>();
  const add=(value:string,alt:string,role:SourceImage['role'],width?:number,height?:number)=>{
   const url=publicSourceAsset(value,sourceUrl);
-  if(!url||seen.has(url)||width&&height&&width<32&&height<32)return;
+  if(!url||width&&height&&width<32&&height<32)return;
+  if(seen.has(url)){
+   // The same asset may first appear as a generic <img>, then be identified
+   // as a logo by the source's logo-specific CSS. Promote its observed role.
+   if(role==='logo'){
+    const at=images.findIndex(image=>image.url===url);
+    if(at>=0&&images[at].role!=='logo'){
+     const [observed]=images.splice(at,1);
+     images.unshift({...observed,role:'logo',alt:text(alt)||observed.alt});
+    }
+   }
+   return;
+  }
   if(images.length>=30){
    // Source storefronts can have dozens of category photographs before the
    // official brand asset appears. Reserve observed logo evidence rather than
