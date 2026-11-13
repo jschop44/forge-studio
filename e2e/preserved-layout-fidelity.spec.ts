@@ -1,7 +1,7 @@
 import {test,expect} from '@playwright/test';
 import {generateBusinessWebsite} from '../src/lib/business-site';
 import {applyCapturedAppearance} from '../src/lib/captured-appearance';
-import {createExtractedPages} from '../src/lib/extracted-pages';
+import {createExtractedPages,applyExtractedExperience} from '../src/lib/extracted-pages';
 
 const business={
  businessName:'Green Market',industry:'Fresh produce retail',
@@ -53,7 +53,7 @@ for(const width of [390,1280]){
    description:'Recovery wraps that serve active clients.',headings:['Recovery wraps'],
    images:[{url:'https://client-market.example/wrap.jpg',alt:'Recovery Wrap',role:'content' as const,sourcePage:'https://client-market.example/wraps',width:900,height:600}]
   }]};
-  const extracted=createExtractedPages(evidence,'Green Market');
+  const extracted=applyExtractedExperience(createExtractedPages(evidence,'Green Market'),'standard',{businessName:'Green Market',industry:'Health and wellness',services:['Recovery wraps']});
   const style={...observed,contentMaxWidth:'1280px',heroLayout:'stacked' as const};
   const captured={...capture,pages:[...capture.pages,{...capture.pages[0],path:'/wraps',designTokens:style}]};
   const result=applyCapturedAppearance(extracted,captured,evidence.url,'preserve',{wraps:'https://client-market.example/wraps'});
