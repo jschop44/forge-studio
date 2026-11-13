@@ -84,7 +84,27 @@ export function extractWebsiteDesignDna(input:string,sourceUrl:string,stylesheet
   if(closed&&(closed.index??-1)>(last.index??-1))return '';
   const observed=attribute(last[0],'aria-label')||attribute(last[0],'title');
   const label=text(observed);
-  return label.length>=4&&label.length<=110&&!/^(?:image|photo|picture|graphic|banner|shop now|click here|learn more|view all|open)$/i.test(label)?label:'';
+  if(label.length>=4&&label.length<=110&&!/^(?:image|photo|picture|graphic|banner|shop now|click here|learn more|view all|open)$/i.test(label))return label;
+  // Category links also publish their own visible heading after an alt="" image.
+  // Only use a short label inside the SAME enclosing first-party anchor, never
+  // adjacent card copy, marketing banners, a second image or outbound links.
+  const href=attribute(last[0],'href');
+  try{
+   const destination=new URL(href,sourceUrl);
+   if(!href||destination.origin!==new URL(sourceUrl).origin||!/^https:$/i.test(destination.protocol))return '';
+  }catch{return ''}
+  const following=html.slice(index+tag.length,index+tag.length+650);
+  const close=/<\/a\s*>/i.exec(following);
+  if(!close||close.index>500)return '';
+  const own=following.slice(0,close.index);
+  if(/<(?:img|picture|a)\b/i.test(own))return '';
+  const heading=own.match(/<h[2-4]\b[^>]*>([\s\S]{1,140}?)<\/h[2-4]\s*>/i)?.[1];
+  const named=own.match(/<(?:span|div|p)\b[^>]*(?:class|id)=["'][^"']*(?:category|product|title|label|name)[^"']*["'][^>]*>([\s\S]{1,140}?)<\/(?:span|div|p)\s*>/i)?.[1];
+  const visible=text(heading||named||own);
+  if(visible.length<4||visible.length>85||visible.split(/\s+/).length>8||
+    /^(?:shop now|learn more|buy now|click here|view all|see details|add to cart)$/i.test(visible)||
+    /\b(?:free shipping|limited time|sign in|subscribe|terms apply)\b/i.test(visible))return '';
+  return visible;
  };
  for(const match of html.matchAll(/<img\b[^>]*>/gi)){
   const tag=match[0],alt=contextualImageLabel(tag,match.index??0),label=[alt,attribute(tag,'class'),attribute(tag,'id')].join(' ');
