@@ -84,15 +84,15 @@ export function extractWebsiteDesignDna(input:string,sourceUrl:string,stylesheet
  // fallback. Do not convert a third-party icon or an invented URL into a logo.
  if(!images.some(image=>image.role==='logo')){
   const homepage=new URL(sourceUrl);
-  const icons=[...html.matchAll(/<link\\b[^>]*>/gi)]
+  const icons=[...html.matchAll(/<link\b[^>]*>/gi)]
    .map(match=>match[0])
-   .filter(tag=>/(?:^|\\s)(?:apple-touch-icon|icon)(?:\\s|$)/i.test(attribute(tag,'rel')))
+   .filter(tag=>/(?:^|\s)(?:apple-touch-icon|icon)(?:\s|$)/i.test(attribute(tag,'rel')))
    .sort((a,b)=>Number(/apple-touch-icon/i.test(attribute(b,'rel')))-Number(/apple-touch-icon/i.test(attribute(a,'rel'))));
   for(const tag of icons){
    const value=publicSourceAsset(attribute(tag,'href'),sourceUrl);
    if(!value)continue;
    const asset=new URL(value);
-   if(asset.origin!==homepage.origin||!/\\.(?:png|jpe?g|webp|svg|ico)$/i.test(asset.pathname))continue;
+   if(asset.origin!==homepage.origin||!/\.(?:png|jpe?g|webp|svg|ico)$/i.test(asset.pathname))continue;
    add(value,'Source website icon','logo');
    if(images.some(image=>image.role==='logo'))break;
   }
