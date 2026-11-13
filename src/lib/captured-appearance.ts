@@ -35,7 +35,7 @@ function family(value:unknown):string|undefined{
  return safe.every(Boolean)?safe.join(','):undefined;
 }
 function pixels(value:unknown,min:number,max:number):number|undefined{
- if(typeof value!=='string'||! /^\d{1,3}(?:\.\d{1,2})?px$/.test(value))return;
+ if(typeof value!=='string'||! /^\d{1,4}(?:\.\d{1,2})?px$/.test(value))return;
  const number=Number(value.slice(0,-2));
  return number>=min&&number<=max?number:undefined;
 }
@@ -65,9 +65,12 @@ function appearanceRules(tokens:unknown):string{
   navBg?'body>nav{background:'+navBg+';color:'+readableInk(navBg)+'}body>nav a{color:inherit}':'',
   buttonBg?'body .button{background:'+buttonBg+';color:'+buttonInk+'}':'',
   radius!==undefined?'body .button{border-radius:'+radius+'px}':'',
-  heroAlignment?'body main .site-hero>div{text-align:'+heroAlignment+'}':'',
-  heroLayout==='stacked'?'body main .site-hero:not(.text-led){grid-template-columns:minmax(0,1fr);min-height:0}':'',
-  heroLayout==='split'?'@media(min-width:701px){body main .site-hero:not(.text-led){grid-template-columns:minmax(0,1fr) minmax(0,1fr)}}':''
+  heroAlignment?'body main .site-hero>div{text-align:'+heroAlignment+'}body main .extracted-hero>div{text-align:'+heroAlignment+'}':'',
+  heroLayout==='stacked'?'body main .site-hero:not(.text-led){grid-template-columns:minmax(0,1fr);min-height:0}body main .extracted-hero:has(figure){grid-template-columns:minmax(0,1fr);min-height:0}body main .extracted-hero:has(figure)>figure{width:100%;max-width:100%}':'',
+  heroLayout==='split'?'@media(min-width:701px){body main .site-hero:not(.text-led){grid-template-columns:minmax(0,1fr) minmax(0,1fr)}}@media(min-width:701px){body main .extracted-hero:has(figure){grid-template-columns:minmax(0,1fr) minmax(0,1fr)}}':'',
+  // Captured desktop typography must never cut off long product and brand titles on phones.
+  'body main .site-hero>*,body main .extracted-hero>*,body main .extracted-gallery figure{min-width:0}body main h1,body main h2{overflow-wrap:anywhere;max-width:100%}body main .extracted-hero img{max-width:100%;height:auto}',
+  '@media(max-width:700px){body main .site-hero:not(.text-led),body main .extracted-hero:has(figure){grid-template-columns:minmax(0,1fr)}body main h1{font-size:clamp(2rem,8vw,3.2rem);line-height:1.12}body main .extracted-hero figure{width:100%;max-width:100%}}'
  ].join('');
 }
 /** CSS-only, strictly bounded computed style reuse. Source CSS and scripts are never executed. */
