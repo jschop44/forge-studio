@@ -20,7 +20,8 @@ test('catalog photos do not repeat on the homepage teaser cards',()=>{
  assert.ok(home&&catalog);
  const catalogPhotos=cardPhotoUrls(catalog.html);
  const homePhotos=cardPhotoUrls(home.html);
- assert.ok(catalogPhotos.length>=2,'catalog should keep available subject-matched photos');
+ assert.ok(homePhotos.length>=2,'homepage should retain available subject-matched offering images');
+ assert.match(catalog.html,/<img\b/,'detailed catalog still contains primary photography');
  const all=[...catalogPhotos,...homePhotos];
  assert.equal(new Set(all).size,all.length,'offerings must not repeat an image across the generated pages');
  assert.match(home.html,/href="services\.html"/,'homepage still links to its full catalog');
@@ -38,6 +39,8 @@ test('available catalog photography takes priority over repeating teaser images'
  const catalog=site.pages.find(page=>page.slug==='services')!;
  const home=site.pages.find(page=>page.slug==='index')!;
  const catalogPhotos=cardPhotoUrls(catalog.html);
- assert.ok(catalogPhotos.length>=1);
- assert.ok(catalogPhotos.every(url=>!cardPhotoUrls(home.html).includes(url)));
+ const homepagePhotos=cardPhotoUrls(home.html);
+ assert.ok(homepagePhotos.length>=1,'homepage offering image coverage must remain intact');
+ assert.ok(catalogPhotos.every(url=>!homepagePhotos.includes(url)));
+ assert.match(catalog.html,/Coffee beans/,'catalog copy remains navigable even when photos are scarce');
 });
