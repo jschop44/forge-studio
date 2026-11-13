@@ -171,3 +171,21 @@ test('interior-page image evidence rejects unknown-size beacons while retaining 
   'https://retailer.example/logo.png','https://retailer.example/products/pixel-9.jpg'
  ]);
 });
+
+
+test('source logos and above-fold photographs load eagerly while offering cards remain lazy',()=>{
+ const source=extractWebsiteDesignDna(
+  '<img src="/logo.png" alt="Market logo"><img src="/grand-opening.jpg" alt="Grand opening"><img src="/wings.jpg" alt="Chicken wings">',
+  'https://market.example/');
+ const pages=[
+  {slug:'index',title:'Grand opening',html:wrap('<h1>Grand opening</h1><figure class="editorial-photo"><img src="https://stock.example/placeholder.jpg" alt=""></figure>')},
+  {slug:'services',title:'Menu',html:wrap('<article><h2>Chicken wings</h2></article>')}
+ ];
+ const generated=applySourceDesign(pages,source,'inspired').pages;
+ for(const page of generated){
+  assert.match(page.html,/class="source-brand-logo"[^>]*loading="eager" fetchpriority="high"/);
+ }
+ assert.match(generated[0].html,/src="https:\/\/market\.example\/grand-opening\.jpg"[^>]*loading="eager" fetchpriority="high"/);
+ assert.match(generated[1].html,/src="https:\/\/market\.example\/wings\.jpg"[^>]*loading="lazy"/);
+ assert.doesNotMatch(generated[1].html,/src="https:\/\/market\.example\/wings\.jpg"[^>]*fetchpriority="high"/);
+});
