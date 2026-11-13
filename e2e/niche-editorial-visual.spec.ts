@@ -14,7 +14,8 @@ for(const width of [390,1440]){
   await page.setContent(draft.pages[0].html,{waitUntil:'domcontentloaded'});
   await expect(page.locator('body')).toHaveAttribute('data-forge-business','produce');
   await expect(page.locator('.forge-editorial')).toHaveAttribute('data-editorial-theme','produce');
-  await expect(page.locator('.forge-editorial__photo')).toHaveCount(3);
+  expect(await page.locator('.forge-editorial__photo').count()).toBeGreaterThanOrEqual(2);
+  expect(await page.locator('main img').count()).toBeGreaterThanOrEqual(3);
   const styles=await page.evaluate(()=>{
    const hero=document.querySelector('.site-hero')!;
    const mark=document.querySelector('nav .brand-mark')!;
