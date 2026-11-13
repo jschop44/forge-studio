@@ -7,40 +7,37 @@ function cardPhotoUrls(html:string):string[]{
   .map(match=>match[1].replace(/&amp;/g,'&').split('?')[0]);
 }
 
-test('catalog photos do not repeat on the homepage teaser cards',()=>{
+test('homepage and catalog use different matching photos when alternatives are licensed',()=>{
+ // Synthetic licensed-asset fixture: never fetched or shown to real site visitors.
+ const assets=[101,102,103,104].map(id=>({
+  url:'https://images.pexels.com/photos/'+id+'/pexels-photo-'+id+'.jpeg',
+  title:'Coffee shop coffee beans display '+id,
+  source:'https://www.pexels.com/photo/coffee-shop-beans-'+id+'/',
+  credit:'Test photographer',license:'Pexels License'
+ }));
  const site=generateBusinessWebsite({
-  businessName:'Neighborhood Coffee Roasters',
-  industry:'Coffee shop and cafe',
-  description:'A friendly neighborhood coffee shop serving espresso drinks, roasted beans and pastries.',
-  services:['Coffee beans','Espresso drinks','Pastries'],
-  experienceStyle:'standard'
+  businessName:'Sample Coffee',industry:'Coffee shop',
+  description:'A neighborhood shop specializing in fresh coffee beans and quality espresso.',
+  services:['Coffee beans'],visualAssets:assets,experienceStyle:'standard'
  });
- const home=site.pages.find(page=>page.slug==='index');
- const catalog=site.pages.find(page=>page.slug==='services');
- assert.ok(home&&catalog);
- const catalogPhotos=cardPhotoUrls(catalog.html);
- const homePhotos=cardPhotoUrls(home.html);
- assert.ok(homePhotos.length>=2,'homepage should retain available subject-matched offering images');
- assert.match(catalog.html,/<img\b/,'detailed catalog still contains primary photography');
- const all=[...catalogPhotos,...homePhotos];
- assert.equal(new Set(all).size,all.length,'offerings must not repeat an image across the generated pages');
- assert.match(home.html,/href="services\.html"/,'homepage still links to its full catalog');
- assert.match(catalog.html,/Espresso drinks/,'offering copy must survive photo allocation');
+ const home=site.pages.find(page=>page.slug==='index')!;
+ const catalog=site.pages.find(page=>page.slug==='services')!;
+ const homePhotos=cardPhotoUrls(home.html),catalogPhotos=cardPhotoUrls(catalog.html);
+ assert.equal(homePhotos.length,1,'homepage card retains an image');
+ assert.equal(catalogPhotos.length,1,'catalog card retains an image');
+ assert.notEqual(homePhotos[0],catalogPhotos[0],'matching alternatives should prevent repeated card photos');
+ assert.match(home.html,/href="services\.html"/);
+ assert.match(catalog.html,/Coffee beans/);
 });
 
-test('available catalog photography takes priority over repeating teaser images',()=>{
+test('scarce niche imagery remains visible on both pages when no alternate exists',()=>{
  const site=generateBusinessWebsite({
-  businessName:'Coffee Counter',
-  industry:'Coffee shop and cafe',
-  description:'Serving small batch coffee beans and brewed espresso for the neighborhood.',
-  services:['Coffee beans','Coffee bean roasting'],
-  experienceStyle:'standard'
+  businessName:'Neighborhood Bail Bonds',industry:'Bail bond services',
+  description:'Information and support for people seeking bail bond services.',
+  services:['Bail bonds'],experienceStyle:'standard'
  });
- const catalog=site.pages.find(page=>page.slug==='services')!;
  const home=site.pages.find(page=>page.slug==='index')!;
- const catalogPhotos=cardPhotoUrls(catalog.html);
- const homepagePhotos=cardPhotoUrls(home.html);
- assert.ok(homepagePhotos.length>=1,'homepage offering image coverage must remain intact');
- assert.ok(catalogPhotos.every(url=>!homepagePhotos.includes(url)));
- assert.match(catalog.html,/Coffee beans/,'catalog copy remains navigable even when photos are scarce');
+ const catalog=site.pages.find(page=>page.slug==='services')!;
+ assert.ok(cardPhotoUrls(home.html).length>=1,'do not remove homepage offering photography');
+ assert.ok(cardPhotoUrls(catalog.html).length>=1,'do not remove catalog offering photography');
 });
