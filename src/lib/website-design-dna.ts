@@ -1,7 +1,8 @@
+import {decodeSourceEntities as decode} from './source-text';
 /** Observed design evidence only. Asset discovery is not a license or availability check. */
 export type SourceImage={url:string;alt:string;role:'logo'|'content'|'background';sourcePage:string;width?:number;height?:number};
 export type WebsiteDesignDna={version:1;sourceUrl:string;businessName?:string;images:SourceImage[];logo?:SourceImage;contact:{emails:string[];phones:string[]};typography:{families:string[]};palette:string[];layout:{header:boolean;hero:boolean;sectionCount:number;breakpoints:number[];heroAlignment?:'center'|'left'|'right'};warnings:string[]};
-function decode(value:string){return value.replace(/&amp;/gi,'&').replace(/&quot;/gi,'"').replace(/&#39;|&apos;/gi,"'").replace(/&#(\d+);/g,(_,number)=>String.fromCharCode(Number(number))).replace(/&#x([a-f\d]+);/gi,(_,number)=>String.fromCharCode(parseInt(number,16)))}
+
 function text(value:string){return decode(value.replace(/<[^>]*>/g,' ')).replace(/\s+/g,' ').trim().slice(0,350)}
 function attribute(tag:string,name:string){return decode(tag.match(new RegExp('(?:^|\\s)'+name+'\\s*=\\s*(?:"([^"]*)"|\'([^\']*)\'|([^\\s>]+))','i'))?.slice(1).find(value=>value!==undefined)||'')}
 /** Exclude credentialed, local, literal-IP and non-HTTPS destinations before exposing assets. */
