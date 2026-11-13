@@ -28,7 +28,7 @@ const computedSize=(value:unknown):value is string=>{
  const number=Number(value.slice(0,-2));
  return number>=8&&number<=128;
 };
-const boundedPixels=(value:unknown,min:number,max:number)=>typeof value==='string'&&/^\\d{1,4}(?:\\.\\d{1,2})?px$/.test(value)&&Number(value.slice(0,-2))>=min&&Number(value.slice(0,-2))<=max;
+const boundedPixels=(value:unknown,min:number,max:number)=>typeof value==='string'&&/^\d{1,4}(?:\.\d{1,2})?px$/.test(value)&&Number(value.slice(0,-2))>=min&&Number(value.slice(0,-2))<=max;
 export function validCapturedDesignTokens(value:unknown):value is CapturedDesignTokens{
  if(!value||typeof value!=='object'||Array.isArray(value))return false;
  const tokens=value as Partial<CapturedDesignTokens>;
