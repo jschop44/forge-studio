@@ -86,7 +86,7 @@ export default function BusinessGenerator(){
    if(event.data.type==='forge-preview-height'){
     const measured=event.data.height;
     if(mobile&&event.data.slug===active&&typeof measured==='number'&&Number.isFinite(measured)&&measured>=300&&measured<=20000){
-     const bounded=Math.min(4200,Math.max(700,Math.ceil(measured)+20));
+     const bounded=Math.min(4200,Math.max(700,Math.ceil(measured)+40));
      setPreviewHeight(previous=>previous===bounded?previous:bounded);
     }
     return;
@@ -235,7 +235,7 @@ export default function BusinessGenerator(){
   }catch(error){setStatus('Website download failed: '+(error instanceof Error?error.message:'Unable to package website'))}
  }
 
- const previewHtml=businessPreviewHtml(current,pages,previewAnchor);
+ const previewHtml=businessPreviewHtml(current,pages,previewAnchor,mobile);
  async function inspectWebsite():Promise<Inspection|null>{
   const requested=siteAddressRef.current.trim()||siteUrl.trim();
   if(!requested){const message='Enter a website address such as example.com.';setInspectionError(message);setStatus(message);return null}
