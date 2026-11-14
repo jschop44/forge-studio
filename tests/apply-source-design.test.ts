@@ -420,3 +420,16 @@ test('park-category matching rejects merchandise, external source-page claims an
    'unrelated parks must not be attached to streaming entertainment');
  }
 });
+
+test('Preserve Style does not turn a brand accent into the whole page background',()=>{
+ const dna=extractWebsiteDesignDna(
+  '<style>.brand{color:#e85d04}.promo{background-color:#ffcc00}</style>'+
+  '<h1>Neighborhood Bakery</h1>',
+  'https://bakery.example/');
+ assert.deepEqual(dna.palette.slice(0,2),['#e85d04','#ffcc00']);
+ assert.equal(dna.background,undefined,'No document background was actually observed');
+ const result=applySourceDesign([{slug:'index',title:'Home',html:wrap('<h1>Neighborhood Bakery</h1>')}],dna,'inspired');
+ assert.doesNotMatch(result.pages[0].html,/body\\{background:#(?:e85d04|ffcc00)/i);
+ assert.doesNotMatch(result.pages[0].html,/--business-paper:#(?:e85d04|ffcc00)/i);
+});
+
