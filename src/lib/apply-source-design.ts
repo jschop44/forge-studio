@@ -248,7 +248,23 @@ export function applySourceDesign(pages:GeneratedPage[],dna:WebsiteDesignDna|und
   const home=output[homeIndex];
   const cards=home.html.match(/<article\b[^>]*class=["'][^"']*\bservice-card\b[^"']*["'][^>]*>[\s\S]*?<\/article>/gi)||[];
   const illustrated=cards.filter(card=>/<img\b/i.test(card)).length;
-  if(cards.length>=3&&illustrated<Math.ceil(cards.length/2)&&!home.html.includes('data-forge-source-highlights')){
+  // A genuine local business homepage may be one or two sections and have no
+  // service cards at all. Its inspected, captioned photographs should not be
+  // withheld solely because the generated template has fewer than three cards.
+  // Never crowd an already photo-rich page with a second, redundant gallery.
+  const existingPhotos=(home.html.match(/<img\b[^>]*>/gi)||[])
+   .filter(tag=>!/\bsource-brand-logo\b/.test(tag)).length;
+  // A short page can represent a different business than the inspected
+  // source; gallery captions must have evidence relevant to its actual topic.
+  // Use the page title and prominent heading rather than generic navigation.
+  const heading=home.html.match(/<h1\b[^>]*>([\s\S]*?)<\/h1>/i)?.[1]||'';
+  const firstParagraph=home.html.match(/<main\b[^>]*>[\s\S]*?<p\b[^>]*>([\s\S]*?)<\/p>/i)?.[1]||'';
+  const visibleTopic=new Set(terms(home.title+' '+heading+' '+firstParagraph));
+  const topicalSourceEvidence=images.some(image=>image.role==='content'&&
+   terms(image.alt).some(word=>word.length>=5&&visibleTopic.has(word)));
+  const needsSourceHighlights=(cards.length>=3&&illustrated<Math.ceil(cards.length/2))||
+   (existingPhotos<2&&topicalSourceEvidence);
+  if(needsSourceHighlights&&!home.html.includes('data-forge-source-highlights')){
    const rootOrigin=new URL(dna.sourceUrl).origin;
    const eligible=images.filter(image=>{
     if(image.role!=='content'||usedAcrossPages.has(image.url)||reservedForOfferings.has(image.url))return false;
