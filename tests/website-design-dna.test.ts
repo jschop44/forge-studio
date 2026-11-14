@@ -199,3 +199,33 @@ test('closed and distant links never donate a misleading category to a source im
  for(const file of ['fruit.jpg','unlabeled.jpg','distant.jpg'])
   assert.equal(dna.images.find(image=>image.url.endsWith(file))?.alt,'','No inherited false product label: '+file);
 });
+
+
+test('Preserve Style typography prioritizes the actual body font over CSS icon fonts',()=>{
+ const source='<style>'+
+  '@font-face{font-family:"Material Icons";src:url("/icons.woff2")}'+
+  '.icon{font-family:"Font Awesome 5 Free"}'+
+  '.card-title{font-family:"Display Label", serif}'+
+  'body{font-family:"Open Sans", Arial, sans-serif}'+
+  '</style>';
+ const dna=extractWebsiteDesignDna(source,'https://bakery.example/');
+ assert.equal(dna.typography.families[0],'Open Sans, Arial, sans-serif');
+ assert.ok(!dna.typography.families.some(value=>/Material Icons|Font Awesome/i.test(value)));
+ assert.ok(dna.typography.families.includes('Display Label, serif'));
+});
+
+test('unused theme tokens and class names do not constitute a source page background',()=>{
+ const source='<style>:root{--background:#122334;--surface:#eacb44;--accent:#aa00ff}'+
+  '.site-body{background:#ffee00}.body-theme{background:#ebebeb}</style>';
+ const dna=extractWebsiteDesignDna(source,'https://studio.example/');
+ assert.equal(dna.background,undefined);
+ assert.ok(dna.palette.includes('#122334'),'source theme tokens remain palette evidence');
+ const root=extractWebsiteDesignDna(
+  '<style>:root{--surface:#ff9900;background-color:#fefefe}'+
+  '.promo{background:#aa0000}</style>','https://studio.example/');
+ assert.equal(root.background,'#fefefe','only applied root background is authoritative');
+ const body=extractWebsiteDesignDna(
+  '<style>:root{--surface:#fff;--accent:#f00}body{background:var(--surface)}</style>',
+  'https://studio.example/');
+ assert.equal(body.background,'#fff','an explicitly applied variable remains valid');
+});
