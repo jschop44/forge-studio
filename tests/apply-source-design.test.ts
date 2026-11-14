@@ -499,7 +499,7 @@ test('Full Redesign creates a visually distinct source-photo editorial hero with
  const preserved=applySourceDesign([page],source,'inspired').pages[0].html;
  const redesigned=applySourceDesign([page],source,'redesign').pages[0].html;
  const signature='main>.site-hero.image-led:has(figure[data-forge-source-figure])';
- assert.doesNotMatch(preserved,/min-height:clamp\\(510px,72svh,780px\\)/,'Preserve Style must not receive redesign composition');
+ assert.ok(!preserved.includes('min-height:clamp(510px,72svh,780px)'), 'Preserve Style must not receive redesign composition');
  assert.ok(redesigned.includes(signature),'Redesign must target first-party editorial photography rather than all pages');
  assert.ok(redesigned.includes('min-height:clamp(510px,72svh,780px)'));
  assert.ok(redesigned.includes('linear-gradient(90deg,rgba(8,21,31,.88)'));
@@ -516,5 +516,5 @@ test('redesign photo composition needs real source-figure evidence, not stock im
  const redesigned=applySourceDesign([page],source,'redesign').pages[0].html;
  assert.doesNotMatch(redesigned,/data-forge-source-figure/);
  assert.match(redesigned,/site-hero editorial text-led/,'No source photo means no fabricated cinematic photo hero');
- assert.match(redesigned,/:has\\(figure\\[data-forge-source-figure\\]\\)/,'Cinematic styles remain gated behind source evidence');
+ assert.ok(redesigned.includes(':has(figure[data-forge-source-figure])'), 'Cinematic styles remain gated behind source evidence');
 });
