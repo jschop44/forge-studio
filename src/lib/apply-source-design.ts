@@ -29,7 +29,10 @@ function matchingImage(subject:string,images:SourceImage[],used:Set<string>){
  */
 function textHeavyRetailPromotion(image:SourceImage):boolean{
  const alt=decodeSourceEntities(image.alt||'');
- return /\b(?:save\s+(?:up to\s+)?\d{1,3}\s*%|\d{1,3}\s*%\s*off|terms(?: and conditions)? apply|members?\s+(?:get|save)\s+additional savings|limited[- ]time offer|(?:coupon|promo)\s+code)\b/i.test(alt);
+ // A word boundary AFTER "%" does not match "% on tickets" because both
+ // percent and whitespace are non-word characters. Treat percent discounts
+ // as marketing artwork even when the banner says "save 40% on tickets".
+ return /(?:\bsave\s+(?:up to\s+)?\d{1,3}\s*%(?!\d)|\b\d{1,3}\s*%\s*off\b|\bterms(?: and conditions)? apply\b|\bmembers?\s+(?:get|save)\s+additional savings\b|\blimited[- ]time offer\b|\b(?:coupon|promo)\s+code\b)/i.test(alt);
 }
 function observedRetailHero(html:string,images:SourceImage[],used:Set<string>){
  const main=html.match(/<main\b[^>]*>([\s\S]*?)<\/main>/i)?.[1]||'';
