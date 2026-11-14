@@ -246,3 +246,41 @@ test('source logos still replace generated initials and meaningful multi-letter 
  const kept=applySourceDesign([deliberate],noOfficialLogo,'redesign').pages[0].html;
  assert.match(kept,/<span class="brand-mark">BB<\/span>/);
 });
+
+
+test('unmatched source photo highlights precede text-only offering cards without impersonating their topics',()=>{
+ const base=extractWebsiteDesignDna('<meta property="og:site_name" content="Fictional Media">','https://media.example/');
+ const source={...base,images:[
+  'Animated family gathered at a rocky coastal shoreline',
+  'Illustrated science fiction characters near a spacecraft',
+  'A black animated cat against a vibrant blue background',
+  'An elaborate snow-covered fantasy palace at night',
+  'Brightly colored creatures in an enchanted forest'
+ ].map((alt,i)=>({url:'https://media.example/gallery-'+i+'.jpg',alt,role:'content' as const,sourcePage:'https://media.example/',width:1200,height:720}))};
+ const cards=['More streaming stories','Vacation destinations','Studio partners'].map(label=>
+  '<article class="card service-card"><h2>'+label+'</h2><p>Explore the topic.</p></article>').join('');
+ const page={slug:'index',title:'Home',html:wrap(
+  '<section class="site-hero"><h1>Fictional Media</h1></section>'+
+  '<section class="section-heading"><h2>Discover more.</h2></section><div class="cards">'+cards+'</div>'
+ )};
+ const result=applySourceDesign([page],source,'redesign').pages[0].html;
+ const galleryIndex=result.indexOf('data-forge-source-highlights'),headingIndex=result.indexOf('class="section-heading"');
+ assert.ok(galleryIndex>=0,'A genuine source-photo gallery is available');
+ assert.ok(galleryIndex<headingIndex,'Visual source highlights appear before image-poor topic tiles');
+ const gallery=result.match(/<section class="source-highlights"[\s\S]*?<\/section>/)?.[0]||'';
+ assert.match(gallery,/Animated family gathered at a rocky coastal shoreline/,'Original descriptive alt survives');
+ assert.ok((gallery.match(/data-forge-source-image/g)||[]).length>=2,'Multiple original photos are retained');
+ for(const card of result.match(/<article class="card service-card">[\s\S]*?<\/article>/g)||[]){
+  assert.doesNotMatch(card,/<img\b/,'An unrelated photo must not claim a topic');
+ }
+});
+
+test('fully illustrated offering cards never receive a redundant source gallery',()=>{
+ const source=extractWebsiteDesignDna(
+  '<img src="/one.jpg" alt="Mountain landscape in morning light"><img src="/two.jpg" alt="Forest trail in afternoon sunshine">',
+  'https://media.example/');
+ const cards=['A','B','C'].map((name,i)=>
+  '<article class="card service-card"><img src="https://stock.example/'+i+'.jpg" alt="Photo"><h2>'+name+'</h2></article>').join('');
+ const result=applySourceDesign([{slug:'index',title:'Home',html:wrap('<div class="cards">'+cards+'</div>')}],source,'redesign');
+ assert.doesNotMatch(result.pages[0].html,/data-forge-source-highlights/);
+});
