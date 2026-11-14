@@ -450,3 +450,41 @@ test('Preserve Style applies the observed body font but not an unused CSS surfac
  assert.doesNotMatch(result,/--business-paper:#eecf11/i);
  assert.doesNotMatch(result,/body,h1,h2,h3\{font-family:"Material Icons"/);
 });
+
+test('photo-unverified source offerings use a deliberate editorial text-card layout, not unrelated image placeholders',()=>{
+ const source=extractWebsiteDesignDna('<h1>Entertainment destination</h1>','https://entertainment.example/');
+ const pages=[{slug:'services',title:'Explore',html:wrap(
+  '<div class="cards"><article class="card service-card"><div class="service-copy"><h2>Partner experiences</h2><p>Browse the available options.</p></div></article>'+
+  '<article class="card service-card"><img class="service-photo" src="https://authorized.example/park.jpg"><div class="service-copy"><h2>Theme parks</h2></div></article></div>')}];
+ for(const mode of ['inspired','redesign']){
+  const html=applySourceDesign(pages,source,mode).pages[0].html;
+  assert.match(html,/.service-card:not\(:has\(> img.service-photo\)\)/,'Only cards without verified offering photos get the neutral visual fallback');
+  assert.match(html,/min-height:clamp\(270px,26vw,360px\)/);
+  assert.match(html,/Partner experiences/);
+  assert.match(html,/src="https:\/\/authorized.example\/park.jpg"/,'An existing offering photograph is untouched');
+  assert.doesNotMatch(html,/data-forge-auto-photo/,'Source styling must not fabricate or borrow imagery');
+ }
+});
+
+test('unverified contact details offer a safe link to the inspected source instead of a dead placeholder',()=>{
+ const source=extractWebsiteDesignDna('<h1>Entertainment destination</h1>','https://www.entertainment.example/featured?campaign=123');
+ const page={slug:'contact',title:'Contact',html:wrap('<section class="contact-panel"><h2>How can we help?</h2><p>Contact details are being updated.</p></section>')};
+ const contact=applySourceDesign([page],source,'redesign').pages[0].html;
+ assert.match(contact,/data-forge-source-contact-fallback/);
+ assert.match(contact,/href="https:\/\/www.entertainment.example\/"/);
+ assert.match(contact,/target="_blank" rel="noopener noreferrer"/);
+ assert.match(contact,/could not verify a public email address or phone number/);
+ assert.doesNotMatch(contact,/campaign=123|href="mailto:|href="tel:/);
+ assert.doesNotMatch(contact,/Contact details are being updated/);
+ const withEmail=applySourceDesign([page],dna,'redesign').pages[0].html;
+ assert.match(withEmail,/mailto:info@example.com/);
+ assert.doesNotMatch(withEmail,/data-forge-source-contact-fallback/);
+});
+
+test('untrusted source addresses never become contact fallback links',()=>{
+ const source=extractWebsiteDesignDna('<h1>Sample</h1>','https://sample.example/');
+ const page={slug:'contact',title:'Contact',html:wrap('<p>Contact details are being updated.</p>')};
+ const dangerous={...source,sourceUrl:'https://user:password@sample.example/'};
+ const html=applySourceDesign([page],dangerous,'redesign').pages[0].html;
+ assert.doesNotMatch(html,/data-forge-source-contact-fallback|user:password/);
+});
