@@ -23,7 +23,7 @@ export function auditGeneratedDraft(pages: GeneratedPage[]): DraftQualityReport 
   const errors: string[] = [];
   const warnings: string[] = [];
   const slugs = new Set<string>();
-  const contentImagePages = new Map<string,Set<string>>();
+  const contentImagePages = new Map<string,Map<string,number>>();
   const fragmentTargets = new Map<string,Set<string>>();
   if (pages.length === 0) errors.push("No generated pages");
   for (const page of pages) {
@@ -81,8 +81,8 @@ export function auditGeneratedDraft(pages: GeneratedPage[]): DraftQualityReport 
       if(/\blogo\b|brand[-_ ]?(?:mark|logo)/i.test(alt+' '+className)||/(?:^|[/_-])(?:logo|brand[-_]?mark)(?:[._/-]|$)/i.test(src))continue;
       const key=src.split(/[?#]/)[0].toLowerCase();
       if(!key)continue;
-      const used=contentImagePages.get(key)||new Set<string>();
-      used.add(page.slug);contentImagePages.set(key,used);
+      const used=contentImagePages.get(key)||new Map<string,number>();
+      used.set(page.slug,(used.get(page.slug)||0)+1);contentImagePages.set(key,used);
     }
 
   }
@@ -145,6 +145,11 @@ export function auditGeneratedDraft(pages: GeneratedPage[]): DraftQualityReport 
   }
   for(const [url,used] of contentImagePages){
     if(used.size>1)warnings.push("Repeated content image across "+used.size+" pages: "+url.slice(0,150)+". Review image diversity.");
+    // A source photo repeated in one homepage gallery looks unprofessional,
+    // even when it never appears elsewhere. Keep company logos excluded.
+    for(const [slug,count] of used){
+      if(count>1)warnings.push(slug+": repeated content image "+count+" times on the same page: "+url.slice(0,150)+". Review image diversity.");
+    }
   }
   return { readyForReview: errors.length === 0, readyForPublishing: false, pageCount: pages.length, errors, warnings };
 }

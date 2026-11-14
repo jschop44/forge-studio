@@ -2,7 +2,7 @@ import {chromium} from '@playwright/test';
 import {unzipSync,strFromU8} from 'fflate';
 import {mkdir,writeFile,readFile} from 'node:fs/promises';
 import {join,posix} from 'node:path';
-import {inspectExportedBranding,inspectExportedPhotoCoverage,inspectEditorialHero} from './exported-visual-acceptance.mjs';
+import {inspectExportedBranding,inspectExportedPhotoCoverage,inspectEditorialHero,inspectExportedLayout} from './exported-visual-acceptance.mjs';
 import {primeExportImages} from './exported-image-capture.mjs';
 
 const BASE='https://forge-studio-preview.stands-old-3h.workers.dev';
@@ -90,9 +90,43 @@ async function inspectPortableExport(browser,archive,index,entry){
    const screenshot='case-'+index+'-export-'+device+'.png';
    await page.screenshot({path:join(OUT,screenshot),fullPage:true,timeout:30000});
    entry.screenshots.push(screenshot);
-   measurements.push({device,...finding,imagePreparation});
-   if(finding.images.confirmedBroken>0)throw Error('Exported website has '+finding.images.confirmedBroken+' browser-confirmed broken images after scrolling');
+   const layout=inspectExportedLayout({page:'index.html',device,...finding});
+   measurements.push({page:'index.html',device,...finding,imagePreparation,layout});
+   if(!layout.passes)throw Error('Exported homepage visual defects: '+layout.defects.join('; '));
   }
+  // The homepage screenshot is necessary, but it cannot show a clipped
+  // heading or sideways overflow on About, Services or Contact. Exercise the
+  // entire portable ZIP at phone and desktop widths before accepting it.
+  const additionalLayouts=[];
+  for(const name of files.keys()){
+   if(name==='index.html')continue;
+   if(!/^[a-z0-9_-]{1,64}\.html$/i.test(name))throw Error('Exported page filename is unsafe: '+name.slice(0,100));
+   for(const [width,device] of [[1280,'desktop'],[390,'390px']]){
+    await page.setViewportSize({width,height:900});
+    await page.goto('https://forge-export.test/'+name,{waitUntil:'domcontentloaded',timeout:15000});
+    await page.evaluate(()=>document.fonts?.ready);
+    const finding=await page.evaluate(()=>{
+     const visible=element=>{
+      const css=getComputedStyle(element),bounds=element.getBoundingClientRect();
+      return css.display!=='none'&&css.visibility!=='hidden'&&bounds.width>0&&bounds.height>0;
+     };
+     return {
+      documentWidth:document.documentElement.scrollWidth,
+      viewportWidth:innerWidth,
+      headingsClipped:[...document.querySelectorAll('h1,h2,h3')].filter(visible)
+       .filter(h=>h.clientWidth>0&&h.scrollWidth>h.clientWidth+2)
+       .slice(0,8).map(h=>h.textContent?.trim().slice(0,80)),
+      images:{confirmedBroken:[...document.images].filter(img=>visible(img)&&img.complete&&img.naturalWidth===0).length}
+     };
+    });
+    const layout=inspectExportedLayout({page:name,device,...finding});
+    additionalLayouts.push({page:name,device,...finding,layout});
+    if(!layout.passes)throw Error('Exported secondary-page visual defects: '+layout.defects.join('; '));
+   }
+  }
+  entry.exportedAdditionalPageLayouts=additionalLayouts;
+  await page.setViewportSize({width:390,height:900});
+  await page.goto('https://forge-export.test/index.html',{waitUntil:'domcontentloaded',timeout:15000});
   const serviceLink=page.locator('a[href^="services.html"]').first();
   if(await serviceLink.count()){
    await serviceLink.click({timeout:10000});

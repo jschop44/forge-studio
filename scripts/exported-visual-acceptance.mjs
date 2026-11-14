@@ -59,3 +59,25 @@ export function inspectEditorialHero(html){
  const warning=wideGalleryPhoto&&!sourceHero?'A descriptive wide source image is available in the gallery but the homepage lacks an integrated first-party hero.':null;
  return {heroPresent:!!hero,heroTextLed:/\btext-led\b/.test(hero),sourceHero,wideGalleryPhoto,warning};
 }
+
+
+/** Deterministic browser geometry failures; not a substitute for a human
+ * assessment of brand accuracy, image subject relevance or aesthetics.
+ * Only visible headings and fully loaded images should be passed in.
+ */
+export function inspectExportedLayout(snapshot){
+ const defects=[];
+ const page=String(snapshot?.page||'exported page').slice(0,100);
+ const device=String(snapshot?.device||'viewport').slice(0,30);
+ const contentWidth=Number(snapshot?.documentWidth);
+ const viewportWidth=Number(snapshot?.viewportWidth);
+ if(Number.isFinite(contentWidth)&&Number.isFinite(viewportWidth)&&viewportWidth>=300&&contentWidth>viewportWidth+2)
+  defects.push(page+' at '+device+': horizontal overflow '+Math.round(contentWidth-viewportWidth)+'px');
+ const clipped=Array.isArray(snapshot?.headingsClipped)?snapshot.headingsClipped.filter(Boolean):[];
+ if(clipped.length)
+  defects.push(page+' at '+device+': clipped visible headings: '+clipped.slice(0,3).join(' / ').slice(0,220));
+ const broken=Number(snapshot?.images?.confirmedBroken||0);
+ if(broken>0)
+  defects.push(page+' at '+device+': '+broken+' browser-confirmed broken images');
+ return {passes:!defects.length,defects};
+}

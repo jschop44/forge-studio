@@ -1,6 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {inspectExportedBranding,inspectExportedPhotoCoverage,inspectEditorialHero} from '../scripts/exported-visual-acceptance.mjs';
+import {inspectExportedBranding,inspectExportedPhotoCoverage,inspectEditorialHero,inspectExportedLayout} from '../scripts/exported-visual-acceptance.mjs';
+import {readFileSync} from 'node:fs';
 
 const logo=(alt,url)=>'<html><body><nav><a href="index.html"><img class="source-brand-logo" src="'+url+'" alt="'+alt+'">Disney Home</a></nav><main><h1>Disney Home</h1></main></body></html>';
 
@@ -54,4 +55,36 @@ test('integrated editorial hero passes and never uses a product gallery picture 
 test('a text-led homepage without a verified wide gallery photo is not an invented defect',()=>{
  const check=inspectEditorialHero('<main><section class="site-hero editorial text-led"><h1>Story World</h1></section></main>');
  assert.equal(check.warning,null);
+});
+
+
+test('exported mobile and desktop layouts reject horizontal page overflow and visible clipped headings',()=>{
+ const clean={page:'about.html',device:'390px',documentWidth:390,viewportWidth:390,headingsClipped:[],images:{confirmedBroken:0}};
+ assert.equal(inspectExportedLayout(clean).passes,true);
+ const overflowing=inspectExportedLayout({...clean,documentWidth:419});
+ assert.equal(overflowing.passes,false);
+ assert.match(overflowing.defects.join(' '),/about\.html at 390px: horizontal overflow 29px/);
+ const clipped=inspectExportedLayout({...clean,page:'services.html',headingsClipped:['Professional Emergency Repair Services']});
+ assert.equal(clipped.passes,false);
+ assert.match(clipped.defects.join(' '),/clipped visible headings/);
+ const images=inspectExportedLayout({...clean,images:{confirmedBroken:2}});
+ assert.match(images.defects.join(' '),/2 browser-confirmed broken images/);
+});
+
+test('subpixel layout tolerance and pending lazy photos do not manufacture visual failures',()=>{
+ const report=inspectExportedLayout({
+  page:'contact.html',device:'desktop',documentWidth:1282,viewportWidth:1280,
+  headingsClipped:[],images:{confirmedBroken:0,unloadedLazy:4}
+ });
+ assert.equal(report.passes,true);
+ assert.deepEqual(report.defects,[]);
+});
+
+test('live exported-site acceptance includes every secondary HTML page at both viewport widths',()=>{
+ const runner=readFileSync(new URL('../scripts/live-large-site-acceptance.mjs',import.meta.url),'utf8');
+ assert.match(runner,/for\(const name of files\.keys\(\)\)/);
+ assert.match(runner,/if\(name==='index\.html'\)continue/);
+ assert.match(runner,/for\(const \[width,device\] of \[\[1280,'desktop'\],\[390,'390px'\]\]\)/);
+ assert.match(runner,/inspectExportedLayout\(\{page:name,device/);
+ assert.match(runner,/if\(!layout\.passes\)throw Error\('Exported secondary-page visual defects:/);
 });
