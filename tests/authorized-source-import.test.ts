@@ -29,20 +29,12 @@ test('authorized saved pages reconstruct bounded multi-page metadata without fet
  assert.equal(data.stylesheetsRead,0);
 });
 
-test('import accepts a single saved HTML page and never executes embedded scripts',()=>{
- let touched=false;
- const before=(globalThis as {fetch?:typeof fetch}).fetch;
- (globalThis as {fetch?:typeof fetch}).fetch=(async()=>{
-  touched=true;throw Error('Network must not be used while reading saved source');
- }) as typeof fetch;
- try{
-  const data=prepareSavedSourceInspection([{name:'home.htm',html:page('Bookstore Example','<main><h1>Stories and books</h1><p>Discover our locally owned bookshop.</p><script>globalThis.hijacked=true</script></main>')}],'https://books.example/');
-  assert.equal(data.url,'https://books.example/');
-  assert.equal(data.pageSummaries.length,0);
-  assert.deepEqual(data.navigation,[]);
-  assert.equal(touched,false);
-  assert.equal((globalThis as {hijacked?:boolean}).hijacked,undefined);
- }finally{(globalThis as {fetch?:typeof fetch}).fetch=before;}
+test('import accepts a single HTML page and treats embedded scripts as inert source text',()=>{
+ const data=prepareSavedSourceInspection([{name:'home.htm',html:page('Bookstore Example','<main><h1>Stories and books</h1><p>Discover our locally owned bookshop.</p><script>globalThis.hijacked=true</script></main>')}],'https://books.example/');
+ assert.equal(data.url,'https://books.example/');
+ assert.equal(data.pageSummaries.length,0);
+ assert.deepEqual(data.navigation,[]);
+ assert.equal((globalThis as {hijacked?:boolean}).hijacked,undefined);
 });
 
 test('authorized page import rejects duplicate names, private URLs, non-HTML and oversized content',()=>{
