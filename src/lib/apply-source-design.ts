@@ -47,6 +47,27 @@ function observedRetailHero(html:string,images:SourceImage[],used:Set<string>){
   }).filter(x=>x.categoryHits.length>0)
   .sort((a,b)=>b.categoryHits.length-a.categoryHits.length||a.extra-b.extra)[0]?.image;
 }
+/** Recognize explicit, named park/destination evidence published by the source.
+ * A category headline ("Vacation with Disney Parks") is not an exact
+ * transcription of an honest photo caption ("at Walt Disney World").
+ * Bridge only this narrow, observable entity equivalence. Never infer that
+ * movie posters, branded merchandise or unrelated source photos depict a park.
+ */
+function matchingParkDestinationPhoto(subject:string,images:SourceImage[],used:Set<string>,dna:WebsiteDesignDna){
+ const topic=decodeSourceEntities(subject).toLowerCase();
+ if(!/\bdisney\b/.test(topic)||!/\b(?:parks?|vacations?|resorts?|destinations?)\b/.test(topic))return;
+ let sourceHost='';
+ try{sourceHost=new URL(dna.sourceUrl).hostname.toLowerCase().replace(/^www\./,'')}catch{return}
+ return images.find(image=>{
+  if(image.role!=='content'||used.has(image.url)||textHeavyRetailPromotion(image))return false;
+  const caption=decodeSourceEntities(image.alt||'').trim();
+  if(caption.length<18||caption.length>180)return false;
+  if(!/\b(?:(?:walt\s+)?disney\s+world|disneyland|disney\s+(?:theme\s+)?parks?)\b/i.test(caption))return false;
+  if(/\b(?:posters?|merchandise|figurines?|dolls?|toys?|collectibles?|souvenirs?|costumes?|shirts?|sale|promotion|advertisement)\b/i.test(caption))return false;
+  if(image.width&&image.width<320||image.height&&image.height<230)return false;
+  try{return new URL(image.sourcePage).hostname.toLowerCase().replace(/^www\./,'')===sourceHost}catch{return false}
+ });
+}
 /** A broad editorial homepage should feature its own observed landscape art,
  * not a square branded merchandise tile that only shares the company name.
  * Prefer genuinely first-party, descriptive homepage images with wide geometry.
@@ -160,7 +181,7 @@ export function applySourceDesign(pages:GeneratedPage[],dna:WebsiteDesignDna|und
    html=html.replace(/<span\b[^>]*class=["'][^"']*\bbrand-mark\b[^"']*["'][^>]*>\s*[a-z0-9]\s*<\/span>(?=\s*[^<]{2,}<\/a>)/i,()=>{suppressedUnverifiedMarks++;return ''});
   }
   // Specific offering sections require matching semantic evidence; never substitute a generic source photograph.
-  html=html.replace(/<article\b[^>]*>[\s\S]*?<\/article>/gi,article=>{const heading=article.match(/<h[23]\b[^>]*>([\s\S]*?)<\/h[23]>/i)?.[1]||'';const image=matchingImage(heading,images,page.slug==='services'?used:new Set([...used,...reservedForServices]));if(!image)return article;used.add(image.url);assigned++;return /<img\b/i.test(article)?article.replace(/<img\b[^>]*>/i,()=>sourceImage(image,'service-photo')):article.replace(/(<article\b[^>]*>)/i,tag=>tag+sourceImage(image,'service-photo'))});
+  html=html.replace(/<article\b[^>]*>[\s\S]*?<\/article>/gi,article=>{const heading=article.match(/<h[23]\b[^>]*>([\s\S]*?)<\/h[23]>/i)?.[1]||'';const unavailable=page.slug==='services'?used:new Set([...used,...reservedForServices]);const image=matchingImage(heading,images,unavailable)||matchingParkDestinationPhoto(heading,images,unavailable,dna);if(!image)return article;used.add(image.url);assigned++;return /<img\b/i.test(article)?article.replace(/<img\b[^>]*>/i,()=>sourceImage(image,'service-photo')):article.replace(/(<article\b[^>]*>)/i,tag=>tag+sourceImage(image,'service-photo'))});
   let heroAssigned=false;
   const heroSection=page.slug==='index'?html.match(/<section\b[^>]*class=["'][^"']*\bsite-hero\b[^"']*["'][^>]*>[\s\S]*?<\/section>/i)?.[0]||'':'';
   const editorialHomepage=/(?:entertainment[\s,]+media|theme\s*parks?|streaming platform|film studio|television network)/i.test(heroSection);

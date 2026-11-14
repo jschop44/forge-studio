@@ -377,3 +377,46 @@ test('text-only entertainment pages without safe first-party panorama remain tex
   assert.doesNotMatch(page,/data-forge-source-figure/);
  }
 });
+
+test('captioned Disney World experience is assigned only to the matching Disney Parks destination card',()=>{
+ const base=extractWebsiteDesignDna('<meta property="og:site_name" content="Disney Home">','https://disney.com/');
+ const source={...base,images:[
+  {url:'https://media.example/destination.jpg',alt:'A mom and daughter pose together at Walt Disney World',role:'content' as const,sourcePage:'https://disney.com/',width:1200,height:800},
+  {url:'https://media.example/film.jpg',alt:'Matt Ferguson poster artwork for Star Wars 1977',role:'content' as const,sourcePage:'https://disney.com/',width:1000,height:900},
+  {url:'https://media.example/cat.jpg',alt:'Gatto official poster with an illustrated black cat',role:'content' as const,sourcePage:'https://disney.com/',width:1000,height:800}
+ ]};
+ const labels=['More Disney+','Vacation with Disney Parks','Disney Partners'];
+ const cards=labels.map(t=>'<article class="card service-card"><div class="service-copy"><h2>'+t+'</h2><p>Learn more.</p></div></article>').join('');
+ const html=wrap('<div class="cards">'+cards+'</div>');
+ for(const mode of ['inspired','redesign']){
+  const output=applySourceDesign([{slug:'index',title:'Home',html}],source,mode).pages[0].html;
+  const articles=output.match(/<article class="card service-card">[\s\S]*?<\/article>/g)||[];
+  assert.equal(articles.length,3);
+  assert.doesNotMatch(articles[0],/<img\b/,'a Disney World photo must not illustrate unrelated streaming offerings');
+  assert.match(articles[1],/class="service-photo"[^>]*src="https:\/\/media\.example\/destination\.jpg"/,
+   'the published Walt Disney World caption is direct evidence for a Disney Parks destination');
+  assert.doesNotMatch(articles[2],/<img\b/,'a park image is not a studio-partners image');
+  assert.equal((output.match(/src="https:\/\/media\.example\/destination\.jpg"/g)||[]).length,1,'the card must not duplicate a general gallery image');
+  assert.match(output,/data-forge-source-highlights/,'unmatched sourced images remain honestly captioned in a gallery');
+ }
+});
+test('park-category matching rejects merchandise, external source-page claims and unrelated companies',()=>{
+ const base=extractWebsiteDesignDna('<meta property="og:site_name" content="Disney Home">','https://disney.com/');
+ const source={...base,images:[
+  {url:'https://media.example/poster.jpg',alt:'Walt Disney World poster merchandise collectible',role:'content' as const,sourcePage:'https://disney.com/',width:1200,height:800},
+  {url:'https://media.example/foreign.jpg',alt:'A family arriving at Walt Disney World for a vacation',role:'content' as const,sourcePage:'https://unrelated-business.test/',width:1200,height:800},
+  {url:'https://media.example/small.jpg',alt:'A family meeting together at Walt Disney World',role:'content' as const,sourcePage:'https://disney.com/',width:120,height:120},
+  {url:'https://media.example/story.jpg',alt:'A family visiting a science museum in another city',role:'content' as const,sourcePage:'https://disney.com/',width:1200,height:800}
+ ]};
+ const pages=[
+  {slug:'index',title:'Home',html:wrap('<article class="card service-card"><h2>Vacation with Disney Parks</h2></article>')},
+  {slug:'services',title:'Explore',html:wrap('<article class="card service-card"><h2>Streaming films and series</h2></article>')}
+ ];
+ for(const mode of ['inspired','redesign']){
+  const output=applySourceDesign(pages,source,mode);
+  assert.doesNotMatch(output.pages[0].html,/<img class="service-photo"/,
+   'unverified rights, unrelated source location, small icons and retail artwork must not be called destination photos');
+  assert.doesNotMatch(output.pages[1].html,/<img class="service-photo"/,
+   'unrelated parks must not be attached to streaming entertainment');
+ }
+});
