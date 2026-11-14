@@ -172,7 +172,7 @@ test('authorized saved HTML can recover a blocked live source without making ano
  await expect(page.getByRole('navigation',{name:'Website pages'})).toBeVisible();
  const frame=page.frameLocator('iframe[title="Website preview: Home"]');
  await expect(frame.locator('body')).toHaveCSS('background-color','rgb(17, 34, 51)');
- expect(websiteFetches).toBe(0,'An owner-supplied HTML file must not bypass robots or trigger a live source fetch');
+ expect(websiteFetches).toBe(0); // Owner-supplied HTML must never trigger a live source fetch.
 });
 
 test('changing the source address clears previously imported HTML and demands a fresh inspection',async({page})=>{
@@ -191,7 +191,7 @@ test('changing the source address clears previously imported HTML and demands a 
  await page.getByRole('button',{name:/generate my website/i}).click();
  await expect(page.getByRole('alert').filter({hasText:/Website extraction failed/})).toContainText('Website access policy could not be verified');
  expect(failedChecks).toBe(1);
- expect(generations).toBe(0,'Stale authorized HTML cannot be reused with a different business host');
+ expect(generations).toBe(0); // Never reuse imported source HTML for a different business.
 });
 
 test('oversize unauthorized HTML files are rejected without creating generated pages',async({page})=>{
