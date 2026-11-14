@@ -24,6 +24,27 @@ test('successful extraction survives generation and equivalent URL edits, with a
  const contact=page.frameLocator('iframe[title="Website preview: Contact"]');await expect(contact.locator('body')).toHaveCSS('background-color','rgb(17, 34, 51)');
  expect(extractions).toBe(1);expect(generations).toBe(1);
 });
+for(const mode of ['inspired','redesign'] as const){
+ test(`live-inspected homepage paragraphs reach the ${mode} preview without duplicate copy`,async({page})=>{
+  const observed='Our practice creates welcoming homes for families and neighborhood businesses.';
+  await page.route('**/api/site-reference',route=>route.fulfill({status:200,json:{
+   ...extracted,
+   homepageParagraphs:[observed,observed,'Use the contact form below to place an order.']
+  }}));
+  await generationFixture(page);
+  await page.goto('/business');
+  await page.getByRole('combobox',{name:/^Design approach/}).selectOption(mode);
+  await page.getByPlaceholder('e.g. disney.com').fill('reference.example');
+  await page.getByRole('button',{name:mode==='inspired'?'Extract website appearance':'Extract website details for redesign',exact:true}).click();
+  await expect(page.getByText('Website extracted: reference.example. Ready to generate')).toBeVisible();
+  await page.getByRole('button',{name:/generate my website/i}).click();
+  const home=page.frameLocator('iframe[title="Website preview: Home"]');
+  await expect(home.getByText(observed,{exact:true})).toBeVisible();
+  const copied=await home.locator('body').innerText();
+  expect(copied.split(observed).length-1).toBe(1);
+  expect(copied).not.toContain('Use the contact form below to place an order.');
+ });
+}
 test('generation waits for extraction rather than treating an in-flight click as missing extraction',async({page})=>{
  let release!:()=>void;const pending=new Promise<void>(resolve=>{release=resolve});
  await page.route('**/api/site-reference',async route=>{await pending;await route.fulfill({status:200,json:extracted})});
