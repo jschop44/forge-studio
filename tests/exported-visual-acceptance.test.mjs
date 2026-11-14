@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {inspectExportedBranding,inspectExportedPhotoCoverage} from '../scripts/exported-visual-acceptance.mjs';
+import {inspectExportedBranding,inspectExportedPhotoCoverage,inspectEditorialHero} from '../scripts/exported-visual-acceptance.mjs';
 
 const logo=(alt,url)=>'<html><body><nav><a href="index.html"><img class="source-brand-logo" src="'+url+'" alt="'+alt+'">Disney Home</a></nav><main><h1>Disney Home</h1></main></body></html>';
 
@@ -30,4 +30,28 @@ test('distinct offering coverage is recorded without pretending it proves visual
  assert.equal(report.offeringCardsWithPhoto,1);
  assert.equal(report.contentImages,1);
  assert.ok(report.warning);
+});
+
+test('actual Disney-style text-only hero plus wide gallery photo fails visual acceptance',()=>{
+ const html='<main><section class="site-hero editorial text-led"><h1>Story World</h1></section>'+
+  '<section class="source-highlights" data-forge-source-highlights><figure><img class="source-highlights-photo" src="https://media.example/story.jpg" alt="Animated adventurers standing on a rock in the ocean" width="2048" height="878"></figure></section></main>';
+ const check=inspectEditorialHero(html);
+ assert.equal(check.heroTextLed,true);
+ assert.equal(check.sourceHero,false);
+ assert.equal(check.wideGalleryPhoto,true);
+ assert.match(check.warning,/lacks an integrated first-party hero/);
+});
+test('integrated editorial hero passes and never uses a product gallery picture as proof',()=>{
+ const html='<main><section class="site-hero editorial image-led"><div><h1>Story World</h1></div>'+
+  '<figure class="editorial-photo" data-forge-source-figure><img class="source-photo" data-forge-source-image src="https://media.example/story.jpg" alt="Animated adventurers standing together" width="2048" height="878"></figure></section>'+
+  '<section class="source-highlights"><figure><img src="/doll.jpg" alt="Story store collectible doll" width="800" height="800"></figure></section></main>';
+ const check=inspectEditorialHero(html);
+ assert.equal(check.sourceHero,true);
+ assert.equal(check.heroTextLed,false);
+ assert.equal(check.wideGalleryPhoto,false);
+ assert.equal(check.warning,null);
+});
+test('a text-led homepage without a verified wide gallery photo is not an invented defect',()=>{
+ const check=inspectEditorialHero('<main><section class="site-hero editorial text-led"><h1>Story World</h1></section></main>');
+ assert.equal(check.warning,null);
 });
