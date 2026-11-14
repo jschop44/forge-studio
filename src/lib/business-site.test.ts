@@ -93,3 +93,60 @@ test('image-led design uses a distinct responsive hero while editorial remains s
  assert.match(editorial,/data-forge-layout="editorial"/);
  assert.match(editorial,/site-hero editorial/);
 });
+
+
+test('large entertainment destination pages use editorial links rather than invented service inquiries',()=>{
+ const site=generateBusinessWebsite({
+  businessName:'Disney Home',industry:'Entertainment, media and theme parks',
+  description:'Explore family entertainment, parks, movies and stories.',
+  services:['More Disney+','Vacation with Disney Parks','Disney Partners']
+ });
+ const home=site.pages[0].html,catalog=site.pages[1].html;
+ assert.equal(site.pages[1].title,'Explore');
+ assert.match(home,/>Explore topics<\/a>/);
+ assert.match(home,/Discover more\./);
+ assert.match(home,/href="services\.html#offering-0" aria-label="Explore More Disney\+"/);
+ assert.match(home,/Explore this topic →/);
+ assert.match(catalog,/Stories &amp; destinations/);
+ assert.match(catalog,/related stories, destinations and experiences/);
+ assert.doesNotMatch(home+catalog,/Ask about this service|Ask about availability|href="contact\.html" aria-label="Ask about /);
+ assert.deepEqual(site.pages.map(p=>p.slug),['index','services','about','contact']);
+});
+test('ordinary local services keep genuine inquiry links and service navigation',()=>{
+ for(const industry of ['Music lessons','Events and seasonal attractions','Wedding planning']){
+  const site=generateBusinessWebsite(brief(industry));
+  assert.equal(site.pages[1].title,'Services');
+  assert.match(site.pages[0].html,/Ask about this service/);
+  assert.match(site.pages[0].html,/href="contact\.html" aria-label="Ask about /);
+ }
+});
+
+
+test('large entertainment source renders exploration cards rather than invented service inquiries',()=>{
+ const site=generateBusinessWebsite({
+  businessName:'Disney Home',
+  industry:'Entertainment, media and theme parks',
+  description:'Explore films, characters, destinations and family-friendly experiences.',
+  services:['More Disney+','Vacation with Disney Parks','Disney Partners']
+ });
+ const home=site.pages.find(p=>p.slug==='index')!.html;
+ const catalog=site.pages.find(p=>p.slug==='services')!.html;
+ assert.match(home,/>Explore<\/a>/,'Navigation reflects the destination rather than a service business');
+ assert.match(home,/>Explore topics<\/a>/,'Hero call to action leads to real internal exploration');
+ assert.match(home,/Discover more\./);
+ assert.match(home,/href="services\.html#offering-0"/,'Offering teaser links to the exported catalog anchor');
+ assert.match(home,/Explore this topic/);
+ assert.doesNotMatch(home,/Ask about this service|Explore what we offer|request details tailored to your needs/);
+ assert.match(catalog,/Stories &amp; destinations/);
+ assert.match(catalog,/id="offering-0"/);
+ assert.doesNotMatch(catalog,/Ask about this service|aria-label="Ask about/);
+ assert.deepEqual(site.pages.map(page=>page.slug),['index','services','about','contact']);
+});
+
+test('ordinary local service businesses retain actionable contact inquiry links',()=>{
+ const site=generateBusinessWebsite(brief('Home and trade services'));
+ const home=site.pages[0].html;
+ assert.match(home,/Explore what we offer/);
+ assert.match(home,/href="contact\.html" aria-label="Ask about/);
+ assert.match(home,/Ask about this service/);
+});
