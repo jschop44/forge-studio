@@ -488,3 +488,33 @@ test('untrusted source addresses never become contact fallback links',()=>{
  const html=applySourceDesign([page],dangerous,'redesign').pages[0].html;
  assert.doesNotMatch(html,/data-forge-source-contact-fallback|user:password/);
 });
+
+test('Full Redesign creates a visually distinct source-photo editorial hero without changing Preserve Style',()=>{
+ const source=extractWebsiteDesignDna(
+  '<main><img src="/storyscape.jpg" alt="Families exploring a breathtaking entertainment destination together" width="1800" height="900"></main>',
+  'https://stories.example/');
+ const page={slug:'index',title:'Home',html:wrap(
+  '<section class="site-hero editorial text-led"><div><p class="eyebrow">Entertainment, media and theme parks</p>'+
+  '<h1>Stories for everyone</h1><p>Find the latest stories and experiences.</p><a class="button" href="services.html">Explore</a></div></section>')};
+ const preserved=applySourceDesign([page],source,'inspired').pages[0].html;
+ const redesigned=applySourceDesign([page],source,'redesign').pages[0].html;
+ const signature='main>.site-hero.image-led:has(figure[data-forge-source-figure])';
+ assert.doesNotMatch(preserved,/min-height:clamp\\(510px,72svh,780px\\)/,'Preserve Style must not receive redesign composition');
+ assert.ok(redesigned.includes(signature),'Redesign must target first-party editorial photography rather than all pages');
+ assert.ok(redesigned.includes('min-height:clamp(510px,72svh,780px)'));
+ assert.ok(redesigned.includes('linear-gradient(90deg,rgba(8,21,31,.88)'));
+ assert.ok(redesigned.includes('object-fit:cover;object-position:center center'));
+ assert.ok(redesigned.includes('min-height:560px;padding:44px 25px'));
+ assert.ok(!preserved.includes(signature),'Source style remains untouched by cinematic redesign CSS');
+ assert.match(redesigned,/href="services.html"/,'Redesign must preserve navigation and offerings');
+ assert.equal((redesigned.match(/<h1>/g)||[]).length,1,'Redesign keeps the original content hierarchy');
+});
+
+test('redesign photo composition needs real source-figure evidence, not stock imagery or a blank hero',()=>{
+ const source=extractWebsiteDesignDna('<h1>Storytelling</h1>','https://stories.example/');
+ const page={slug:'index',title:'Home',html:wrap('<section class="site-hero editorial text-led"><div><h1>Storytelling</h1></div></section>')};
+ const redesigned=applySourceDesign([page],source,'redesign').pages[0].html;
+ assert.doesNotMatch(redesigned,/data-forge-source-figure/);
+ assert.match(redesigned,/site-hero editorial text-led/,'No source photo means no fabricated cinematic photo hero');
+ assert.match(redesigned,/:has\\(figure\\[data-forge-source-figure\\]\\)/,'Cinematic styles remain gated behind source evidence');
+});
