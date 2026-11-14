@@ -153,6 +153,30 @@ const unillustratedOfferingStyles=`
  .service-card:not(:has(> img.service-photo)) .service-copy p{margin:0;max-width:38ch}
  @media(max-width:700px){.service-card:not(:has(> img.service-photo)) .service-copy{min-height:235px;padding:26px}}
 }`;
+/** Redesign-only treatment of a *verified source-photo* editorial hero.
+ * Preserve Style retains measured source rhythm. Full Redesign can instead
+ * turn an observed first-party photograph into a cinematic, readable masthead.
+ * Never promote a generic stock image, text-only hero, or unverified source asset.
+ */
+const sourceEditorialRedesignStyles=`
+@supports selector(:has(> figure)){
+ body[data-forge-layout="editorial"] main>.site-hero.image-led:has(figure[data-forge-source-figure]){position:relative;isolation:isolate;display:flex;align-items:flex-end;min-height:clamp(510px,72svh,780px);width:100%;padding:clamp(40px,6vw,100px);border-radius:clamp(16px,2.5vw,30px);overflow:hidden;background:#11202a;color:#fff}
+ body[data-forge-layout="editorial"] main>.site-hero.image-led:has(figure[data-forge-source-figure])::after{content:"";position:absolute;inset:0;z-index:1;background:linear-gradient(90deg,rgba(8,21,31,.88),rgba(8,21,31,.52) 54%,rgba(8,21,31,.12)),linear-gradient(0deg,rgba(8,21,31,.5),transparent 65%);pointer-events:none}
+ body[data-forge-layout="editorial"] main>.site-hero.image-led:has(figure[data-forge-source-figure])>div{position:relative;z-index:2;max-width:min(680px,100%);width:100%;text-align:left}
+ body[data-forge-layout="editorial"] main>.site-hero.image-led:has(figure[data-forge-source-figure])>figure.editorial-photo{position:absolute;inset:0;width:100%;height:100%;max-height:none;min-height:0;aspect-ratio:auto;margin:0;border:0;border-radius:0;z-index:0;box-shadow:none;transform:none}
+ body[data-forge-layout="editorial"] main>.site-hero.image-led:has(figure[data-forge-source-figure])>figure.editorial-photo img{display:block;width:100%;height:100%;object-fit:cover;object-position:center center}
+ body[data-forge-layout="editorial"] main>.site-hero.image-led:has(figure[data-forge-source-figure]) h1{color:#fff;font-size:clamp(54px,7.6vw,112px);line-height:1.02;max-width:13ch;margin:15px 0 22px;letter-spacing:-.055em;text-wrap:balance}
+ body[data-forge-layout="editorial"] main>.site-hero.image-led:has(figure[data-forge-source-figure]) :is(p,p.eyebrow){color:#fff;opacity:1}
+ body[data-forge-layout="editorial"] main>.site-hero.image-led:has(figure[data-forge-source-figure]) p:not(.eyebrow){font-size:clamp(16px,1.5vw,19px);max-width:52ch;line-height:1.6}
+ body[data-forge-layout="editorial"] main>.site-hero.image-led:has(figure[data-forge-source-figure]) .button{background:#fff;color:#11202a;border:0;border-radius:8px;min-height:48px}
+ @media(max-width:700px){
+  body[data-forge-layout="editorial"] main>.site-hero.image-led:has(figure[data-forge-source-figure]){min-height:560px;padding:44px 25px;border-radius:16px}
+  body[data-forge-layout="editorial"] main>.site-hero.image-led:has(figure[data-forge-source-figure])::after{background:linear-gradient(0deg,rgba(8,21,31,.9),rgba(8,21,31,.3) 85%)}
+  body[data-forge-layout="editorial"] main>.site-hero.image-led:has(figure[data-forge-source-figure]) h1{font-size:clamp(42px,11vw,66px)}
+  body[data-forge-layout="editorial"] main>.site-hero.image-led:has(figure[data-forge-source-figure])>figure.editorial-photo img{object-position:60% center}
+ }
+}
+`;
 function sourceImage(image:SourceImage,className='source-photo',eager=false){return '<img class="'+className+'" data-forge-source-image src="'+esc(image.url)+'" alt="'+esc(image.alt)+'" loading="'+(eager?'eager':'lazy')+'"'+(eager?' fetchpriority="high"':'')+' decoding="async"'+(image.width?' width="'+image.width+'"':'')+(image.height?' height="'+image.height+'"':'')+'>'}
 function foreground(background:string){const rgb=(background.length===4?background.slice(1).split('').map(c=>c+c).join(''):background.slice(1)).match(/../g)!.map(c=>parseInt(c,16));return rgb[0]*.299+rgb[1]*.587+rgb[2]*.114>150?'#151515':'#f8f8f8'}
 /** Reuse observed assets and bounded design tokens without executing source HTML/CSS. */
@@ -266,7 +290,12 @@ export function applySourceDesign(pages:GeneratedPage[],dna:WebsiteDesignDna|und
    else if(/<footer\b/i.test(html))html=html.replace(/(<footer\b[^>]*>)/i,tag=>tag+'<p class="source-contact" data-forge-source-contact>'+contact+'</p>');
    else html=html.replace(/<\/main>/i,()=>'<section aria-label="Contact"><p class="source-contact" data-forge-source-contact>'+contact+'</p></section></main>');
   }
-  return {...page,html:html.replace(/<\/head>/i,'<style id="forge-source-design">'+css+'</style></head>')};
+  // Include cinematic CSS only when this exported homepage actually uses a
+  // first-party source photograph in its hero. Text-only and promotional
+  // artwork pages must not carry even an inert source-hero marker.
+  const hasSourceHero=mode==='redesign'&&page.slug==='index'&&
+   /<figure\b[^>]*\bdata-forge-source-figure\b/i.test(html);
+  return {...page,html:html.replace(/<\/head>/i,'<style id="forge-source-design">'+css+(hasSourceHero?sourceEditorialRedesignStyles:'')+'</style></head>')};
  });
  // The source may publish far more photographs than can be safely matched to
  // individual offerings. On a photo-poor homepage, show remaining observed
