@@ -66,8 +66,8 @@ export async function POST(req:NextRequest){
    const pageHtml=pageResult.body;
    if(!usefulSourcePage({...item,title:clean(pageHtml.match(/<title[^>]*>([\s\S]*?)<\/title>/i)?.[1]||''),headings:[...pageHtml.matchAll(/<h([1-3])\b[^>]*>([\s\S]*?)<\/h\1>/gi)].map(m=>clean(m[2]))})){warnings.push('Interstitial or unavailable destination omitted: '+item.path);continue;}
    const pageDna=extractWebsiteDesignDna(pageHtml,pageResult.url.href);
-   const mainHtml=pageHtml.match(/<main\b[^>]*>([\s\S]*?)<\/main>/i)?.[1]||pageHtml;
-   const paragraphs=[...mainHtml.matchAll(/<p\b[^>]*>([\s\S]*?)<\/p>/gi)].map(m=>clean(m[1])).filter(p=>p.length>=20).filter((p,i,all)=>all.indexOf(p)===i).slice(0,12);
+   // Share the bounded, inert visible-copy policy with the homepage and authorized imports.
+   const paragraphs=homepageSourceParagraphs(pageHtml);
    if(pageResult.extraction?.truncated)warnings.push('Partial page extraction: '+item.path);
    pageSummaries.push({paragraphs,images:pageDna.images,path:item.path,label:item.label,title:clean(pageHtml.match(/<title[^>]*>([\s\S]*?)<\/title>/i)?.[1]||item.label),description:meta(pageHtml,'description')||meta(pageHtml,'og:description'),headings:[...pageHtml.matchAll(/<h([1-3])\b[^>]*>([\s\S]*?)<\/h\1>/gi)].slice(0,5).map(m=>clean(m[2])).filter(Boolean)});
   }catch{warnings.push('Page could not be retrieved: '+item.path);continue}
