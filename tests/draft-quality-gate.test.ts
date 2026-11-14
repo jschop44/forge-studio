@@ -127,3 +127,12 @@ test("query-string photo variants on the same page are one image; repeated logo 
  assert.ok(report.warnings.some(w=>w.includes("repeated content image 2 times on the same page")&&w.includes("cafe.jpg")));
  assert.ok(report.warnings.every(w=>!w.includes("brand.png")));
 });
+
+
+test("missing main landmark never passes draft review even with decorative headings",()=>{
+ const html='<!doctype html><html><head><title>Missing main</title></head><body>'+
+  '<header><h1>Business</h1></header><section>Beautiful decorative background and navigation.</section></body></html>';
+ const result=auditGeneratedDraft([{slug:"index",title:"Home",html}]);
+ assert.equal(result.readyForReview,false);
+ assert.ok(result.errors.includes("index: missing main content landmark"));
+});
