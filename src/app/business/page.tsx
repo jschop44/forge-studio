@@ -61,11 +61,33 @@ export default function BusinessGenerator(){
  useEffect(()=>()=>{inspectionEpoch.current++;inspectionController.current?.abort()},[]);
  function updateWebsiteAddress(value:string){
   if(websiteAddressKey(value)!==websiteAddressKey(siteAddressRef.current)){
-   inspectionEpoch.current++;inspectionController.current?.abort();setResearchBusy(false);setInspected(null);setInspectionError('');setReferenceStyle({});setWorkerEvidence(null);setWorkerEvidenceText('');setPages([]);
+   inspectionEpoch.current++;inspectionController.current?.abort();setResearchBusy(false);setInspected(null);setInspectionError('');setReferenceStyle({});setReferenceMarkup('');setWorkerEvidence(null);setWorkerEvidenceText('');setPages([]);
   }
   siteAddressRef.current=value;setSiteUrl(value);
  }
  function extractedName(evidence:Inspection){return evidence.designDna?.businessName||evidence.title.split(/[|—–]/)[0].trim().slice(0,100)||new URL(evidence.url).hostname}
+ async function importAuthorizedHtmlFile(file:File|undefined){
+  if(!file)return;
+  const sourceAddress=siteAddressRef.current;
+  if(!websiteAddressKey(sourceAddress)){setStatus('Enter the original website address before importing authorized HTML.');return}
+  // Imported HTML is local, inert source evidence; never upload or execute it.
+  // Keep a bounded browser-memory copy rather than accepting arbitrary archives.
+  if(file.size===0||file.size>1_000_000){setStatus('Select a nonempty HTML file smaller than 1 MB.');return}
+  const epoch=inspectionEpoch.current;
+  try{
+   const html=await file.text();
+   if(epoch!==inspectionEpoch.current||siteAddressRef.current!==sourceAddress)return;
+   if(html.length>1_000_000||!/<(?:!doctype\s+html|html|head|body|style)\b/i.test(html)){
+    setStatus('The selected file does not contain recognizable HTML or exceeds the 1 MB limit.');return
+   }
+   inspectionEpoch.current++;inspectionController.current?.abort();
+   setInspected(null);setReferenceStyle({});setInspectionError('');
+   setWorkerEvidence(null);setWorkerEvidenceText('');setCapturePreview([]);
+   setReferenceMarkup(html);setUndoPages(null);setPages([]);
+   setStatus('Authorized HTML loaded from your device. Forge did not fetch or verify the live website. Only embedded design evidence and authorized public image references can be considered. Review the generated draft before publishing.');
+  }catch{setStatus('The authorized HTML file could not be read.')}
+ }
+
  const [previewAnchor,setPreviewAnchor]=useState('');
  const [experienceStyle,setExperienceStyle]=useState<WebsiteExperience>('standard');
  const [visualDesignMode,setVisualDesignMode]=useState<'auto'|'library'>('auto');
@@ -388,7 +410,7 @@ export default function BusinessGenerator(){
  <fieldset style={{border:'1px solid #99999966',borderRadius:14,padding:16,margin:'18px 0'}}><legend>Choose your website experience</legend><div style={{display:'grid',gap:10}}>{([{value:'standard',title:'Standard website',description:'Clear pages and conventional navigation.'},{value:'cinematic',title:'Cinematic depth & transitions',description:'Layered visuals and transitions between pages.'},{value:'immersive',title:'3D immersion',description:'Business-matched immersive scenes and interactive 3D objects with destinations throughout the website, plus accessible page navigation.'}] as const).map(choice=><button key={choice.value} type="button" disabled={busy||researchBusy} aria-pressed={experienceStyle===choice.value} onClick={()=>{if(experienceStyle===choice.value)return;setExperienceStyle(choice.value);setAutoImmersive(choice.value==='immersive');setPages([]);setReviewApproved(false);setStatus('')}} style={{textAlign:'left',color:'inherit',padding:'14px 16px',border:experienceStyle===choice.value?'2px solid #c5a775':'1px solid #99999966',borderRadius:10,background:experienceStyle===choice.value?'#c5a77522':'transparent'}}><strong>{choice.title}</strong><span style={{display:'block',fontSize:13,marginTop:5}}>{choice.description}</span></button>)}</div><p className="forge-auto-note">3D is optional. The single 3D immersion choice combines business-themed interactive objects and a navigable scene with destinations on every page. Standard pages stay available, and all immersive choices keep accessible offering links or readable page navigation.</p></fieldset>
  <fieldset style={{border:'1px solid #99999966',borderRadius:14,padding:14,margin:'12px 0'}}><legend>Visual design direction</legend><label>Design selection<select value={visualDesignMode} disabled={busy||researchBusy} onChange={e=>{setVisualDesignMode(e.target.value as 'auto'|'library');setPages([])}}><option value="auto">AI Auto-Design (recommended)</option><option value="library">Choose from design library</option></select></label>{visualDesignMode==='library'&&<label>Design pattern<select value={visualPatternId} disabled={busy||researchBusy} onChange={e=>{setVisualPatternId(e.target.value);setPages([])}}>{DESIGN_PATTERNS.map(pattern=><option key={pattern.id} value={pattern.id}>{pattern.label}</option>)}</select></label>}</fieldset>
  <label>Design approach<select disabled={busy||researchBusy} value={designMode} onChange={e=>{setDesignMode(e.target.value as 'new'|'inspired'|'redesign');setWorkerEvidence(null);setWorkerEvidenceText('');setPages([])}}><option value="new">Create a completely new website</option><option value="inspired">Preserve an existing site's visual style</option><option value="redesign">Fully redesign an existing site</option></select></label>
- {designMode!=='new'&&<><label>Existing website address<input type="url" value={siteUrl} onChange={e=>{updateWebsiteAddress(e.target.value)}} placeholder="e.g. disney.com"/></label><button type="button" disabled={researchBusy||busy} onClick={()=>void inspectWebsite()}>{researchBusy?'Inspecting website…':designMode==='inspired'?'Extract website appearance':'Extract website details for redesign'}</button><details className="forge-auto-advanced"><summary>Optional: paste existing HTML/CSS instead</summary><textarea rows={4} value={referenceMarkup} onChange={e=>setReferenceMarkup(e.target.value)} placeholder="Paste saved HTML with embedded CSS"/></details><p className="forge-auto-note">Forge extracts public content, design details and image references. Use only designs and assets you are authorized to reuse. Review the draft against the original before publishing.</p></>}
+ {designMode!=='new'&&<><label>Existing website address<input type="url" value={siteUrl} onChange={e=>{updateWebsiteAddress(e.target.value)}} placeholder="e.g. disney.com"/></label><button type="button" disabled={researchBusy||busy} onClick={()=>void inspectWebsite()}>{researchBusy?'Inspecting website…':designMode==='inspired'?'Extract website appearance':'Extract website details for redesign'}</button><details className="forge-auto-advanced"><summary>Use authorized HTML if live website inspection is blocked</summary><p className="forge-auto-note">If you own or have permission to reuse the website, select a saved HTML page (up to 1 MB) or paste its markup with embedded CSS. Provide the original website address above so relative image links are resolved to the correct source. Files stay in this browser; this is not a live inspection or permission bypass.</p><label>Authorized HTML file<input type="file" accept=".html,.htm,text/html" disabled={busy||researchBusy} onChange={e=>{const file=e.currentTarget.files?.[0];void importAuthorizedHtmlFile(file);e.currentTarget.value=''}}/></label><textarea rows={4} aria-label="Authorized HTML/CSS markup" value={referenceMarkup} onChange={e=>{setReferenceMarkup(e.target.value);setInspected(null);setReferenceStyle({});setPages([])}} placeholder="Or paste saved HTML with embedded CSS"/></details><p className="forge-auto-note">Forge extracts public content, design details and image references. Use only designs and assets you are authorized to reuse. Review the draft against the original before publishing.</p></>}
  {designMode!=='new'&&inspected&&name.trim()&&!matchingSourceBusiness(name,extractedName(inspected))?<p className="forge-auto-note" role="status">This is a different business from {extractedName(inspected)}. Generate will automatically create a fresh website without reusing that source's branding, pages or contact details.</p>:designMode!=='new'&&inspected&&<p className="forge-auto-note" role="status">Website extracted: {new URL(inspected.url).hostname}. Ready to generate; you do not need to extract it again.</p>}
  {designMode!=='new'&&inspectionError&&<p className="forge-auto-note" role="alert">{inspectionError}</p>}
 
