@@ -21,6 +21,7 @@ test('authorized saved pages reconstruct bounded multi-page metadata without fet
  assert.deepEqual(data.navigation.map(x=>x.path),['/products','/about','/support']);
  assert.equal(data.pageSummaries.length,3);
  assert.equal(data.pageSummaries[0].title,'Products | Northstar Electronics');
+ assert.equal(data.pageSummaries[0].label,'Products','trailing company name delimiters must not leak into navigation');
  assert.equal(data.pageSummaries[0].paragraphs[0],'Find laptop computers and electronics accessories.');
  assert.ok(data.designDna.images.some(x=>x.url==='https://retail.example/laptops.jpg'));
  assert.match(data.referenceMarkup,/Electronics for everyone/);
