@@ -133,6 +133,26 @@ function matchesPrimaryBrand(image:SourceImage,dna:WebsiteDesignDna):boolean{
  const observed=label.toLowerCase().replace(/[^a-z0-9]/g,'');
  return observed.includes(stem);
 }
+/** A confirmed source page is an honest fallback for businesses without published contact details. */
+function verifiedSourceHomepage(value:string):string|undefined{
+ try{
+  const url=new URL(value);
+  if(url.protocol!=='https:'||url.username||url.password||!url.hostname.includes('.'))return;
+  return url.origin+'/';
+ }catch{return}
+}
+/** An unillustrated offering should be a deliberate editorial panel, never a blank image placeholder.
+ * This does not imply that an unrelated stock photograph represents the offering.
+ */
+const unillustratedOfferingStyles=`
+@supports selector(:has(> img)){
+ .service-card:not(:has(> img.service-photo)){position:relative;isolation:isolate;display:flex;align-items:stretch;background:linear-gradient(150deg,color-mix(in srgb,var(--business-ink) 8%,var(--business-paper)),var(--business-paper));border:1px solid color-mix(in srgb,var(--business-ink) 20%,transparent)}
+ .service-card:not(:has(> img.service-photo))::before{content:"";position:absolute;inset:0 auto auto 0;height:4px;width:100%;background:color-mix(in srgb,var(--business-ink) 55%,var(--business-paper))}
+ .service-card:not(:has(> img.service-photo)) .service-copy{position:relative;display:flex;min-height:clamp(270px,26vw,360px);flex-direction:column;align-items:flex-start;justify-content:center;gap:18px;width:100%;padding:clamp(26px,3vw,44px)}
+ .service-card:not(:has(> img.service-photo)) .service-copy h2{font-size:clamp(26px,3vw,40px);line-height:1.08;letter-spacing:-.04em;margin:0;overflow-wrap:anywhere}
+ .service-card:not(:has(> img.service-photo)) .service-copy p{margin:0;max-width:38ch}
+ @media(max-width:700px){.service-card:not(:has(> img.service-photo)) .service-copy{min-height:235px;padding:26px}}
+}`;
 function sourceImage(image:SourceImage,className='source-photo',eager=false){return '<img class="'+className+'" data-forge-source-image src="'+esc(image.url)+'" alt="'+esc(image.alt)+'" loading="'+(eager?'eager':'lazy')+'"'+(eager?' fetchpriority="high"':'')+' decoding="async"'+(image.width?' width="'+image.width+'"':'')+(image.height?' height="'+image.height+'"':'')+'>'}
 function foreground(background:string){const rgb=(background.length===4?background.slice(1).split('').map(c=>c+c).join(''):background.slice(1)).match(/../g)!.map(c=>parseInt(c,16));return rgb[0]*.299+rgb[1]*.587+rgb[2]*.114>150?'#151515':'#f8f8f8'}
 /** Reuse observed assets and bounded design tokens without executing source HTML/CSS. */
@@ -150,7 +170,7 @@ export function applySourceDesign(pages:GeneratedPage[],dna:WebsiteDesignDna|und
  const font=family?.split(',').map(part=>part.trim()).filter(Boolean).map(part=>/^(?:serif|sans-serif|monospace|system-ui|cursive|fantasy)$/i.test(part)?part:'"'+part+'"').join(',');
  const safeFont=font?font+(/(?:^|,)(?:serif|sans-serif|monospace|system-ui|cursive|fantasy)$/.test(font)?'':',system-ui,sans-serif'):undefined;
  const preserve=mode==='inspired'||mode==='preserve';
- const css='.site-hero .editorial-photo.editorial-source-landscape{aspect-ratio:16/9;min-height:280px}@media(max-width:700px){.site-hero .editorial-photo.editorial-source-landscape{aspect-ratio:4/3;min-height:0}}.source-highlights{margin:clamp(28px,5vw,64px) 0}.source-highlights>h2{margin-bottom:18px}.source-highlights-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,220px),1fr));gap:clamp(12px,2vw,24px)}.source-highlights figure{min-width:0;margin:0}.source-highlights img{display:block;width:100%;height:clamp(210px,23vw,280px);max-height:280px;object-fit:cover;border-radius:16px}.source-highlights figcaption{padding:10px 2px;font-size:.88rem;line-height:1.45;overflow-wrap:anywhere}.source-brand-logo{display:inline-block;width:auto;max-width:min(160px,35vw);max-height:64px;object-fit:contain;vertical-align:middle;margin-right:14px}.source-contact{display:flex;gap:12px;flex-wrap:wrap;overflow-wrap:anywhere}.source-photo{display:block;width:100%;height:100%;object-fit:cover}.source-page-visual{margin:32px 0;max-width:100%;overflow:hidden;aspect-ratio:16/9}.source-page-visual img{width:100%;height:100%;object-fit:cover}'+(preserve?(safeFont?'body,h1,h2,h3{font-family:'+safeFont+'}':'')+(observedBackground?':root{--business-paper:'+observedBackground+';--business-ink:'+foreground(observedBackground)+';--business-accent:'+foreground(observedBackground)+'}body{background:'+observedBackground+';color:'+foreground(observedBackground)+'}body>nav,body>footer,main p,.card p,.contact-panel{color:'+foreground(observedBackground)+'}body>nav a,body>footer a,main a:not(.button),.eyebrow{color:inherit}main p,.card p,body>footer{opacity:1}.service-card,.contact-panel{background:transparent}.button{background:'+foreground(observedBackground)+';color:'+observedBackground+'}':'')+(dna.layout?.header?'body>nav{display:flex;align-items:center;flex-wrap:wrap;gap:20px}':'')+(dna.layout?.heroAlignment==='center'?'.site-hero{grid-template-columns:1fr;text-align:center;justify-items:center}.site-hero>div{max-width:760px}.site-hero .editorial-photo{width:min(100%,980px)}':dna.layout?.heroAlignment==='right'?'.site-hero>div{text-align:right;justify-self:end}':'')+'@media(max-width:650px){.site-hero{grid-template-columns:1fr}}':'');
+ const css='.site-hero .editorial-photo.editorial-source-landscape{aspect-ratio:16/9;min-height:280px}@media(max-width:700px){.site-hero .editorial-photo.editorial-source-landscape{aspect-ratio:4/3;min-height:0}}.source-highlights{margin:clamp(28px,5vw,64px) 0}.source-highlights>h2{margin-bottom:18px}.source-highlights-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,220px),1fr));gap:clamp(12px,2vw,24px)}.source-highlights figure{min-width:0;margin:0}.source-highlights img{display:block;width:100%;height:clamp(210px,23vw,280px);max-height:280px;object-fit:cover;border-radius:16px}.source-highlights figcaption{padding:10px 2px;font-size:.88rem;line-height:1.45;overflow-wrap:anywhere}.source-brand-logo{display:inline-block;width:auto;max-width:min(160px,35vw);max-height:64px;object-fit:contain;vertical-align:middle;margin-right:14px}.source-contact{display:flex;gap:12px;flex-wrap:wrap;overflow-wrap:anywhere}.source-photo{display:block;width:100%;height:100%;object-fit:cover}.source-page-visual{margin:32px 0;max-width:100%;overflow:hidden;aspect-ratio:16/9}.source-page-visual img{width:100%;height:100%;object-fit:cover}'+(preserve?(safeFont?'body,h1,h2,h3{font-family:'+safeFont+'}':'')+(observedBackground?':root{--business-paper:'+observedBackground+';--business-ink:'+foreground(observedBackground)+';--business-accent:'+foreground(observedBackground)+'}body{background:'+observedBackground+';color:'+foreground(observedBackground)+'}body>nav,body>footer,main p,.card p,.contact-panel{color:'+foreground(observedBackground)+'}body>nav a,body>footer a,main a:not(.button),.eyebrow{color:inherit}main p,.card p,body>footer{opacity:1}.service-card,.contact-panel{background:transparent}.button{background:'+foreground(observedBackground)+';color:'+observedBackground+'}':'')+(dna.layout?.header?'body>nav{display:flex;align-items:center;flex-wrap:wrap;gap:20px}':'')+(dna.layout?.heroAlignment==='center'?'.site-hero{grid-template-columns:1fr;text-align:center;justify-items:center}.site-hero>div{max-width:760px}.site-hero .editorial-photo{width:min(100%,980px)}':dna.layout?.heroAlignment==='right'?'.site-hero>div{text-align:right;justify-self:end}':'')+'@media(max-width:650px){.site-hero{grid-template-columns:1fr}}':'')+unillustratedOfferingStyles;
  let assigned=0;
  // Reserve each source photograph at most once across the entire generated site.
  // The brand logo is intentionally shared on every page, but unrelated content images
@@ -230,6 +250,16 @@ export function applySourceDesign(pages:GeneratedPage[],dna:WebsiteDesignDna|und
    const heading=html.match(/<h1\b[^>]*>([\s\S]*?)<\/h1>/i)?.[1]||'';
    const image=matchingImage(page.title+' '+heading,images,new Set([...used,...reservedForOfferings]));
    if(image&&!/data-forge-source-page-visual/.test(html)){used.add(image.url);assigned++;html=html.replace(/(<main\b[^>]*>)/i,tag=>tag+'<figure class="source-page-visual" data-forge-source-page-visual>'+sourceImage(image,'source-photo',true)+'</figure>')}
+  }
+  // Avoid an inert contact-page placeholder when the source provides no verified email or phone.
+  // Link only to the inspected HTTPS source origin; never invent a contact address.
+  if(!contact&&page.slug==='contact'){
+   const sourceHome=verifiedSourceHomepage(dna.sourceUrl);
+   if(sourceHome&&/<p>Contact details are being updated\.<\/p>/i.test(html)){
+    const fallback='<p>We could not verify a public email address or phone number from the inspected pages.</p>'+
+     '<p><a class="button" data-forge-source-contact-fallback href="'+esc(sourceHome)+'" target="_blank" rel="noopener noreferrer">Visit the source website for contact options →</a></p>';
+    html=html.replace(/<p>Contact details are being updated\.<\/p>/i,()=>fallback);
+   }
   }
   if(contact&&!/data-forge-source-contact/.test(html)){
    if(page.slug==='contact'&&/<p>Contact details are being updated\.<\/p>/i.test(html))html=html.replace(/<p>Contact details are being updated\.<\/p>/i,()=>'<p class="source-contact" data-forge-source-contact>'+contact+'</p>');
