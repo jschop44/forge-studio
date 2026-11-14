@@ -120,3 +120,33 @@ test('ordinary local services keep genuine inquiry links and service navigation'
   assert.match(site.pages[0].html,/href="contact\.html" aria-label="Ask about /);
  }
 });
+
+
+test('large entertainment source renders exploration cards rather than invented service inquiries',()=>{
+ const site=generateBusinessWebsite({
+  businessName:'Disney Home',
+  industry:'Entertainment, media and theme parks',
+  description:'Explore films, characters, destinations and family-friendly experiences.',
+  services:['More Disney+','Vacation with Disney Parks','Disney Partners']
+ });
+ const home=site.pages.find(p=>p.slug==='index')!.html;
+ const catalog=site.pages.find(p=>p.slug==='services')!.html;
+ assert.match(home,/>Explore<\/a>/,'Navigation reflects the destination rather than a service business');
+ assert.match(home,/>Explore topics<\/a>/,'Hero call to action leads to real internal exploration');
+ assert.match(home,/Discover more\./);
+ assert.match(home,/href="services\.html#offering-0"/,'Offering teaser links to the exported catalog anchor');
+ assert.match(home,/Explore this topic/);
+ assert.doesNotMatch(home,/Ask about this service|Explore what we offer|request details tailored to your needs/);
+ assert.match(catalog,/Stories &amp; destinations/);
+ assert.match(catalog,/id="offering-0"/);
+ assert.doesNotMatch(catalog,/Ask about this service|aria-label="Ask about/);
+ assert.deepEqual(site.pages.map(page=>page.slug),['index','services','about','contact']);
+});
+
+test('ordinary local service businesses retain actionable contact inquiry links',()=>{
+ const site=generateBusinessWebsite(brief('Home and trade services'));
+ const home=site.pages[0].html;
+ assert.match(home,/Explore what we offer/);
+ assert.match(home,/href="contact\.html" aria-label="Ask about/);
+ assert.match(home,/Ask about this service/);
+});
