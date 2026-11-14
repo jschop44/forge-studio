@@ -29,7 +29,10 @@ function matchingImage(subject:string,images:SourceImage[],used:Set<string>){
  */
 function textHeavyRetailPromotion(image:SourceImage):boolean{
  const alt=decodeSourceEntities(image.alt||'');
- return /\b(?:save\s+(?:up to\s+)?\d{1,3}\s*%|\d{1,3}\s*%\s*off|terms(?: and conditions)? apply|members?\s+(?:get|save)\s+additional savings|limited[- ]time offer|(?:coupon|promo)\s+code)\b/i.test(alt);
+ // A word boundary AFTER "%" does not match "% on tickets" because both
+ // percent and whitespace are non-word characters. Treat percent discounts
+ // as marketing artwork even when the banner says "save 40% on tickets".
+ return /(?:\bsave\s+(?:up to\s+)?\d{1,3}\s*%(?!\d)|\b\d{1,3}\s*%\s*off\b|\bterms(?: and conditions)? apply\b|\bmembers?\s+(?:get|save)\s+additional savings\b|\blimited[- ]time offer\b|\b(?:coupon|promo)\s+code\b)/i.test(alt);
 }
 function observedRetailHero(html:string,images:SourceImage[],used:Set<string>){
  const main=html.match(/<main\b[^>]*>([\s\S]*?)<\/main>/i)?.[1]||'';
@@ -125,7 +128,7 @@ export function applySourceDesign(pages:GeneratedPage[],dna:WebsiteDesignDna|und
  const font=family?.split(',').map(part=>part.trim()).filter(Boolean).map(part=>/^(?:serif|sans-serif|monospace|system-ui|cursive|fantasy)$/i.test(part)?part:'"'+part+'"').join(',');
  const safeFont=font?font+(/(?:^|,)(?:serif|sans-serif|monospace|system-ui|cursive|fantasy)$/.test(font)?'':',system-ui,sans-serif'):undefined;
  const preserve=mode==='inspired'||mode==='preserve';
- const css='.source-highlights{margin:clamp(28px,5vw,64px) 0}.source-highlights>h2{margin-bottom:18px}.source-highlights-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,220px),1fr));gap:clamp(12px,2vw,24px)}.source-highlights figure{min-width:0;margin:0}.source-highlights img{display:block;width:100%;height:clamp(210px,23vw,280px);max-height:280px;object-fit:cover;border-radius:16px}.source-highlights figcaption{padding:10px 2px;font-size:.88rem;line-height:1.45;overflow-wrap:anywhere}.source-brand-logo{display:inline-block;width:auto;max-width:min(160px,35vw);max-height:64px;object-fit:contain;vertical-align:middle;margin-right:14px}.source-contact{display:flex;gap:12px;flex-wrap:wrap;overflow-wrap:anywhere}.source-photo{display:block;width:100%;height:100%;object-fit:cover}.source-page-visual{margin:32px 0;max-width:100%;overflow:hidden;aspect-ratio:16/9}.source-page-visual img{width:100%;height:100%;object-fit:cover}'+(preserve?(safeFont?'body,h1,h2,h3{font-family:'+safeFont+'}':'')+(palette[0]?':root{--business-paper:'+palette[0]+';--business-ink:'+foreground(palette[0])+';--business-accent:'+foreground(palette[0])+'}body{background:'+palette[0]+';color:'+foreground(palette[0])+'}body>nav,body>footer,main p,.card p,.contact-panel{color:'+foreground(palette[0])+'}body>nav a,body>footer a,main a:not(.button),.eyebrow{color:inherit}main p,.card p,body>footer{opacity:1}.service-card,.contact-panel{background:transparent}.button{background:'+foreground(palette[0])+';color:'+palette[0]+'}':'')+(dna.layout?.header?'body>nav{display:flex;align-items:center;flex-wrap:wrap;gap:20px}':'')+(dna.layout?.heroAlignment==='center'?'.site-hero{grid-template-columns:1fr;text-align:center;justify-items:center}.site-hero>div{max-width:760px}.site-hero .editorial-photo{width:min(100%,980px)}':dna.layout?.heroAlignment==='right'?'.site-hero>div{text-align:right;justify-self:end}':'')+'@media(max-width:650px){.site-hero{grid-template-columns:1fr}}':'');
+ const css='.site-hero .editorial-photo.editorial-source-landscape{aspect-ratio:16/9;min-height:280px}@media(max-width:700px){.site-hero .editorial-photo.editorial-source-landscape{aspect-ratio:4/3;min-height:0}}.source-highlights{margin:clamp(28px,5vw,64px) 0}.source-highlights>h2{margin-bottom:18px}.source-highlights-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,220px),1fr));gap:clamp(12px,2vw,24px)}.source-highlights figure{min-width:0;margin:0}.source-highlights img{display:block;width:100%;height:clamp(210px,23vw,280px);max-height:280px;object-fit:cover;border-radius:16px}.source-highlights figcaption{padding:10px 2px;font-size:.88rem;line-height:1.45;overflow-wrap:anywhere}.source-brand-logo{display:inline-block;width:auto;max-width:min(160px,35vw);max-height:64px;object-fit:contain;vertical-align:middle;margin-right:14px}.source-contact{display:flex;gap:12px;flex-wrap:wrap;overflow-wrap:anywhere}.source-photo{display:block;width:100%;height:100%;object-fit:cover}.source-page-visual{margin:32px 0;max-width:100%;overflow:hidden;aspect-ratio:16/9}.source-page-visual img{width:100%;height:100%;object-fit:cover}'+(preserve?(safeFont?'body,h1,h2,h3{font-family:'+safeFont+'}':'')+(palette[0]?':root{--business-paper:'+palette[0]+';--business-ink:'+foreground(palette[0])+';--business-accent:'+foreground(palette[0])+'}body{background:'+palette[0]+';color:'+foreground(palette[0])+'}body>nav,body>footer,main p,.card p,.contact-panel{color:'+foreground(palette[0])+'}body>nav a,body>footer a,main a:not(.button),.eyebrow{color:inherit}main p,.card p,body>footer{opacity:1}.service-card,.contact-panel{background:transparent}.button{background:'+foreground(palette[0])+';color:'+palette[0]+'}':'')+(dna.layout?.header?'body>nav{display:flex;align-items:center;flex-wrap:wrap;gap:20px}':'')+(dna.layout?.heroAlignment==='center'?'.site-hero{grid-template-columns:1fr;text-align:center;justify-items:center}.site-hero>div{max-width:760px}.site-hero .editorial-photo{width:min(100%,980px)}':dna.layout?.heroAlignment==='right'?'.site-hero>div{text-align:right;justify-self:end}':'')+'@media(max-width:650px){.site-hero{grid-template-columns:1fr}}':'');
  let assigned=0;
  // Reserve each source photograph at most once across the entire generated site.
  // The brand logo is intentionally shared on every page, but unrelated content images
@@ -172,6 +175,19 @@ export function applySourceDesign(pages:GeneratedPage[],dna:WebsiteDesignDna|und
    if(!image||used.has(image.url))return figure;
    used.add(image.url);heroAssigned=true;assigned++;return '<figure class="editorial-photo" data-forge-source-figure>'+sourceImage(image,'source-photo',true)+'</figure>';
   });
+  // The source editor often creates a genuinely text-only entertainment
+  // homepage. Merely replacing existing <figure> tags cannot give that hero
+  // its observed first-party artwork: insert a responsive editorial figure
+  // *inside* the hero, never a detached image above <main>'s first section.
+  if(!heroAssigned&&editorialHomepageImage&&heroSection&&!/<(?:figure|img|picture)\b/i.test(heroSection)){
+   const image=editorialHomepageImage;
+   const amended=heroSection.replace(/\btext-led\b/g,'image-led')
+    .replace(/<\/section>$/i,'<figure class="editorial-photo editorial-source-landscape" data-forge-source-figure>'+sourceImage(image,'source-photo',true)+'</figure></section>');
+   if(amended!==heroSection){
+    html=html.replace(heroSection,amended);
+    used.add(image.url);assigned++;heroAssigned=true;
+   }
+  }
   // Retail homepages in both Preserve Style and Full Redesign should use
   // a genuine, semantically matched source photograph instead of a blank
   // hero when the generated hero has no picture. Product-specific photos

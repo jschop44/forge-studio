@@ -40,3 +40,22 @@ export function inspectExportedPhotoCoverage(html){
  return {offeringCards:cards.length,offeringCardsWithPhoto:withPhoto,contentImages:content,
   warning:cards.length>=3&&withPhoto<2?'Most offering cards have no verified matching image.':null};
 }
+
+/** Distinguish a real source-photo hero from a text-only heading followed by
+ * a detached image gallery. A wide, captioned source photo sitting in that
+ * gallery is direct evidence of a missed editorial hero opportunity.
+ * Browser capture still needs manual aesthetic review after this check.
+ */
+export function inspectEditorialHero(html){
+ const body=String(html||'');
+ const hero=body.match(/<section\b[^>]*class\s*=\s*["'][^"']*\bsite-hero\b[^"']*["'][^>]*>[\s\S]{0,30000}?<\/section>/i)?.[0]||'';
+ const gallery=body.match(/<section\b[^>]*class\s*=\s*["'][^"']*\bsource-highlights\b[^"']*["'][^>]*>[\s\S]{0,30000}?<\/section>/i)?.[0]||'';
+ const sourceHero=/<figure\b[^>]*data-forge-source-figure[^>]*>[\s\S]*?<img\b[^>]*data-forge-source-image/i.test(hero);
+ const wideGalleryPhoto=[...gallery.matchAll(/<img\b[^>]*>/gi)].some(([tag])=>{
+  const width=Number(tag.match(/\bwidth\s*=\s*["'](\d+)/i)?.[1]||0),height=Number(tag.match(/\bheight\s*=\s*["'](\d+)/i)?.[1]||0);
+  const alt=tag.match(/\balt\s*=\s*["']([^"']*)/i)?.[1]||'';
+  return width>=1100&&height>=450&&width/height>=1.6&&width/height<=4.5&&alt.trim().length>=22;
+ });
+ const warning=wideGalleryPhoto&&!sourceHero?'A descriptive wide source image is available in the gallery but the homepage lacks an integrated first-party hero.':null;
+ return {heroPresent:!!hero,heroTextLed:/\btext-led\b/.test(hero),sourceHero,wideGalleryPhoto,warning};
+}
