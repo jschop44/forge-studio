@@ -329,6 +329,14 @@ export function applySourceDesign(pages:GeneratedPage[],dna:WebsiteDesignDna|und
     if(image.role!=='content'||usedAcrossPages.has(image.url)||reservedForOfferings.has(image.url))return false;
     const label=decodeSourceEntities(image.alt).trim();
     if(label.length<12||label.length>160||/\b(?:logo|icon|sprite|pixel|tracking|placeholder)\b/i.test(label))return false;
+    // A narrowly described homepage must not acquire a visually unrelated
+    // source-gallery image merely because another image matches its topic.
+    // Broad company/editorial pages without matching category evidence can
+    // still use genuine captioned source photography as a showcase.
+    if(topicalSourceEvidence&&!terms(label).some(word=>word.length>=5&&visibleTopic.has(word)))return false;
+    // Promotional banners often contain embedded offer text; they cannot be
+    // safely cropped into a responsive gallery as ordinary photography.
+    if(textHeavyRetailPromotion(image))return false;
     if(image.width&&image.width<220||image.height&&image.height<170)return false;
     try{return new URL(image.sourcePage).origin===rootOrigin}catch{return false}
    }).slice(0,3);
