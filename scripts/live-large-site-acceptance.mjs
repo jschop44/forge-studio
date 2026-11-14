@@ -2,7 +2,7 @@ import {chromium} from '@playwright/test';
 import {unzipSync,strFromU8} from 'fflate';
 import {mkdir,writeFile,readFile} from 'node:fs/promises';
 import {join,posix} from 'node:path';
-import {inspectExportedBranding,inspectExportedPhotoCoverage} from './exported-visual-acceptance.mjs';
+import {inspectExportedBranding,inspectExportedPhotoCoverage,inspectEditorialHero} from './exported-visual-acceptance.mjs';
 import {primeExportImages} from './exported-image-capture.mjs';
 
 const BASE='https://forge-studio-preview.stands-old-3h.workers.dev';
@@ -192,6 +192,9 @@ async function runOne(browser,item,index){
   const exportedHtml=strFromU8(exportedHomepage);
   entry.brandingReview=inspectExportedBranding(exportedHtml,item.business);
   entry.offeringImageCoverage=inspectExportedPhotoCoverage(exportedHtml);
+  entry.editorialHeroReview=inspectEditorialHero(exportedHtml);
+  if(item.business==='Disney'&&entry.editorialHeroReview.warning)
+   throw Error(entry.editorialHeroReview.warning);
   if(entry.brandingReview.promotionalLogoFound)
    throw Error('Exported site header uses a promotional partner logo rather than the company brand');
   if(!entry.zip.allPagesReachable||entry.zip.brokenLinks.length)throw Error('Exported site navigation contains unreachable pages or broken local links');
