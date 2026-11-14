@@ -191,7 +191,15 @@ export function applySourceDesign(pages:GeneratedPage[],dna:WebsiteDesignDna|und
    if(eligible.length>=2){
     const figures=eligible.map(image=>'<figure>'+sourceImage(image,'source-highlights-photo')+'<figcaption>'+esc(decodeSourceEntities(image.alt).trim().slice(0,125))+'</figcaption></figure>').join('');
     const gallery='<section class="source-highlights" data-forge-source-highlights aria-label="More from this business"><h2>More to explore</h2><div class="source-highlights-grid">'+figures+'</div></section>';
-    output[homeIndex]={...home,html:home.html.replace(/<\/main>/i,()=>gallery+'</main>')};
+    // Where the generated homepage has image-poor offering cards, introduce
+    // the verified captioned source photographs *before* those text-only cards.
+    // Keep every image in its own gallery so an unrelated campaign artwork is
+    // never mislabeled as a particular offering or product.
+    const sectionHeading=/<section\b[^>]*class=["'][^"']*\bsection-heading\b[^"']*["'][^>]*>/i;
+    const decorated=sectionHeading.test(home.html)
+     ?home.html.replace(sectionHeading,match=>gallery+match)
+     :home.html.replace(/<\/main>/i,()=>gallery+'</main>');
+    output[homeIndex]={...home,html:decorated};
     for(const image of eligible)usedAcrossPages.add(image.url);
     assigned+=eligible.length;
    }
