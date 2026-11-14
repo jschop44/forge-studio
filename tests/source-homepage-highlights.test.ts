@@ -95,3 +95,20 @@ test('short photo-rich homepages do not receive a redundant second gallery',()=>
  const result=applySourceDesign([{slug:'index',title:'Home',html}],source,'inspired');
  assert.doesNotMatch(result.pages[0].html,/data-forge-source-highlights/);
 });
+
+
+test('short homepages never get a source gallery from unrelated business categories',()=>{
+ const unrelated=extractWebsiteDesignDna(
+  '<img src="/fruit.jpg" alt="Fresh fruit bowl and vegetables" width="800" height="600">'+
+  '<img src="/wings.jpg" alt="Hot chicken wings on a platter" width="800" height="600">',
+  'https://other-business.example/'
+ );
+ for(const homepage of [
+  wrap('<section class="site-hero"><h1>Auto repair</h1></section>'),
+  wrap('<h1>Auto repair</h1><figure class="editorial-photo"><img src="https://stock.example/car.jpg" alt="Auto service"></figure>')
+ ]){
+  const generated=applySourceDesign([{slug:'index',title:'Home',html:homepage}],unrelated,'inspired').pages[0].html;
+  assert.doesNotMatch(generated,/data-forge-source-highlights/);
+  assert.doesNotMatch(generated,/src="https:\/\/other-business\.example\/(?:fruit|wings)\.jpg"/);
+ }
+});
