@@ -172,6 +172,19 @@ export function applySourceDesign(pages:GeneratedPage[],dna:WebsiteDesignDna|und
    if(!image||used.has(image.url))return figure;
    used.add(image.url);heroAssigned=true;assigned++;return '<figure class="editorial-photo" data-forge-source-figure>'+sourceImage(image,'source-photo',true)+'</figure>';
   });
+  // The source editor often creates a genuinely text-only entertainment
+  // homepage. Merely replacing existing <figure> tags cannot give that hero
+  // its observed first-party artwork: insert a responsive editorial figure
+  // *inside* the hero, never a detached image above <main>'s first section.
+  if(!heroAssigned&&editorialHomepageImage&&heroSection&&!/<(?:figure|img|picture)\b/i.test(heroSection)){
+   const image=editorialHomepageImage;
+   const amended=heroSection.replace(/\btext-led\b/g,'image-led')
+    .replace(/<\/section>$/i,'<figure class="editorial-photo" data-forge-source-figure>'+sourceImage(image,'source-photo',true)+'</figure></section>');
+   if(amended!==heroSection){
+    html=html.replace(heroSection,amended);
+    used.add(image.url);assigned++;heroAssigned=true;
+   }
+  }
   // Retail homepages in both Preserve Style and Full Redesign should use
   // a genuine, semantically matched source photograph instead of a blank
   // hero when the generated hero has no picture. Product-specific photos
