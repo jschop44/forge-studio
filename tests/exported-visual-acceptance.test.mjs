@@ -112,5 +112,7 @@ test('browser acceptance measures visible main copy on the homepage and every se
  assert.equal((source.match(/mainVisibleTextLength:/g)||[]).length,2,
   'Homepage and secondary page measurements must each capture visible main text');
  assert.equal((source.match(/mainVisiblePhotos:/g)||[]).length,2);
- assert.equal((source.match(/hasMain:!!main/g)||[]).length,2);
+ assert.equal((source.match(/hasMain:renderedMain/g)||[]).length,2);
+ assert.equal((source.match(/main.getClientRects\(\).length>0/g)||[]).length,2,
+  'A CSS-hidden main must not count as visible page content');
 });
