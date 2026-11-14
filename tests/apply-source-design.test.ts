@@ -516,5 +516,5 @@ test('redesign photo composition needs real source-figure evidence, not stock im
  const redesigned=applySourceDesign([page],source,'redesign').pages[0].html;
  assert.doesNotMatch(redesigned,/data-forge-source-figure/);
  assert.match(redesigned,/site-hero editorial text-led/,'No source photo means no fabricated cinematic photo hero');
- assert.ok(redesigned.includes(':has(figure[data-forge-source-figure])'), 'Cinematic styles remain gated behind source evidence');
+ assert.ok(!redesigned.includes(':has(figure[data-forge-source-figure])'), 'No redesign stylesheet is included without source-photo evidence');
 });
