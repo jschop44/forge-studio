@@ -1,7 +1,7 @@
 import {decodeSourceEntities as decode} from './source-text';
 /** Observed design evidence only. Asset discovery is not a license or availability check. */
 export type SourceImage={url:string;alt:string;role:'logo'|'content'|'background';sourcePage:string;width?:number;height?:number};
-export type WebsiteDesignDna={version:1;sourceUrl:string;businessName?:string;images:SourceImage[];logo?:SourceImage;contact:{emails:string[];phones:string[]};typography:{families:string[]};palette:string[];layout:{header:boolean;hero:boolean;sectionCount:number;breakpoints:number[];heroAlignment?:'center'|'left'|'right'};warnings:string[]};
+export type WebsiteDesignDna={version:1;sourceUrl:string;businessName?:string;images:SourceImage[];logo?:SourceImage;contact:{emails:string[];phones:string[]};typography:{families:string[]};palette:string[];background?:string;layout:{header:boolean;hero:boolean;sectionCount:number;breakpoints:number[];heroAlignment?:'center'|'left'|'right'};warnings:string[]};
 
 function text(value:string){return decode(value.replace(/<[^>]*>/g,' ')).replace(/\s+/g,' ').trim().slice(0,350)}
 function attribute(tag:string,name:string){return decode(tag.match(new RegExp('(?:^|\\s)'+name+'\\s*=\\s*(?:"([^"]*)"|\'([^\']*)\'|([^\\s>]+))','i'))?.slice(1).find(value=>value!==undefined)||'')}
@@ -175,7 +175,7 @@ export function extractWebsiteDesignDna(input:string,sourceUrl:string,stylesheet
  const heroAlignment=/\b(?:text-center|align-center|centered|hero-center)\b/i.test(heroClasses)?'center':/\b(?:text-right|align-right|hero-right)\b/i.test(heroClasses)?'right':/\b(?:text-left|align-left|hero-left)\b/i.test(heroClasses)?'left':undefined;
  const warnings=['Discovered source assets require authorization and availability verification before publication.','Observed HTML and CSS do not establish computed layout, browser interactions, or visual fidelity.'];
  if(!images.length)warnings.push('No reusable public HTTPS images were discovered; supply authorized business assets.');
- return {version:1,sourceUrl,...(businessName?{businessName}:{}),images,logo:images.find(image=>image.role==='logo'),contact:{emails,phones},typography:{families:[...new Set(families)].slice(0,8)},palette,layout:{header:/<header\b/i.test(html),hero:/(?:class|id)\s*=\s*["'][^"']*(?:hero|banner|masthead)/i.test(html),sectionCount:(html.match(/<section\b/gi)||[]).length,breakpoints,...(heroAlignment?{heroAlignment}:{})},warnings};
+ return {version:1,sourceUrl,...(businessName?{businessName}:{}),images,logo:images.find(image=>image.role==='logo'),contact:{emails,phones},typography:{families:[...new Set(families)].slice(0,8)},palette,...(background?{background}:{}),layout:{header:/<header\b/i.test(html),hero:/(?:class|id)\s*=\s*["'][^"']*(?:hero|banner|masthead)/i.test(html),sectionCount:(html.match(/<section\b/gi)||[]).length,breakpoints,...(heroAlignment?{heroAlignment}:{})},warnings};
 }
 
 
