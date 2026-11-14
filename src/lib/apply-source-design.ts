@@ -321,6 +321,15 @@ export function applySourceDesign(pages:GeneratedPage[],dna:WebsiteDesignDna|und
   const visibleTopic=new Set(terms(home.title+' '+heading+' '+firstParagraph));
   const topicalSourceEvidence=images.some(image=>image.role==='content'&&
    terms(image.alt).some(word=>word.length>=5&&visibleTopic.has(word)));
+  // Match every distinctive term in a specific, non-brand H1 before treating
+  // the homepage as a single-product showcase. Broad business/community and
+  // entertainment homepages still need their diverse captioned source photos.
+  const focusTerms=[...new Set(terms(heading))];
+  const sourceBrand=terms(dna.businessName||'').join(' ');
+  const focusedTopicEvidence=focusTerms.length>=2&&
+   (!sourceBrand||focusTerms.join(' ')!==sourceBrand)&&
+   images.some(image=>image.role==='content'&&
+    focusTerms.every(word=>terms(image.alt).includes(word)));
   const needsSourceHighlights=(cards.length>=3&&illustrated<Math.ceil(cards.length/2))||
    (existingPhotos<2&&topicalSourceEvidence);
   if(needsSourceHighlights&&!home.html.includes('data-forge-source-highlights')){
@@ -333,7 +342,7 @@ export function applySourceDesign(pages:GeneratedPage[],dna:WebsiteDesignDna|und
     // source-gallery image merely because another image matches its topic.
     // Broad company/editorial pages without matching category evidence can
     // still use genuine captioned source photography as a showcase.
-    if(topicalSourceEvidence&&!terms(label).some(word=>word.length>=5&&visibleTopic.has(word)))return false;
+    if(focusedTopicEvidence&&!focusTerms.every(word=>terms(label).includes(word)))return false;
     // Promotional banners often contain embedded offer text; they cannot be
     // safely cropped into a responsive gallery as ordinary photography.
     if(textHeavyRetailPromotion(image))return false;
