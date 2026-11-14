@@ -204,8 +204,15 @@ test('a generic retail redesign uses an advertised source category photo as its 
  assert.match(result.pages[0].html,/src="https:\/\/store\.example\/kitchen\.jpg"[^>]*loading="eager"/);
  assert.match(result.pages[1].html,/src="https:\/\/store\.example\/headphones\.jpg"/);
  assert.doesNotMatch(result.pages[0].html,/src="https:\/\/store\.example\/fruit\.jpg"/);
- const preserved=applySourceDesign([{slug:'index',title:'Home',html:home}],source,'inspired');
- assert.doesNotMatch(preserved.pages[0].html,/data-forge-source-figure/);
+ const preserved=applySourceDesign([{slug:'index',title:'Home',html:home},{slug:'services',title:'Products',html:services}],source,'inspired');
+ assert.match(preserved.pages[0].html,/class="site-hero editorial image-led"/,
+  'Preserve Style uses an observed source category photo instead of a blank hero');
+ assert.match(preserved.pages[0].html,/src="https:\/\/store\.example\/kitchen\.jpg"[^>]*loading="eager"/,
+  'Preserve Style retains the real observed category photograph');
+ assert.match(preserved.pages[1].html,/src="https:\/\/store\.example\/headphones\.jpg"/,
+  'Preserve Style reserves specific item photos for the product catalog');
+ assert.doesNotMatch(preserved.pages[0].html,/store\.example\/fruit\.jpg/,
+  'Unrelated source photography must not become a hero');
 });
 
 
@@ -283,4 +290,19 @@ test('fully illustrated offering cards never receive a redundant source gallery'
   '<article class="card service-card"><img src="https://stock.example/'+i+'.jpg" alt="Photo"><h2>'+name+'</h2></article>').join('');
  const result=applySourceDesign([{slug:'index',title:'Home',html:wrap('<div class="cards">'+cards+'</div>')}],source,'redesign');
  assert.doesNotMatch(result.pages[0].html,/data-forge-source-highlights/);
+});
+
+test('retail Preserve Style refuses cropped offer text and unrelated source hero photos',()=>{
+ const source=extractWebsiteDesignDna(
+  '<img src="/promotion.jpg" alt="Wireless Headphones save 50% limited-time offer">'+
+  '<img src="/unrelated.jpg" alt="Fruit bowl photographed on a kitchen table">',
+  'https://store.example/');
+ const homepage=wrap('<section class="site-hero editorial text-led"><div><p class="eyebrow">Electronics Retail</p><h1>Store</h1><p>Explore wireless headphones and home theater.</p></div></section>');
+ for(const mode of ['inspired','redesign']){
+  const html=applySourceDesign([{slug:'index',title:'Home',html:homepage}],source,mode).pages[0].html;
+  assert.doesNotMatch(html,/data-forge-source-figure/,
+   'Promotional text art must not be cropped into the hero');
+  assert.match(html,/class="site-hero editorial text-led"/,
+   'A safe text-led hero is preferable to unrelated photos');
+ }
 });
