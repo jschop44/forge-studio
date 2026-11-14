@@ -62,3 +62,53 @@ test('server-side image coverage retains all original page IDs and inserts disti
  assert.equal(new Set(html.map(page=>page.match(/<img src="([^"]+)"/)?.[1])).size,4);
  assert.ok(html.every(page=>!page.includes('CC BY')));
 });
+
+test('one existing hero photo does not suppress precisely matched photos for empty offering cards',()=>{
+ const page=(slug:string,body:string)=>({slug,title:slug,html:'<!doctype html><html><head></head><body><main>'+body+'</main></body></html>'});
+ const hero='<figure><img src="https://images.unsplash.com/photo-1595574444306-e235cef5ea37" alt="Restaurant photography"></figure>';
+ const cards='<div class="cards">'+
+  '<article class="card service-card"><div class="service-copy"><h2>Chicken wings</h2><p>Fresh wings</p></div></article>'+
+  '<article class="card service-card"><div class="service-copy"><h2>Pizza</h2><p>Fresh pizza</p></div></article>'+
+  '<article class="card service-card"><div class="service-copy"><h2>Salads</h2><p>More options</p></div></article></div>';
+ const pages=[page('index',hero+cards),page('services',hero+cards)];
+ const images=[rawAsset('Chicken wings on a plate'),rawAsset('Pizza on a wooden board'),rawAsset('Fruit bowl')];
+ const result=ensurePagePhotography(pages,'Restaurant',images,['Chicken wings','Pizza','Salads']);
+ const catalog=result[1].html;
+ assert.equal((catalog.match(/data-forge-verified-offering-photo/g)||[]).length,2);
+ assert.match(catalog,/alt="Chicken wings"/);
+ assert.match(catalog,/alt="Pizza"/);
+ assert.doesNotMatch(catalog,/alt="Salads" loading/);
+ assert.doesNotMatch(catalog,/Fruit-bowl/,'unrelated photo must not be mislabelled as a menu product');
+ assert.ok(!result[0].html.includes('data-forge-verified-offering-photo'),'catalog receives scarce photos before home teasers');
+ assert.equal(result[0].html.match(/<img\b/g)?.length,1,'original homepage photo remains untouched');
+ assert.deepEqual(pages.map(p=>p.html.includes('data-forge-verified-offering-photo')), [false,false],'input is immutable');
+ const again=ensurePagePhotography(result,'Restaurant',images,['Chicken wings','Pizza','Salads']);
+ assert.deepEqual(again,result,'repeating repair does not duplicate media or rewrite existing cards');
+});
+
+test('offering photo repair refuses credited, unrelated, repeated or untrusted images',()=>{
+ const card=(title:string,extra='')=>'<article class="card service-card">'+extra+'<div class="service-copy"><h2>'+title+'</h2></div></article>';
+ const html='<html><body><main><img src="https://images.unsplash.com/photo-1513104890138-7c749659a591" alt="Existing hero">'+
+  card('Chicken wings')+card('Pizza')+card('Ceramic mugs')+
+  card('Chicken wings','<img class="service-photo" src="https://known.example/already.jpg">')+
+  '<article class="card"><h2>Pizza</h2></article></main></body></html>';
+ const candidates=[rawAsset('Chicken wings with sauce','CC BY 4.0'),
+  rawAsset('Chicken salad with greens'),rawAsset('Pizza on a board'),
+  {...rawAsset('Ceramic mugs'),url:'https://tracker.bad.example/ads.jpg'}];
+ const fixed=ensurePagePhotography([{slug:'services',title:'Services',html}],'Restaurant',candidates,
+  ['Chicken wings','Pizza','Ceramic mugs']);
+ assert.equal((fixed[0].html.match(/data-forge-verified-offering-photo/g)||[]).length,1);
+ assert.match(fixed[0].html,/src="https:\/\/known\.example\/already\.jpg"/);
+ assert.match(fixed[0].html,/alt="Pizza"/);
+ assert.doesNotMatch(fixed[0].html,/alt="Chicken wings" loading|tracker\.bad\.example|Chicken-salad/);
+ assert.equal((fixed[0].html.match(/<article class="card"><h2>Pizza<\/h2><\/article>/g)||[]).length,1);
+});
+
+test('photo fallback never relabels visual subjects that cannot be verified or are unsafe',()=>{
+ const html='<html><body><main><article class="card service-card">'+
+  '<div class="service-copy"><h2>Halloween attraction</h2></div></article></main></body></html>';
+ const page={slug:'services',title:'Services',html};
+ const result=ensurePagePhotography([page],'Unknown performance venue',[rawAsset('Halloween attraction')],['Halloween attraction']);
+ assert.equal((result[0].html.match(/<img\b/g)||[]).length,0);
+ assert.doesNotMatch(result[0].html,/data-forge-verified-offering-photo/);
+});
