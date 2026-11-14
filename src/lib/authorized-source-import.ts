@@ -77,7 +77,7 @@ export function prepareSavedSourceInspection(files:readonly SavedSourcePage[],ad
  const summaries=docs.filter(x=>x!==home).map(item=>{
   const pageUrl=new URL(item.path,base);
   const dna=extractWebsiteDesignDna(item.html,pageUrl.href);
-  return {path:item.path,label:item.title.split(/[|—–]/)[0].slice(0,100)||item.path.slice(1),
+  return {path:item.path,label:item.title.split(/[|—–]/)[0].trim().slice(0,100)||item.path.slice(1),
    title:item.title.slice(0,200),description:item.description.slice(0,500),
    headings:item.headings,paragraphs:item.paragraphs,
    images:dna.images.slice(0,30)};
