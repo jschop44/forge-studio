@@ -2,6 +2,7 @@
 import {observedCatalogOfferings,matchingSourceBusiness,resolveGenerationSourceMode} from '../../lib/source-reuse-policy';
 import {parseGeneratorEditorState,serializeGeneratorEditorState} from '../../lib/editor-generator-state';
 import {extractWebsiteDesignDna,mergeSourcePageImages,type WebsiteDesignDna,type SourceImage} from '../../lib/website-design-dna';
+import {prepareSavedSourceInspection} from '../../lib/authorized-source-import';
 import {applySourceDesign} from '../../lib/apply-source-design';
 import {appendAuthorizedStylesheets} from '../../lib/authorized-source-styles';
 import {businessGenerationPayload} from '../../lib/business-generation-payload';
@@ -52,6 +53,7 @@ type Inspection={url:string;title:string;description:string;headings:string[];ho
 export default function BusinessGenerator(){
  const [inspected,setInspected]=useState<Inspection|null>(null),[siteUrl,setSiteUrl]=useState(''),[researchBusy,setResearchBusy]=useState(false),[referenceStyle,setReferenceStyle]=useState<StyleReference>({}),[name,setName]=useState(''),[designMode,setDesignMode]=useState<'new'|'inspired'|'redesign'>('new'),[referenceMarkup,setReferenceMarkup]=useState(''),[brief,setBrief]=useState(''),[contactEmail,setContactEmail]=useState(''),[busy,setBusy]=useState(false),[status,setStatus]=useState(''),[pages,setPages]=useState<GeneratedPage[]>([]),[active,setActive]=useState('index'),[mobile,setMobile]=useState(false);
  const [inspectionError,setInspectionError]=useState('');
+ const [authorizedSourceConfirmed,setAuthorizedSourceConfirmed]=useState(false);
  const [previewHeight,setPreviewHeight]=useState<number|null>(null);
  // Start the editor in mobile preview on narrow screens while retaining the
  // user's explicit desktop/mobile toolbar choice afterward.
@@ -62,32 +64,43 @@ export default function BusinessGenerator(){
  useEffect(()=>()=>{inspectionEpoch.current++;inspectionController.current?.abort()},[]);
  function updateWebsiteAddress(value:string){
   if(websiteAddressKey(value)!==websiteAddressKey(siteAddressRef.current)){
-   inspectionEpoch.current++;inspectionController.current?.abort();setResearchBusy(false);setInspected(null);setInspectionError('');setReferenceStyle({});setReferenceMarkup('');setWorkerEvidence(null);setWorkerEvidenceText('');setPages([]);
+   inspectionEpoch.current++;inspectionController.current?.abort();setResearchBusy(false);setInspected(null);setInspectionError('');setAuthorizedSourceConfirmed(false);setReferenceStyle({});setReferenceMarkup('');setWorkerEvidence(null);setWorkerEvidenceText('');setPages([]);
   }
   siteAddressRef.current=value;setSiteUrl(value);
  }
  function extractedName(evidence:Inspection){return evidence.designDna?.businessName||evidence.title.split(/[|—–]/)[0].trim().slice(0,100)||new URL(evidence.url).hostname}
- async function importAuthorizedHtmlFile(file:File|undefined){
-  if(!file)return;
+ async function importAuthorizedHtmlFiles(files:File[]){
+  if(!files.length)return;
+  if(!authorizedSourceConfirmed){setStatus('Confirm that you are authorized to reuse the saved website pages first.');return}
   const sourceAddress=siteAddressRef.current;
-  if(!websiteAddressKey(sourceAddress)){setStatus('Enter the original website address before importing authorized HTML.');return}
-  // Imported HTML is local, inert source evidence; never upload or execute it.
-  // Keep a bounded browser-memory copy rather than accepting arbitrary archives.
-  if(file.size===0||file.size>1_000_000){setStatus('Select a nonempty HTML file smaller than 1 MB.');return}
+  if(!websiteAddressKey(sourceAddress)){setStatus('Enter the original public HTTPS website address before importing authorized pages.');return}
+  if(files.length>6||files.some(file=>file.size===0||file.size>1_000_000)||files.reduce((sum,file)=>sum+file.size,0)>4_000_000){
+   setStatus('Choose up to six HTML files, each under 1 MB, with a combined limit of 4 MB.');return
+  }
   const epoch=inspectionEpoch.current;
   try{
-   const html=await file.text();
+   const saved=await Promise.all(files.map(async file=>({name:file.name,html:await file.text()})));
    if(epoch!==inspectionEpoch.current||siteAddressRef.current!==sourceAddress)return;
-   if(html.length>1_000_000||!/<(?:!doctype\s+html|html|head|body|style)\b/i.test(html)){
-    setStatus('The selected file does not contain recognizable HTML or exceeds the 1 MB limit.');return
-   }
+   const imported=prepareSavedSourceInspection(saved,sourceAddress);
+   const {referenceMarkup:markup,...evidence}=imported;
    inspectionEpoch.current++;inspectionController.current?.abort();
-   setInspected(null);setReferenceStyle({});setInspectionError('');
+   setInspected(evidence);setReferenceStyle(imported.styleReference);setInspectionError('');
    setWorkerEvidence(null);setWorkerEvidenceText('');setCapturePreview([]);
-   setReferenceMarkup(html);setUndoPages(null);setPages([]);
-   setStatus('Authorized HTML loaded from your device. Forge did not fetch or verify the live website. Only embedded design evidence and authorized public image references can be considered. Review the generated draft before publishing.');
-  }catch{setStatus('The authorized HTML file could not be read.')}
+   setReferenceMarkup(markup);setUndoPages(null);setPages([]);
+   setName(current=>current.trim()?current:extractedName(evidence));
+   setBrief(current=>current.trim()?current:[evidence.description,...evidence.headings.slice(0,2)].filter(Boolean).join('. ').slice(0,1600));
+   setStatus('Loaded '+saved.length+' authorized HTML page'+(saved.length===1?'':'s')+' without accessing the live site. Page links are inferred from filenames. Original scripts are not executed. Review content and image permissions before publishing.');
+  }catch(error){setStatus('Authorized source import failed: '+(error instanceof Error?error.message:'Unable to read saved pages'))}
  }
+ function useOriginalConceptInstead(){
+  inspectionEpoch.current++;inspectionController.current?.abort();
+  siteAddressRef.current='';setSiteUrl('');setInspected(null);
+  setDesignMode('new');setReferenceMarkup('');setReferenceStyle({});
+  setInspectionError('');setWorkerEvidence(null);setWorkerEvidenceText('');setPages([]);
+  setName('');setBrief('');setContactEmail('');setReviewApproved(false);
+  setStatus('Starting an original website: use your own business name, description and imagery. No blocked source material or third-party branding will be copied.');
+ }
+
 
  async function importAuthorizedCssFiles(files:File[]){
   if(!files.length)return;
@@ -106,7 +119,8 @@ export default function BusinessGenerator(){
    if(epoch!==inspectionEpoch.current||siteAddressRef.current!==sourceAddress)return;
    const combined=appendAuthorizedStylesheets(startingMarkup,sheets);
    inspectionEpoch.current++;inspectionController.current?.abort();
-   setInspected(null);setReferenceStyle({});setInspectionError('');
+   setInspected(previous=>previous?{...previous,designDna:mergeSourcePageImages(extractWebsiteDesignDna(combined,previous.url),previous.pageSummaries||[]),styleReference:parseStyleReference(combined)}:null);
+   setReferenceStyle(parseStyleReference(combined));setInspectionError('');
    setWorkerEvidence(null);setWorkerEvidenceText('');setCapturePreview([]);
    setReferenceMarkup(combined);setUndoPages(null);setPages([]);
    setStatus(files.length+' authorized CSS file'+(files.length===1?'':'s')+' loaded as inert design evidence alongside your saved HTML. No live site, linked stylesheet, font, or image was fetched. Review the source rights and generated design before publishing.');
@@ -435,9 +449,9 @@ export default function BusinessGenerator(){
  <fieldset style={{border:'1px solid #99999966',borderRadius:14,padding:16,margin:'18px 0'}}><legend>Choose your website experience</legend><div style={{display:'grid',gap:10}}>{([{value:'standard',title:'Standard website',description:'Clear pages and conventional navigation.'},{value:'cinematic',title:'Cinematic depth & transitions',description:'Layered visuals and transitions between pages.'},{value:'immersive',title:'3D immersion',description:'Business-matched immersive scenes and interactive 3D objects with destinations throughout the website, plus accessible page navigation.'}] as const).map(choice=><button key={choice.value} type="button" disabled={busy||researchBusy} aria-pressed={experienceStyle===choice.value} onClick={()=>{if(experienceStyle===choice.value)return;setExperienceStyle(choice.value);setAutoImmersive(choice.value==='immersive');setPages([]);setReviewApproved(false);setStatus('')}} style={{textAlign:'left',color:'inherit',padding:'14px 16px',border:experienceStyle===choice.value?'2px solid #c5a775':'1px solid #99999966',borderRadius:10,background:experienceStyle===choice.value?'#c5a77522':'transparent'}}><strong>{choice.title}</strong><span style={{display:'block',fontSize:13,marginTop:5}}>{choice.description}</span></button>)}</div><p className="forge-auto-note">3D is optional. The single 3D immersion choice combines business-themed interactive objects and a navigable scene with destinations on every page. Standard pages stay available, and all immersive choices keep accessible offering links or readable page navigation.</p></fieldset>
  <fieldset style={{border:'1px solid #99999966',borderRadius:14,padding:14,margin:'12px 0'}}><legend>Visual design direction</legend><label>Design selection<select value={visualDesignMode} disabled={busy||researchBusy} onChange={e=>{setVisualDesignMode(e.target.value as 'auto'|'library');setPages([])}}><option value="auto">AI Auto-Design (recommended)</option><option value="library">Choose from design library</option></select></label>{visualDesignMode==='library'&&<label>Design pattern<select value={visualPatternId} disabled={busy||researchBusy} onChange={e=>{setVisualPatternId(e.target.value);setPages([])}}>{DESIGN_PATTERNS.map(pattern=><option key={pattern.id} value={pattern.id}>{pattern.label}</option>)}</select></label>}</fieldset>
  <label>Design approach<select disabled={busy||researchBusy} value={designMode} onChange={e=>{setDesignMode(e.target.value as 'new'|'inspired'|'redesign');setWorkerEvidence(null);setWorkerEvidenceText('');setPages([])}}><option value="new">Create a completely new website</option><option value="inspired">Preserve an existing site's visual style</option><option value="redesign">Fully redesign an existing site</option></select></label>
- {designMode!=='new'&&<><label>Existing website address<input type="url" value={siteUrl} onChange={e=>{updateWebsiteAddress(e.target.value)}} placeholder="e.g. disney.com"/></label><button type="button" disabled={researchBusy||busy} onClick={()=>void inspectWebsite()}>{researchBusy?'Inspecting website…':designMode==='inspired'?'Extract website appearance':'Extract website details for redesign'}</button><details className="forge-auto-advanced"><summary>Use authorized HTML if live website inspection is blocked</summary><p className="forge-auto-note">If you own or have permission to reuse the website, import saved HTML (up to 1 MB), optionally add up to three CSS files, or paste the HTML with embedded CSS. Provide the original website address so relative image links resolve to the correct source. Files stay in this browser; no proxy, live fetch, or permission bypass is performed.</p><label>Authorized HTML file<input type="file" accept=".html,.htm,text/html" disabled={busy||researchBusy} onChange={e=>{const file=e.currentTarget.files?.[0];void importAuthorizedHtmlFile(file);e.currentTarget.value=''}}/></label><label>Optional authorized CSS files (up to 3)<input type="file" accept=".css,text/css" multiple disabled={busy||researchBusy||!referenceMarkup.trim()} onChange={e=>{const files=Array.from(e.currentTarget.files||[]);void importAuthorizedCssFiles(files);e.currentTarget.value=''}}/></label><textarea rows={4} aria-label="Authorized HTML/CSS markup" value={referenceMarkup} onChange={e=>{setReferenceMarkup(e.target.value);setInspected(null);setReferenceStyle({});setPages([])}} placeholder="Or paste saved HTML with embedded CSS"/></details><p className="forge-auto-note">Forge extracts public content, design details and image references. Use only designs and assets you are authorized to reuse. Review the draft against the original before publishing.</p></>}
+ {designMode!=='new'&&<><label>Existing website address<input type="url" value={siteUrl} onChange={e=>{updateWebsiteAddress(e.target.value)}} placeholder="e.g. disney.com"/></label><button type="button" disabled={researchBusy||busy} onClick={()=>void inspectWebsite()}>{researchBusy?'Inspecting website…':designMode==='inspired'?'Extract website appearance':'Extract website details for redesign'}</button><details className="forge-auto-advanced" open={Boolean(inspectionError)}><summary>Import authorized saved website pages when live inspection is blocked</summary><p className="forge-auto-note">With permission from the site owner, save up to six original HTML pages in your browser (for example index.html, products.html, about.html and support.html). Files are read locally; no proxy, scraping bypass, remote upload of HTML, or script execution occurs. Forge proposes routes from filenames and extracts safe metadata; it cannot verify the live appearance or grant rights to photos, products or logos.</p><label><input type="checkbox" checked={authorizedSourceConfirmed} onChange={e=>setAuthorizedSourceConfirmed(e.target.checked)} disabled={busy||researchBusy}/> I own or have permission to reuse the source pages and their design evidence.</label><label>Authorized saved HTML files<input type="file" multiple accept=".html,.htm,text/html" disabled={busy||researchBusy||!authorizedSourceConfirmed} onChange={e=>{const selected=Array.from(e.currentTarget.files||[]);void importAuthorizedHtmlFiles(selected);e.currentTarget.value=''}}/></label><p className="forge-auto-note">Name the saved homepage index.html or home.html. Only files you explicitly select are inspected. Photos and brand assets require separate permission before publication.</p><textarea rows={4} aria-label="Authorized HTML/CSS markup" value={referenceMarkup} onChange={e=>{setReferenceMarkup(e.target.value);setInspected(null);setReferenceStyle({});setPages([])}} placeholder="Or paste HTML you have permission to use, including embedded CSS"/><label>Optional authorized CSS files (up to 3)<input type="file" accept=".css,text/css" multiple disabled={busy||researchBusy||!authorizedSourceConfirmed||!referenceMarkup.trim()} onChange={e=>{const files=Array.from(e.currentTarget.files||[]);void importAuthorizedCssFiles(files);e.currentTarget.value=''}}/></label></details><p className="forge-auto-note">Forge extracts public content, design details and image references. Use only designs and assets you are authorized to reuse. Review the draft against the original before publishing.</p></>}
  {designMode!=='new'&&inspected&&name.trim()&&!matchingSourceBusiness(name,extractedName(inspected))?<p className="forge-auto-note" role="status">This is a different business from {extractedName(inspected)}. Generate will automatically create a fresh website without reusing that source's branding, pages or contact details.</p>:designMode!=='new'&&inspected&&<p className="forge-auto-note" role="status">Website extracted: {new URL(inspected.url).hostname}. Ready to generate; you do not need to extract it again.</p>}
- {designMode!=='new'&&inspectionError&&<p className="forge-auto-note" role="alert">{inspectionError}</p>}
+ {designMode!=='new'&&inspectionError&&<div className="forge-auto-note" role="alert"><p>{inspectionError}</p><p>Automated extraction has stopped. If you have reuse permission, import saved HTML pages above. Otherwise, build an original site without copying source code, branding or product content.</p><button type="button" disabled={busy||researchBusy} onClick={useOriginalConceptInstead}>Build an original website without this source</button></div>}
 
  {inspected&&designMode!=='new'&&<details className="forge-auto-advanced"><summary>Review evidence-grounded website proposal</summary>{(()=>{try{const evidence=inspectionToBrowserEvidence(inspected);const proposal=proposeBusinessSiteFromCapture(evidence);return <div className="forge-auto-note"><p><strong>Proposed business name:</strong> {proposal.businessName}</p><p><strong>Observed headings:</strong> {proposal.observedHeadings.join(' · ')||'None'}</p><p><strong>Verified business facts required:</strong> {proposal.missingRequiredFields.join(', ')}</p><p><strong>Captured navigation:</strong> {proposal.navigation.length} unverified links</p><p><strong>Publishing:</strong> blocked until owner review and approval</p><p>{proposal.warnings.join(' ')}</p></div>}catch{return <p className="forge-auto-note">This inspection cannot be converted into a trusted evidence proposal. Verify the source URL and try again.</p>}})()}</details>}
  {inspected&&designMode!=='new'&&<details className="forge-auto-advanced"><summary>Generate from reviewed website evidence</summary><p className="forge-auto-note">This option uses metadata evidence only, not screenshot reconstruction. Enter verified facts before generating.</p><label>Verified industry<input value={reviewIndustry} onChange={e=>{setReviewIndustry(e.target.value);setReviewApproved(false)}} placeholder="e.g. Professional services"/></label><label>Verified services (comma-separated)<textarea rows={3} value={reviewServices} onChange={e=>{setReviewServices(e.target.value);setReviewApproved(false)}} placeholder="e.g. Consulting, Support"/></label><label><input type="checkbox" checked={reviewApproved} onChange={e=>setReviewApproved(e.target.checked)}/> I have reviewed the extracted business name, description above, industry and services.</label><button type="button" disabled={!reviewApproved} onClick={generateFromReviewedEvidence}>Generate reviewed four-page draft</button></details>}
