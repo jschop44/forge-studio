@@ -59,3 +59,39 @@ test('source gallery never appears on a fresh site when source preservation was 
  const page={slug:'index',title:'Home',html:wrap('<h1>Home</h1>'+cards())};
  assert.deepEqual(applySourceDesign([page],source,'new').pages,[page]);
 });
+
+
+test('small-business homepage without three service cards still gains genuine source photography',()=>{
+ const oneSection={slug:'index',title:'Home',html:wrap(
+  '<section class="site-hero text-led"><h1>Welcome to our neighborhood</h1><p>Get to know our community.</p></section>'
+ )};
+ const result=applySourceDesign([oneSection],source,'inspired');
+ const home=result.pages[0].html;
+ assert.match(home,/data-forge-source-highlights/);
+ assert.equal((home.match(/class="source-highlights-photo"/g)||[]).length,3);
+ assert.match(home,/Community volunteers working together/);
+ assert.match(home,/Saturday neighborhood celebration/);
+ assert.equal((home.match(/data-forge-source-highlights/g)||[]).length,1);
+ const repeated=applySourceDesign(result.pages,source,'inspired').pages[0].html;
+ assert.equal((repeated.match(/data-forge-source-highlights/g)||[]).length,1,
+  'Repeated Preserve Style must not duplicate the gallery');
+});
+
+test('a one-photo hero may gain additional, non-repeating source highlights',()=>{
+ const page={slug:'index',title:'Home',html:wrap(
+  '<h1>Community</h1><figure class="editorial-photo"><img src="https://stock.example/old.jpg" alt="Photo"></figure>'
+ )};
+ const html=applySourceDesign([page],source,'inspired').pages[0].html;
+ assert.match(html,/data-forge-source-highlights/);
+ const urls=[...html.matchAll(/data-forge-source-image src="([^"]+)"/g)]
+  .map(match=>match[1]).filter(url=>!url.endsWith('/logo.png'));
+ assert.equal(urls.length,new Set(urls).size,'The hero photograph cannot reappear in its gallery');
+});
+
+test('short photo-rich homepages do not receive a redundant second gallery',()=>{
+ const html=wrap('<h1>Our team</h1>'+
+  '<figure><img src="https://stock.example/team.jpg" alt="Staff"></figure>'+
+  '<figure><img src="https://stock.example/entrance.jpg" alt="Storefront"></figure>');
+ const result=applySourceDesign([{slug:'index',title:'Home',html}],source,'inspired');
+ assert.doesNotMatch(result.pages[0].html,/data-forge-source-highlights/);
+});
