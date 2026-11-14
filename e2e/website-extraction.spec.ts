@@ -151,6 +151,30 @@ for(const width of [390,1280])test(`captured subpage styling survives extraction
 });
 
 
+test('multiple authorized source pages produce navigable catalog and company pages without crawling',async({page})=>{
+ let websiteFetches=0;
+ await page.route('**/api/site-reference',route=>{websiteFetches++;return route.fulfill({status:422,json:{error:'Website access policy could not be verified'}})});
+ await generationFixture(page,input=>expect(input.businessName).toBe('Harbor Coffee'));
+ await openExtraction(page);
+ await page.getByPlaceholder('e.g. Northstar Coffee').fill('Harbor Coffee');
+ await page.getByText('Import authorized saved website pages when live inspection is blocked',{exact:true}).click();
+ await page.getByLabel('I own or have permission to reuse the source pages and their design evidence.').check();
+ await page.getByLabel('Authorized saved HTML files').setInputFiles([
+  {name:'index.html',mimeType:'text/html',buffer:Buffer.from('<!doctype html><html><head><title>Harbor Coffee</title><meta name="description" content="Freshly roasted coffee and pastries with pickup and delivery."></head><body><h1>Harbor Coffee</h1><p>Delicious specialty espresso and pastries.</p></body></html>')},
+  {name:'products.html',mimeType:'text/html',buffer:Buffer.from('<!doctype html><html><head><title>Products | Harbor Coffee</title></head><body><h1>Coffee products</h1><h2>Whole bean coffee</h2><p>Explore our fresh roasted whole bean coffee.</p></body></html>')},
+  {name:'about.html',mimeType:'text/html',buffer:Buffer.from('<!doctype html><html><head><title>About | Harbor Coffee</title></head><body><h1>About our roastery</h1><p>Locally roasted beans and fresh pastries.</p></body></html>')}
+ ]);
+ await expect(page.getByRole('status').filter({hasText:'Loaded 3 authorized HTML pages'})).toBeVisible();
+ await page.getByRole('button',{name:/generate my website/i}).click();
+ const tabs=page.getByRole('navigation',{name:'Website pages'});
+ await expect(tabs.getByRole('button',{name:'Products',exact:true})).toBeVisible();
+ await tabs.getByRole('button',{name:'Products',exact:true}).click();
+ const products=page.frameLocator('iframe[title="Website preview: Products"]');
+ await expect(products.getByRole('heading',{name:'Products | Harbor Coffee'})).toBeVisible();
+ await expect(products.getByText('Explore our fresh roasted whole bean coffee.')).toBeVisible();
+ expect(websiteFetches).toBe(0);
+});
+
 test('authorized saved HTML can recover a blocked live source without making another website fetch',async({page})=>{
  let websiteFetches=0;
  await page.route('**/api/site-reference',route=>{websiteFetches++;return route.fulfill({status:422,json:{error:'Website access policy could not be verified'}})});
