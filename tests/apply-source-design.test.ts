@@ -306,3 +306,34 @@ test('retail Preserve Style refuses cropped offer text and unrelated source hero
    'A safe text-led hero is preferable to unrelated photos');
  }
 });
+
+test('media Preserve Style and redesign favor original wide homepage artwork over square store merchandise',()=>{
+ const base=extractWebsiteDesignDna('<meta property="og:site_name" content="Fictional Media">','https://media.example/');
+ const source={...base,images:[
+  {url:'https://media.example/store-doll.jpg',alt:'Fictional Media Store | Limited Edition collectible dolls',role:'content' as const,sourcePage:'https://media.example/',width:800,height:800},
+  {url:'https://media.example/feature.jpg',alt:'Animated adventurers and their companions standing together on a rocky island in the ocean',role:'content' as const,sourcePage:'https://media.example/',width:2048,height:878},
+  {url:'https://media.example/park.jpg',alt:'Fireworks above the theme park castle on a summer evening',role:'content' as const,sourcePage:'https://media.example/parks',width:1920,height:900},
+  {url:'https://media.example/banner.jpg',alt:'Save 50% on tickets limited-time offer terms apply',role:'content' as const,sourcePage:'https://media.example/',width:2048,height:878}
+ ]};
+ const original=wrap('<section class="site-hero editorial"><div><p class="eyebrow">Entertainment, media and theme parks</p><h1>Fictional Media</h1><p>Explore memorable stories and destinations.</p></div><figure class="editorial-photo"><img src="https://stock.example/generic.jpg" alt="Entertainment photography"></figure></section>');
+ for(const mode of ['inspired','redesign']){
+  const html=applySourceDesign([{slug:'index',title:'Home',html:original}],source,mode).pages[0].html;
+  const hero=html.match(/<section class="site-hero editorial">[\s\S]*?<\/section>/)?.[0]||'';
+  assert.match(hero,/src="https:\/\/media\.example\/feature\.jpg"/,'observed panoramic homepage story becomes the hero');
+  assert.doesNotMatch(hero,/media\.example\/store-doll\.jpg|media\.example\/banner\.jpg|media\.example\/park\.jpg/,'merchandise, offer graphics and interior-page photos cannot displace the homepage story');
+  assert.match(hero,/loading="eager" fetchpriority="high"/,'above-fold source hero is loaded eagerly');
+  assert.equal((html.match(/src="https:\/\/media\.example\/feature\.jpg"/g)||[]).length,1,'source photo is not duplicated');
+ }
+});
+test('entertainment pages without an eligible wide first-party image retain their existing hero',()=>{
+ const base=extractWebsiteDesignDna('<meta property="og:site_name" content="Fictional Media">','https://media.example/');
+ const source={...base,images:[
+  {url:'https://media.example/store-doll.jpg',alt:'Fictional Media Store | Collectible character dolls',role:'content' as const,sourcePage:'https://media.example/',width:800,height:800},
+  {url:'https://media.example/park.jpg',alt:'Fireworks over an illustrated castle at twilight',role:'content' as const,sourcePage:'https://media.example/parks',width:2048,height:878},
+  {url:'https://media.example/promo.jpg',alt:'Save 40% on tickets limited-time offer',role:'content' as const,sourcePage:'https://media.example/',width:2048,height:878}
+ ]};
+ const original=wrap('<section class="site-hero editorial"><div><p class="eyebrow">Entertainment, media and theme parks</p><h1>Fictional Media</h1></div><figure class="editorial-photo"><img src="https://stock.example/hero.jpg" alt="Entertainment photograph"></figure></section>');
+ const result=applySourceDesign([{slug:'index',title:'Home',html:original}],source,'inspired').pages[0].html;
+ assert.match(result,/src="https:\/\/stock\.example\/hero\.jpg"/,'retain the existing hero rather than claiming unrelated images');
+ assert.doesNotMatch(result,/data-forge-source-figure/,'an irrelevant source image must never impersonate an observed cinematic hero');
+});
