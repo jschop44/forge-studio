@@ -1,6 +1,7 @@
 import {cleanSourceText} from './source-text';
 import {extractWebsiteDesignDna,mergeSourcePageImages,type SourceImage,type WebsiteDesignDna} from './website-design-dna';
 import type {ReferenceAppearance} from './reference-appearance';
+import {homepageSourceParagraphs} from './forge-intelligence';
 
 /**
  * User-provided, local-only source evidence for sites that do not permit automated
@@ -10,7 +11,7 @@ import type {ReferenceAppearance} from './reference-appearance';
 export type SavedSourcePage={name:string;html:string};
 export type SavedSourceSummary={path:string;label:string;title:string;description:string;headings:string[];paragraphs:string[];images:SourceImage[]};
 export type SavedSourceInspection={
- url:string;title:string;description:string;headings:string[];
+ url:string;title:string;description:string;headings:string[];homepageParagraphs:string[];
  navigation:{label:string;path:string}[];pageSummaries:SavedSourceSummary[];
  stylesheetsRead:number;styleReference:ReferenceAppearance;designDna:WebsiteDesignDna;
  warnings:string[];referenceMarkup:string;
@@ -70,7 +71,7 @@ export function prepareSavedSourceInspection(files:readonly SavedSourcePage[],ad
   const path=route(file.name);
   if(seen.has(path))throw Error('The selected files contain two pages with the same filename-derived route.');
   seen.add(path);
-  return {path,html:file.html,title:pageTitle(file.html),headings:[...new Set([...tags(file.html,'h1',6),...tags(file.html,'h2',6),...tags(file.html,'h3',5)])].slice(0,MAX_HEADINGS),description:metaDescription(file.html),paragraphs:tags(file.html,'p',7)};
+  return {path,html:file.html,title:pageTitle(file.html),headings:[...new Set([...tags(file.html,'h1',6),...tags(file.html,'h2',6),...tags(file.html,'h3',5)])].slice(0,MAX_HEADINGS),description:metaDescription(file.html),paragraphs:homepageSourceParagraphs(file.html)};
  });
  const home=docs.find(x=>x.path==='/')||docs[0];
  const homeDna=extractWebsiteDesignDna(home.html,base.href);
@@ -90,7 +91,7 @@ export function prepareSavedSourceInspection(files:readonly SavedSourcePage[],ad
   ...(designDna.palette.length?{accent:designDna.palette[0]}:{})
  };
  return {
-  url:base.href,title:home.title.slice(0,200),description,headings:home.headings,
+  url:base.href,title:home.title.slice(0,200),description,headings:home.headings,homepageParagraphs:home.paragraphs,
   navigation,pageSummaries:summaries,stylesheetsRead:0,styleReference:referenceStyle,designDna,
   referenceMarkup:home.html,
   warnings:[
