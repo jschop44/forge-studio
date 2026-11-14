@@ -36,7 +36,7 @@ for(const mode of ['inspired','redesign'] as const){
   await page.getByRole('combobox',{name:/^Design approach/}).selectOption(mode);
   await page.getByPlaceholder('e.g. disney.com').fill('reference.example');
   await page.getByRole('button',{name:mode==='inspired'?'Extract website appearance':'Extract website details for redesign',exact:true}).click();
-  await expect(page.getByText(/Website extracted: reference\\.example\\. Ready to generate/)).toBeVisible();
+  await expect(page.getByText('Website extracted: reference.example. Ready to generate')).toBeVisible();
   await page.getByRole('button',{name:/generate my website/i}).click();
   const home=page.frameLocator('iframe[title="Website preview: Home"]');
   await expect(home.getByText(observed,{exact:true})).toBeVisible();
