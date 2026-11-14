@@ -91,7 +91,7 @@ export function prepareSavedSourceInspection(files:readonly SavedSourcePage[],ad
  };
  return {
   url:base.href,title:home.title.slice(0,200),description,headings:home.headings,
-  navigation,pageSummaries:summaries,stylesheetsRead:0,styleReference,designDna,
+  navigation,pageSummaries:summaries,stylesheetsRead:0,styleReference:referenceStyle,designDna,
   referenceMarkup:home.html,
   warnings:[
    'Source evidence was imported from saved files only; Forge did not fetch, crawl, or verify the live website.',
