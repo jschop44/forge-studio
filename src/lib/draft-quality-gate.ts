@@ -40,6 +40,7 @@ export function auditGeneratedDraft(pages: GeneratedPage[]): DraftQualityReport 
     if (!/<h1\b/i.test(page.html)) warnings.push(page.slug + ": missing primary heading");
     // A decorated shell with no meaningful main content is not a reviewable website.
     const main=page.html.match(/<main\b[^>]*>([\s\S]*?)<\/main>/i)?.[1];
+    if(main===undefined)errors.push(page.slug+": missing main content landmark");
     if(main!==undefined){
       const readable=main.replace(/<(?:script|style|template)\b[^>]*>[\s\S]*?<\/(?:script|style|template)>/gi,'')
         .replace(/<[^>]+>/g,' ').replace(/&(?:nbsp|#160);/gi,' ').replace(/&[a-z\d#]+;/gi,' ').replace(/\s+/g,' ').trim();

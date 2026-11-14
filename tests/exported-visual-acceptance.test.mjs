@@ -88,3 +88,31 @@ test('live exported-site acceptance includes every secondary HTML page at both v
  assert.match(runner,/inspectExportedLayout\(\{page:name,device/);
  assert.match(runner,/if\(!layout\.passes\)throw Error\('Exported secondary-page visual defects:/);
 });
+
+
+test('colored-shell exports fail when main content is hidden or absent',()=>{
+ const common={page:'services.html',device:'390px',viewportWidth:390,documentWidth:390,
+  headingsClipped:[],images:{confirmedBroken:0}};
+ const missing=inspectExportedLayout({...common,hasMain:false,mainVisibleTextLength:0,mainVisiblePhotos:0});
+ assert.equal(missing.passes,false);
+ assert.match(missing.defects.join(' '),/no visible main content landmark/);
+ const hidden=inspectExportedLayout({...common,hasMain:true,mainVisibleTextLength:0,mainVisiblePhotos:0});
+ assert.equal(hidden.passes,false);
+ assert.match(hidden.defects.join(' '),/essentially blank main content/);
+ const tiny=inspectExportedLayout({...common,hasMain:true,mainVisibleTextLength:12,mainVisiblePhotos:0});
+ assert.equal(tiny.passes,false);
+ const text=inspectExportedLayout({...common,hasMain:true,mainVisibleTextLength:75,mainVisiblePhotos:0});
+ assert.equal(text.passes,true);
+ const visual=inspectExportedLayout({...common,hasMain:true,mainVisibleTextLength:15,mainVisiblePhotos:1});
+ assert.equal(visual.passes,true,'A genuine loaded content photo can support a short text page');
+});
+
+test('browser acceptance measures visible main copy on the homepage and every secondary export',()=>{
+ const source=readFileSync(new URL('../scripts/live-large-site-acceptance.mjs',import.meta.url),'utf8');
+ assert.equal((source.match(/mainVisibleTextLength:/g)||[]).length,2,
+  'Homepage and secondary page measurements must each capture visible main text');
+ assert.equal((source.match(/mainVisiblePhotos:/g)||[]).length,2);
+ assert.equal((source.match(/hasMain:renderedMain/g)||[]).length,2);
+ assert.equal((source.match(/main.getClientRects\(\).length>0/g)||[]).length,2,
+  'A CSS-hidden main must not count as visible page content');
+});

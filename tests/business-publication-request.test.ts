@@ -2,7 +2,7 @@ import {describe,it} from 'node:test';
 import assert from 'node:assert/strict';
 import {validateBusinessPublicationRequest} from '../src/lib/business-publication-request';
 
-const page={slug:'index',title:'Home',html:'<!doctype html><html><head><title>Home</title><meta name="viewport" content="width=device-width,initial-scale=1"></head><body><h1>Hello</h1></body></html>'};
+const page={slug:'index',title:'Home',html:'<!doctype html><html><head><title>Home</title><meta name="viewport" content="width=device-width,initial-scale=1"></head><body><main><h1>Hello</h1><p>Northstar Coffee serves our neighborhood with freshly roasted coffee.</p></main></body></html>'};
 const valid={ownerApproved:true,businessName:'Northstar Coffee',pages:[page]};
 
 describe('business publication request validation',()=>{

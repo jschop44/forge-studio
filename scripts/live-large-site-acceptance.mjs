@@ -74,7 +74,19 @@ async function inspectPortableExport(browser,archive,index,entry){
    const finding=await page.evaluate(()=>{
     const images=[...document.images];
     const headings=[...document.querySelectorAll('h1,h2,h3')];
+    const main=document.querySelector('main');
+    const mainStyle=main?getComputedStyle(main):null;
+    const renderedMain=!!main&&mainStyle?.display!=='none'&&mainStyle?.visibility!=='hidden'&&
+     mainStyle?.opacity!=='0'&&main.getClientRects().length>0;
+    const visiblePhoto=img=>{
+     const css=getComputedStyle(img),box=img.getBoundingClientRect();
+     return css.display!=='none'&&css.visibility!=='hidden'&&box.width>10&&box.height>10&&
+      img.naturalWidth>1&&!/\\b(?:logo|brand-mark|favicon|pixel|tracking)\\b/i.test(img.className+' '+img.alt);
+    };
     return {
+     hasMain:renderedMain,
+     mainVisibleTextLength:(renderedMain?main.innerText:'').replace(/\\s+/g,' ').trim().length,
+     mainVisiblePhotos:renderedMain?[...main.querySelectorAll('img')].filter(visiblePhoto).length:0,
      documentWidth:document.documentElement.scrollWidth,viewportWidth:innerWidth,
      scrollHeight:document.documentElement.scrollHeight,
      headingsClipped:headings.filter(h=>h.scrollWidth>h.clientWidth+2&&h.clientWidth>0).slice(0,8).map(h=>h.textContent?.trim().slice(0,80)),
@@ -110,7 +122,16 @@ async function inspectPortableExport(browser,archive,index,entry){
       const css=getComputedStyle(element),bounds=element.getBoundingClientRect();
       return css.display!=='none'&&css.visibility!=='hidden'&&bounds.width>0&&bounds.height>0;
      };
+     const main=document.querySelector('main');
+     const mainStyle=main?getComputedStyle(main):null;
+     const renderedMain=!!main&&mainStyle?.display!=='none'&&mainStyle?.visibility!=='hidden'&&
+      mainStyle?.opacity!=='0'&&main.getClientRects().length>0;
      return {
+      hasMain:renderedMain,
+      mainVisibleTextLength:(renderedMain?main.innerText:'').replace(/\\s+/g,' ').trim().length,
+      mainVisiblePhotos:renderedMain?[...main.querySelectorAll('img')].filter(img=>
+       visible(img)&&img.naturalWidth>1&&!/\\b(?:logo|brand-mark|favicon|pixel|tracking)\\b/i.test(img.className+' '+img.alt)
+      ).length:0,
       documentWidth:document.documentElement.scrollWidth,
       viewportWidth:innerWidth,
       headingsClipped:[...document.querySelectorAll('h1,h2,h3')].filter(visible)

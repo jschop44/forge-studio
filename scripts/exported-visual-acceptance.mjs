@@ -79,5 +79,16 @@ export function inspectExportedLayout(snapshot){
  const broken=Number(snapshot?.images?.confirmedBroken||0);
  if(broken>0)
   defects.push(page+' at '+device+': '+broken+' browser-confirmed broken images');
+ // CSS layouts can be pixel-perfect but show an empty colored shell. Inspect
+ // main.innerText in the rendered browser, not raw source or hidden templates.
+ // A real photo can count as visual content, while logos never substitute for it.
+ if(snapshot?.hasMain===false)
+  defects.push(page+' at '+device+': no visible main content landmark');
+ else if(snapshot?.hasMain===true){
+  const textLength=Number(snapshot?.mainVisibleTextLength);
+  const photos=Number(snapshot?.mainVisiblePhotos||0);
+  if(Number.isFinite(textLength)&&Number.isFinite(photos)&&textLength<25&&photos===0)
+   defects.push(page+' at '+device+': essentially blank main content ('+Math.max(0,Math.round(textLength))+' visible text characters and no loaded content photos)');
+ }
  return {passes:!defects.length,defects};
 }
