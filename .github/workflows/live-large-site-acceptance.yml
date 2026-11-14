@@ -3,6 +3,7 @@ on:
   pull_request:
     paths:
       - 'scripts/live-large-site-acceptance.mjs'
+      - 'scripts/exported-image-capture.mjs'
       - '.github/workflows/live-large-site-acceptance.yml'
       - 'src/app/business/page.tsx'
       - 'src/app/api/site-reference/**'
@@ -19,6 +20,7 @@ on:
     branches: [main]
     paths:
       - 'scripts/live-large-site-acceptance.mjs'
+      - 'scripts/exported-image-capture.mjs'
       - '.github/workflows/live-large-site-acceptance.yml'
       - 'src/app/business/page.tsx'
       - 'src/app/api/site-reference/**'

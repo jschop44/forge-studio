@@ -3,6 +3,7 @@ import {unzipSync,strFromU8} from 'fflate';
 import {mkdir,writeFile,readFile} from 'node:fs/promises';
 import {join,posix} from 'node:path';
 import {inspectExportedBranding,inspectExportedPhotoCoverage} from './exported-visual-acceptance.mjs';
+import {primeExportImages} from './exported-image-capture.mjs';
 
 const BASE='https://forge-studio-preview.stands-old-3h.workers.dev';
 const OUT='acceptance-evidence';
@@ -67,8 +68,9 @@ async function inspectPortableExport(browser,archive,index,entry){
   for(const [width,device] of [[1280,'desktop'],[390,'390px']]){
    await page.setViewportSize({width,height:900});
    await page.goto('https://forge-export.test/index.html',{waitUntil:'domcontentloaded',timeout:15000});
-   // Do not conflate lazy images outside the viewport with missing assets.
-   await page.waitForTimeout(1500);
+   // Scroll every visible photo and decode pixels before judging the screenshot.
+   // Without this, offscreen lazy photos can appear blank despite a green load check.
+   const imagePreparation=await primeExportImages(page);
    const finding=await page.evaluate(()=>{
     const images=[...document.images];
     const headings=[...document.querySelectorAll('h1,h2,h3')];
@@ -88,7 +90,8 @@ async function inspectPortableExport(browser,archive,index,entry){
    const screenshot='case-'+index+'-export-'+device+'.png';
    await page.screenshot({path:join(OUT,screenshot),fullPage:true,timeout:30000});
    entry.screenshots.push(screenshot);
-   measurements.push({device,...finding});
+   measurements.push({device,...finding,imagePreparation});
+   if(finding.images.confirmedBroken>0)throw Error('Exported website has '+finding.images.confirmedBroken+' browser-confirmed broken images after scrolling');
   }
   const serviceLink=page.locator('a[href^="services.html"]').first();
   if(await serviceLink.count()){
