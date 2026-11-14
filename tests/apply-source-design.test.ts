@@ -354,7 +354,7 @@ test('real-world text-only entertainment homepages gain one responsive original 
   const hero=page.match(/<section class="site-hero editorial image-led">[\s\S]*?<\/section>/)?.[0]||'';
   assert.match(hero,/data-forge-source-figure/,'wide artwork appears inside the hero itself');
   assert.match(hero,/class="editorial-photo editorial-source-landscape"/,'panorama retains its wide editorial layout');
-  assert.match(page,/\.editorial-source-landscape\{aspect-ratio:16\/9;min-height:280px\}/,'desktop hero uses a cinematic aspect ratio');
+  assert.match(page,/\.editorial-photo\.editorial-source-landscape\{aspect-ratio:16\/9;min-height:280px\}/,'desktop hero uses a cinematic aspect ratio');
   assert.match(hero,/src="https:\/\/media\.example\/wide\.jpg"/,'homepage first-party source photograph is displayed');
   assert.match(hero,/loading="eager" fetchpriority="high"/,'first-screen photography loads before gallery images');
   assert.doesNotMatch(hero,/shop\.jpg/,'square merchandise art must never impersonate the hero');
