@@ -433,3 +433,20 @@ test('Preserve Style does not turn a brand accent into the whole page background
  assert.doesNotMatch(result.pages[0].html,/--business-paper:#(?:e85d04|ffcc00)/i);
 });
 
+
+
+test('Preserve Style applies the observed body font but not an unused CSS surface token',()=>{
+ const source=extractWebsiteDesignDna(
+  '<style>@font-face{font-family:"Material Icons"}'+
+  '.icon{font-family:"Material Icons"}'+
+  ':root{--background:#eecf11}'+
+  'body{font-family:"Neighborhood Sans", Arial, sans-serif}'+
+  '</style>','https://bakery.example/');
+ const result=applySourceDesign(
+  [{slug:'index',title:'Home',html:wrap('<h1>Neighborhood Bakery</h1>')}],
+  source,'inspired').pages[0].html;
+ assert.match(result,/body,h1,h2,h3\{font-family:"Neighborhood Sans","Arial",sans-serif\}/);
+ assert.doesNotMatch(result,/body\{background:#eecf11/i);
+ assert.doesNotMatch(result,/--business-paper:#eecf11/i);
+ assert.doesNotMatch(result,/body,h1,h2,h3\{font-family:"Material Icons"/);
+});
