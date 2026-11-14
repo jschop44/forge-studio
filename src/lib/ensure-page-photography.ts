@@ -1,12 +1,8 @@
 import type {GeneratedPage} from './business-site';
 import {escapeHtml} from './export';
-import {industryPhotos,photoIdentity} from './industry-photos';
-import {licensedBusinessVisualAssets,type VisualAsset} from './visual-assets';
-
-/** Attribution-free photos only. An image title matching the industry is not permission to reuse it. */
-function verifiedPhotos(industry:string,assets:VisualAsset[],offerings:string[]):string[]{
- return licensedBusinessVisualAssets(industry,offerings,assets).map(asset=>asset.url);
-}
+import {industryPhotos,photoIdentity,requiresFamilySafeReview} from './industry-photos';
+import {cleanSourceText} from './source-text';
+import {licensedBusinessVisualAssets,relevantVisualAssets,specificVisualOfferings,type VisualAsset} from './visual-assets';
 
 /** Logos, icons and tracking pixels are not substitutes for real page photography. */
 function hasContentPhoto(html:string):boolean{
@@ -35,16 +31,50 @@ function usedPhotoIds(pages:GeneratedPage[]):Set<string>{
 }
 
 /**
- * Repair image-free pages after AI generation and source design reconstruction.
+ * Repair missing *offering-card* photos before filling image-free pages.
+ * A page with one hero image can still have a dozen empty offering cards.
+ * Only reuse assets whose no-attribution license metadata and exact offering
+ * subject were verified. Never use industry-wide stock as a product picture.
+ */
+function repairOfferingCards(pages:GeneratedPage[],industry:string,verified:VisualAsset[],used:Set<string>):GeneratedPage[]{
+ const output=pages.map(page=>({...page}));
+ // Save scarce niche-matched assets for the detailed catalog before homepage teasers.
+ const ordered=[...output.filter(page=>page.slug==='services'),...output.filter(page=>page.slug!=='services')];
+ for(const page of ordered){
+  page.html=page.html.replace(/<article\b[^>]*>[\s\S]*?<\/article>/gi,article=>{
+   const tag=article.match(/^<article\b[^>]*>/i)?.[0]||'';
+   if(!/\bclass\s*=\s*["'][^"']*\bservice-card\b/i.test(tag)||
+      /<(?:img|picture|video)\b/i.test(article))return article;
+   const heading=cleanSourceText(article.match(/<h[23]\b[^>]*>([\s\S]*?)<\/h[23]>/i)?.[1]||'',100);
+   if(!heading||requiresFamilySafeReview(industry+' '+heading)||
+      !specificVisualOfferings([heading]).length)return article;
+   const exact=verified.find(asset=>!used.has(photoIdentity(asset.url))&&
+    relevantVisualAssets(heading,[asset]).length>0);
+   if(!exact)return article;
+   used.add(photoIdentity(exact.url));
+   const picture='<img class="service-photo" data-forge-verified-offering-photo="true" src="'+
+    escapeHtml(exact.url)+'" alt="'+escapeHtml(heading)+'" loading="lazy" decoding="async">';
+   return article.replace(/^<article\b[^>]*>/i,opening=>opening+picture);
+  });
+ }
+ return output;
+}
+
+/**
+ * Repair missing offering pictures and image-free pages after AI generation.
  * Never replace real source photos, invent a license, or reuse a photo elsewhere
- * in the site. The repair deliberately leaves unfamiliar niches text-led.
+ * in the site. Leave unfamiliar or unmatched offerings text-led.
  */
 export function ensurePagePhotography(pages:GeneratedPage[],industry:string,assets:VisualAsset[]=[],offerings:string[]=[]):GeneratedPage[]{
- const candidates=[...verifiedPhotos(industry,assets,offerings),...industryPhotos(industry)];
- const seen=new Set<string>(),pool=candidates.filter(url=>{const id=photoIdentity(url);if(seen.has(id))return false;seen.add(id);return true});
- if(!pool.length)return pages;
+ const verified=licensedBusinessVisualAssets(industry,offerings,assets);
  const used=usedPhotoIds(pages);
- return pages.map(page=>{
+ const repaired=repairOfferingCards(pages,industry,verified,used);
+ const candidates=[...verified.map(asset=>asset.url),...industryPhotos(industry)];
+ const seen=new Set<string>(),pool=candidates.filter(url=>{
+  const id=photoIdentity(url);if(seen.has(id))return false;seen.add(id);return true;
+ });
+ if(!pool.length)return repaired;
+ return repaired.map(page=>{
   if(hasContentPhoto(page.html)||!/<\/(?:main|body)\s*>/i.test(page.html))return page;
   const photo=pool.find(url=>!used.has(photoIdentity(url)));
   if(!photo)return page;
