@@ -282,6 +282,48 @@ test('unmatched source photo highlights precede text-only offering cards without
  }
 });
 
+test('narrow source-photo galleries include only topic-matched photography in preserve and redesign',()=>{
+ const source=extractWebsiteDesignDna([
+  '<img src="/wings-1.jpg" alt="Chicken wings with spicy sauce" width="1200" height="800">',
+  '<img src="/fruit.jpg" alt="Fresh fruit bowl with seasonal produce" width="1200" height="800">',
+  '<img src="/promo.jpg" alt="Chicken wings save 40% off this weekend" width="1200" height="800">',
+  '<img src="/wings-2.jpg" alt="Chicken wings glazed with barbecue sauce" width="1200" height="800">',
+  '<img src="/wings-3.jpg" alt="Crispy chicken wings served with dipping sauce" width="1200" height="800">',
+  '<img src="/wings-4.jpg" alt="Chicken wings with house-made hot sauce" width="1200" height="800">'
+ ].join(''),'https://restaurant.example/');
+ const homepage={slug:'index',title:'Home',html:wrap(
+  '<section class="site-hero"><h1>Chicken wings</h1><p>Our chicken wings are prepared with homemade sauces and spices.</p></section>'
+ )};
+ for(const mode of ['inspired','redesign']){
+  const page=applySourceDesign([homepage],source,mode).pages[0].html;
+  const gallery=page.match(/<section class="source-highlights"[\\s\\S]*?<\\/section>/)?.[0]||'';
+  assert.match(gallery,/data-forge-source-highlights/,'multiple relevant observed photos are shown');
+  assert.ok((gallery.match(/data-forge-source-image/g)||[]).length>=2);
+  assert.match(gallery,/wings-2.jpg/);
+  assert.doesNotMatch(page,/fruit.jpg/,'unrelated source photos must not enter a single-topic gallery');
+  assert.doesNotMatch(page,/promo.jpg/,'offer artwork cannot be cropped into a photo gallery');
+  const urls=[...page.matchAll(/data-forge-source-image src="([^"]+)"/g)].map(hit=>hit[1]);
+  assert.equal(new Set(urls).size,urls.length,'each matching source photograph appears once');
+ }
+});
+
+test('broad editorial galleries omit text-heavy promotions but keep captioned source photos',()=>{
+ const source=extractWebsiteDesignDna([
+  '<img src="/coast.jpg" alt="Family exploring a rocky coastal shoreline">',
+  '<img src="/sale.jpg" alt="Save 50% on passes this weekend">',
+  '<img src="/forest.jpg" alt="Colorful animated creatures exploring a forest">'
+ ].join(''),'https://media.example/');
+ const cards=['Explore stories','Discover destinations','Learn about events'].map(title=>
+  '<article class="card service-card"><h2>'+title+'</h2></article>').join('');
+ const homepage={slug:'index',title:'Home',html:wrap(
+  '<section class="site-hero"><h1>Fictional Media</h1></section><div class="cards">'+cards+'</div>')};
+ const page=applySourceDesign([homepage],source,'redesign').pages[0].html;
+ assert.match(page,/source-highlights/);
+ assert.match(page,/coast.jpg/);
+ assert.match(page,/forest.jpg/);
+ assert.doesNotMatch(page,/sale.jpg/);
+});
+
 test('fully illustrated offering cards never receive a redundant source gallery',()=>{
  const source=extractWebsiteDesignDna(
   '<img src="/one.jpg" alt="Mountain landscape in morning light"><img src="/two.jpg" alt="Forest trail in afternoon sunshine">',
