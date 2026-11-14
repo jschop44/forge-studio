@@ -116,3 +116,12 @@ test('browser acceptance measures visible main copy on the homepage and every se
  assert.equal((source.match(/main.getClientRects\(\).length>0/g)||[]).length,2,
   'A CSS-hidden main must not count as visible page content');
 });
+
+test('large-site acceptance decodes and screenshots every exported secondary page',()=>{
+ const runner=readFileSync(new URL('../scripts/live-large-site-acceptance.mjs',import.meta.url),'utf8');
+ const secondary=runner.split('const additionalLayouts=[];')[1]?.split('entry.exportedAdditionalPageLayouts=')[0]||'';
+ assert.match(secondary,/const imagePreparation=await primeExportImages\(page\);/);
+ assert.match(secondary,/additionalLayouts.push\(\{page:name,device,\.\.\.finding,imagePreparation,layout\}\)/);
+ assert.match(secondary,/await page\.screenshot\(\{path:join\(OUT,screenshot\),fullPage:true/);
+ assert.match(secondary,/entry\.screenshots\.push\(screenshot\)/);
+});

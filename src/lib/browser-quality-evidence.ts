@@ -28,7 +28,8 @@ export function collectBrowserQualityEvidence():BrowserQualityEvidence{
   }
   return outsideViewport||ownClipped||ancestorClipped?[heading.tagName.toLowerCase()+' heading '+(index+1)+' is clipped']:[];
  }).slice(0,20);
- const brokenImages=images.filter(img=>!img.complete||img.naturalWidth===0).map(img=>img.currentSrc||img.src).slice(0,30);
+ // A pending/lazy image has not failed. Treat only completed, zero-width loads as confirmed broken.
+ const brokenImages=images.filter(img=>img.complete&&img.naturalWidth===0).map(img=>img.currentSrc||img.src).slice(0,30);
  const brokenLinks=Array.from(document.querySelectorAll('a[href]')).filter(link=>{
   const href=link.getAttribute('href')||'';
   if(!href.startsWith('#')||href==='#')return false;

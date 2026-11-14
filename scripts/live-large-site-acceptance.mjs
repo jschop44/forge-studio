@@ -117,6 +117,8 @@ async function inspectPortableExport(browser,archive,index,entry){
     await page.setViewportSize({width,height:900});
     await page.goto('https://forge-export.test/'+name,{waitUntil:'domcontentloaded',timeout:15000});
     await page.evaluate(()=>document.fonts?.ready);
+    // Secondary pages deserve the same lazy-image decoding and pixel evidence as the homepage.
+    const imagePreparation=await primeExportImages(page);
     const finding=await page.evaluate(()=>{
      const visible=element=>{
       const css=getComputedStyle(element),bounds=element.getBoundingClientRect();
@@ -141,7 +143,11 @@ async function inspectPortableExport(browser,archive,index,entry){
      };
     });
     const layout=inspectExportedLayout({page:name,device,...finding});
-    additionalLayouts.push({page:name,device,...finding,layout});
+    additionalLayouts.push({page:name,device,...finding,imagePreparation,layout});
+    // Record secondary-page screenshots, including failures, for professional visual review.
+    const screenshot='case-'+index+'-export-'+name.replace(/\.html$/i,'')+'-'+device+'.png';
+    await page.screenshot({path:join(OUT,screenshot),fullPage:true,timeout:30000});
+    entry.screenshots.push(screenshot);
     if(!layout.passes)throw Error('Exported secondary-page visual defects: '+layout.defects.join('; '));
    }
   }
