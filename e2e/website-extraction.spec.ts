@@ -149,3 +149,58 @@ for(const width of [390,1280])test(`captured subpage styling survives extraction
  await expect(portfolio.locator('body')).toHaveCSS('font-family',/Courier New.*monospace/);
  await expect(portfolio.getByRole('heading',{name:'Recent residential projects',exact:true})).toBeVisible();
 });
+
+
+test('authorized saved HTML can recover a blocked live source without making another website fetch',async({page})=>{
+ let websiteFetches=0;
+ await page.route('**/api/site-reference',route=>{websiteFetches++;return route.fulfill({status:422,json:{error:'Website access policy could not be verified'}})});
+ await generationFixture(page,input=>{
+  expect(input.designMode).toBe('inspired');
+  expect(input.businessName).toBe('Harbor Coffee');
+ });
+ await openExtraction(page);
+ await page.getByPlaceholder('e.g. Northstar Coffee').fill('Harbor Coffee');
+ await page.getByText('Use authorized HTML if live website inspection is blocked',{exact:true}).click();
+ const html='<!doctype html><html><head><title>Harbor Coffee</title>'+
+  '<style>body{background:#112233;font-family:Georgia,serif}</style></head>'+
+  '<body><main><h1>Harbor Coffee</h1><p>Fresh roasted coffee and pastries.</p></main></body></html>';
+ await page.getByLabel('Authorized HTML file').setInputFiles({
+  name:'authorized-homepage.html',mimeType:'text/html',buffer:Buffer.from(html)
+ });
+ await expect(page.getByRole('status').filter({hasText:'Authorized HTML loaded from your device'})).toBeVisible();
+ await page.getByRole('button',{name:/generate my website/i}).click();
+ await expect(page.getByRole('navigation',{name:'Website pages'})).toBeVisible();
+ const frame=page.frameLocator('iframe[title="Website preview: Home"]');
+ await expect(frame.locator('body')).toHaveCSS('background-color','rgb(17, 34, 51)');
+ expect(websiteFetches).toBe(0,'An owner-supplied HTML file must not bypass robots or trigger a live source fetch');
+});
+
+test('changing the source address clears previously imported HTML and demands a fresh inspection',async({page})=>{
+ let failedChecks=0,generations=0;
+ await page.route('**/api/site-reference',route=>{failedChecks++;return route.fulfill({status:422,json:{error:'Website access policy could not be verified'}})});
+ await page.route('**/api/ai/business',route=>{generations++;return route.abort()});
+ await openExtraction(page);
+ await page.getByPlaceholder('e.g. Northstar Coffee').fill('Harbor Coffee');
+ await page.getByText('Use authorized HTML if live website inspection is blocked',{exact:true}).click();
+ await page.getByLabel('Authorized HTML file').setInputFiles({
+  name:'authorized.html',mimeType:'text/html',buffer:Buffer.from('<!doctype html><html><body><h1>Harbor Coffee</h1></body></html>')
+ });
+ await expect(page.getByRole('status').filter({hasText:'Authorized HTML loaded from your device'})).toBeVisible();
+ await page.getByPlaceholder('e.g. disney.com').fill('different-business.example');
+ await expect(page.getByRole('textbox',{name:'Authorized HTML/CSS markup'})).toHaveValue('');
+ await page.getByRole('button',{name:/generate my website/i}).click();
+ await expect(page.getByRole('alert').filter({hasText:/Website extraction failed/})).toContainText('Website access policy could not be verified');
+ expect(failedChecks).toBe(1);
+ expect(generations).toBe(0,'Stale authorized HTML cannot be reused with a different business host');
+});
+
+test('oversize unauthorized HTML files are rejected without creating generated pages',async({page})=>{
+ await openExtraction(page);
+ await page.getByText('Use authorized HTML if live website inspection is blocked',{exact:true}).click();
+ await page.getByLabel('Authorized HTML file').setInputFiles({
+  name:'huge.html',mimeType:'text/html',buffer:Buffer.alloc(1_000_001,65)
+ });
+ await expect(page.getByRole('status').filter({hasText:'Select a nonempty HTML file smaller than 1 MB.'})).toBeVisible();
+ await expect(page.getByRole('textbox',{name:'Authorized HTML/CSS markup'})).toHaveValue('');
+ await expect(page.locator('iframe[title^="Website preview:"]')).toHaveCount(0);
+});
