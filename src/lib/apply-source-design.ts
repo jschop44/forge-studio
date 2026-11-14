@@ -44,6 +44,27 @@ function observedRetailHero(html:string,images:SourceImage[],used:Set<string>){
   }).filter(x=>x.categoryHits.length>0)
   .sort((a,b)=>b.categoryHits.length-a.categoryHits.length||a.extra-b.extra)[0]?.image;
 }
+/** A broad editorial homepage should feature its own observed landscape art,
+ * not a square branded merchandise tile that only shares the company name.
+ * Prefer genuinely first-party, descriptive homepage images with wide geometry.
+ * This is not evidence that an image depicts a specific topic card.
+ */
+function observedEditorialHomepageHero(dna:WebsiteDesignDna,images:SourceImage[],used:Set<string>){
+ let homepage:URL;
+ try{homepage=new URL(dna.sourceUrl)}catch{return}
+ const normalizedPath=(path:string)=>path.replace(/\/+$/,'')||'/';
+ return images.find(image=>{
+  if(image.role!=='content'||used.has(image.url)||!image.width||!image.height)return false;
+  if(image.width<1100||image.height<450||image.width/image.height<1.6||image.width/image.height>4.5)return false;
+  const alt=decodeSourceEntities(image.alt||'').trim();
+  if(alt.length<22||alt.length>200||textHeavyRetailPromotion(image)||
+   /\b(?:limited edition|shop now|add to cart|buy now|clearance|coupon|sale ends)\b/i.test(alt))return false;
+  try{
+   const source=new URL(image.sourcePage);
+   return source.origin===homepage.origin&&normalizedPath(source.pathname)===normalizedPath(homepage.pathname);
+  }catch{return false}
+ });
+}
 /** A promotional partner or bundle graphic is not the site's company logo.
  * Source crawls can see "Disney+ Hulu logo" inside a Disney hero promotion:
  * its image role is legitimate evidence, but not evidence of primary branding.
@@ -138,10 +159,18 @@ export function applySourceDesign(pages:GeneratedPage[],dna:WebsiteDesignDna|und
   // Specific offering sections require matching semantic evidence; never substitute a generic source photograph.
   html=html.replace(/<article\b[^>]*>[\s\S]*?<\/article>/gi,article=>{const heading=article.match(/<h[23]\b[^>]*>([\s\S]*?)<\/h[23]>/i)?.[1]||'';const image=matchingImage(heading,images,page.slug==='services'?used:new Set([...used,...reservedForServices]));if(!image)return article;used.add(image.url);assigned++;return /<img\b/i.test(article)?article.replace(/<img\b[^>]*>/i,()=>sourceImage(image,'service-photo')):article.replace(/(<article\b[^>]*>)/i,tag=>tag+sourceImage(image,'service-photo'))});
   let heroAssigned=false;
+  const heroSection=page.slug==='index'?html.match(/<section\b[^>]*class=["'][^"']*\bsite-hero\b[^"']*["'][^>]*>[\s\S]*?<\/section>/i)?.[0]||'':'';
+  const editorialHomepage=/(?:entertainment[\s,]+media|theme\s*parks?|streaming platform|film studio|television network)/i.test(heroSection);
+  const editorialHomepageImage=editorialHomepage
+   ?observedEditorialHomepageHero(dna,images,new Set([...used,...reservedForOfferings])):undefined;
   html=html.replace(/<figure\b[^>]*class=["'][^"']*\beditorial-photo\b[^"']*["'][^>]*>[\s\S]*?<\/figure>/gi,figure=>{
    const heading=html.match(/<h1\b[^>]*>([\s\S]*?)<\/h1>/i)?.[1]||'';
-   const subject=page.title+' '+heading+' '+(figure.match(/alt=["']([^"']*)["']/i)?.[1]||'');const image=matchingImage(subject,images,new Set([...used,...reservedForOfferings]));
-   if(!image)return figure;used.add(image.url);heroAssigned=true;assigned++;return '<figure class="editorial-photo" data-forge-source-figure>'+sourceImage(image,'source-photo',true)+'</figure>';
+   const subject=page.title+' '+heading+' '+(figure.match(/alt=["']([^"']*)["']/i)?.[1]||'');
+   // A company-name-only heading does not justify substituting a branded
+   // merchandise photo for a theme park or entertainment homepage hero.
+   const image=editorialHomepage?editorialHomepageImage:matchingImage(subject,images,new Set([...used,...reservedForOfferings]));
+   if(!image||used.has(image.url))return figure;
+   used.add(image.url);heroAssigned=true;assigned++;return '<figure class="editorial-photo" data-forge-source-figure>'+sourceImage(image,'source-photo',true)+'</figure>';
   });
   // Retail homepages in both Preserve Style and Full Redesign should use
   // a genuine, semantically matched source photograph instead of a blank
