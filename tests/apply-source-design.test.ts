@@ -337,3 +337,41 @@ test('entertainment pages without an eligible wide first-party image retain thei
  assert.match(result,/src="https:\/\/stock\.example\/hero\.jpg"/,'retain the existing hero rather than claiming unrelated images');
  assert.doesNotMatch(result,/data-forge-source-figure/,'an irrelevant source image must never impersonate an observed cinematic hero');
 });
+
+test('real-world text-only entertainment homepages gain one responsive original source hero',()=>{
+ const base=extractWebsiteDesignDna('<meta property="og:site_name" content="Story World">','https://media.example/');
+ const source={...base,images:[
+  {url:'https://media.example/shop.jpg',alt:'Story World Store | Limited Edition movie-themed collectible dolls',role:'content' as const,sourcePage:'https://media.example/',width:800,height:800},
+  {url:'https://media.example/wide.jpg',alt:'Animated adventurers together on a rocky island with ocean waves',role:'content' as const,sourcePage:'https://media.example/',width:2048,height:878},
+  {url:'https://media.example/space.jpg',alt:'A spacecraft flying through a bright star-filled nebula',role:'content' as const,sourcePage:'https://media.example/',width:800,height:800},
+  {url:'https://media.example/forest.jpg',alt:'An illuminated forest with magical creatures at night',role:'content' as const,sourcePage:'https://media.example/',width:800,height:800}
+ ]};
+ const cards=['Streaming stories','Theme park trips','Media partners'].map(topic=>'<article class="card service-card"><h2>'+topic+'</h2></article>').join('');
+ const original=wrap('<section class="site-hero editorial text-led"><div><p class="eyebrow">Entertainment, media and theme parks</p><h1>Story World</h1><p>Explore stories, films and destinations.</p></div></section>'+
+  '<section class="section-heading"><h2>Discover more</h2></section><div class="cards">'+cards+'</div>');
+ for(const mode of ['inspired','redesign']){
+  const page=applySourceDesign([{slug:'index',title:'Home',html:original}],source,mode).pages[0].html;
+  const hero=page.match(/<section class="site-hero editorial image-led">[\s\S]*?<\/section>/)?.[0]||'';
+  assert.match(hero,/data-forge-source-figure/,'wide artwork appears inside the hero itself');
+  assert.match(hero,/src="https:\/\/media\.example\/wide\.jpg"/,'homepage first-party source photograph is displayed');
+  assert.match(hero,/loading="eager" fetchpriority="high"/,'first-screen photography loads before gallery images');
+  assert.doesNotMatch(hero,/shop\.jpg/,'square merchandise art must never impersonate the hero');
+  assert.doesNotMatch(page,/class="source-page-visual"/,'a detached figure above the headline is not a valid hero');
+  assert.equal((page.match(/src="https:\/\/media\.example\/wide\.jpg"/g)||[]).length,1,'the hero photo is not repeated in the gallery');
+  assert.match(page,/data-forge-source-highlights/,'unrelated source imagery stays independently captioned');
+ }
+});
+test('text-only entertainment pages without safe first-party panorama remain text-led',()=>{
+ const base=extractWebsiteDesignDna('<meta property="og:site_name" content="Story World">','https://media.example/');
+ const source={...base,images:[
+  {url:'https://media.example/dolls.jpg',alt:'Story World Store limited edition dolls and collectibles',role:'content' as const,sourcePage:'https://media.example/',width:800,height:800},
+  {url:'https://media.example/offer.jpg',alt:'Save 40% on tickets offer ends soon',role:'content' as const,sourcePage:'https://media.example/',width:2048,height:878}
+ ]};
+ const original=wrap('<section class="site-hero editorial text-led"><div><p class="eyebrow">Entertainment, media and theme parks</p><h1>Story World</h1></div></section>');
+ for(const mode of ['inspired','redesign']){
+  const page=applySourceDesign([{slug:'index',title:'Home',html:original}],source,mode).pages[0].html;
+  assert.match(page,/class="site-hero editorial text-led"/);
+  assert.doesNotMatch(page,/class="site-hero editorial image-led"/);
+  assert.doesNotMatch(page,/data-forge-source-figure/);
+ }
+});
