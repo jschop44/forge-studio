@@ -147,10 +147,13 @@ export function extractWebsiteDesignDna(input:string,sourceUrl:string,stylesheet
  }
  // CSS URLs are read as evidence, never emitted as executable style rules.
  for(const match of css.matchAll(/(?:background(?:-image)?\s*:[^;}]*?)url\(\s*["']?([^\s"')]+)["']?\s*\)/gi))add(match[1],'Source website background','background');
- // Prioritize an observed document background; stylesheet order alone can begin with an icon color.
- const documentRules=[...css.matchAll(/(?:\bbody\b|:root)\s*[^{}]*\{([^}]*)\}/gi)];
- // Safely resolve a direct #hex value or a single declared CSS variable.
- // No CSS functions, imports, custom URLs, or source code are executed.
+ // Only applied document rules are evidence of a page-wide background.
+ // A --background / --surface variable alone might be for a card, modal or theme
+ // and must never repaint the entire generated site.
+ const styleRules=[...css.replace(/<\/?style\b[^>]*>/gi,'').matchAll(/([^{}]{1,220})\{([^{}]{0,10000})\}/g)]
+  .map(match=>({selector:match[1].trim(),body:match[2]}));
+ const isBody=(selector:string)=>/(?:^|[,\s>+~])body(?=[\s,.#:>+~]|$)/i.test(selector);
+ const isRoot=(selector:string)=>/(?:^|,)\s*:root(?=[\s,.#:>+~]|$)/i.test(selector);
  const declarations=new Map([...css.matchAll(/(--[a-z][\w-]{1,78})\s*:\s*(#[a-f\d]{6}\b|#[a-f\d]{3}\b)/gi)]
   .map(match=>[match[1].toLowerCase(),match[2].toLowerCase()]));
  const declaredBackground=(rule:string)=>{
@@ -160,12 +163,27 @@ export function extractWebsiteDesignDna(input:string,sourceUrl:string,stylesheet
   const variable=token[2]?.toLowerCase();
   return variable?declarations.get(variable):undefined;
  };
- const bodyBackground=[...css.matchAll(/\bbody\s*\{([^}]*)\}/gi)]
-  .map(rule=>declaredBackground(rule[1])).find(Boolean);
- const rootBackground=documentRules.map(rule=>rule[1].match(/(?:background(?:-color)?|--(?:background|bg|surface))\s*:\s*(#[a-f\d]{6}\b|#[a-f\d]{3}\b)/i)?.[1]).find(Boolean);
+ const bodyBackground=styleRules.filter(rule=>isBody(rule.selector))
+  .map(rule=>declaredBackground(rule.body)).find(Boolean);
+ const rootBackground=styleRules.filter(rule=>isRoot(rule.selector))
+  .map(rule=>declaredBackground(rule.body)).find(Boolean);
  const background=bodyBackground||rootBackground;
  const palette=[...new Set([...(background?[background]:[]),...(css.match(/#[a-f\d]{6}\b|#[a-f\d]{3}\b/gi)||[])].map(color=>color.toLowerCase()))].slice(0,12);
- const families=[...css.matchAll(/font-family\s*:\s*([^;}]+)/gi)].map(match=>match[1].replace(/["']/g,'').trim()).filter(value=>value.length<180&&/^[\w ,.-]+$/.test(value));
+ // CSS @font-face declarations and icon glyph classes do not show the font
+ // actually used for page copy. Prefer an observed body font over a random
+ // stylesheet's first font-family property, without copying executable CSS.
+ const fontRules=styleRules.flatMap((rule,index)=>{
+  if(rule.selector.startsWith('@'))return [];
+  const raw=rule.body.match(/(?:^|;)\s*font-family\s*:\s*([^;}]+)/i)?.[1];
+  const value=raw?.replace(/["']/g,'').trim();
+  if(!value||value.length>=180||!/^[\w ,.-]+$/.test(value))return [];
+  const primary=value.split(',')[0].trim();
+  if(/^(?:font[- ]?awesome(?:\s+\d+)?|material\s+(?:icons|symbols)|glyphicons|bootstrap\s+icons|ionicons|icomoon|boxicons|remixicon|themify|dashicons)\b/i.test(primary))return [];
+  const priority=isBody(rule.selector)?0:/(?:^|,)\s*html(?=[\s,.#:>+~]|$)/i.test(rule.selector)?1:
+   /(?:^|[,\s>+~])(?:main|p|article)(?=[\s,.#:>+~]|$)/i.test(rule.selector)?2:3;
+  return [{value,index,priority}];
+ });
+ const families=fontRules.sort((a,b)=>a.priority-b.priority||a.index-b.index).map(rule=>rule.value);
  const links=[...html.matchAll(/<a\b[^>]*>/gi)].map(match=>attribute(match[0],'href'));
  const emails=[...new Set(links.filter(link=>/^mailto:/i.test(link)).map(link=>link.slice(7).split('?')[0]).filter(value=>/^[\w.!#$%&'*+/=?^`{|}~-]+@[\w.-]+\.[a-z]{2,}$/i.test(value)))].slice(0,8);
  const phones=[...new Set(links.filter(link=>/^tel:/i.test(link)).map(link=>link.slice(4)).filter(value=>/^\+?[\d(). -]{7,30}$/.test(value)))].slice(0,8);
