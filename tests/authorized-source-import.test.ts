@@ -1,6 +1,7 @@
 import {test} from 'node:test';
 import assert from 'node:assert/strict';
 import {prepareSavedSourceInspection} from '../src/lib/authorized-source-import';
+import {applyDefaultSourceContent} from '../src/lib/default-source-content';
 
 const page=(title:string,body:string,description='')=>
  '<!doctype html><html><head><title>'+title+'</title>'+
@@ -18,6 +19,7 @@ test('authorized saved pages reconstruct bounded multi-page metadata without fet
  assert.equal(data.url,'https://retail.example/');
  assert.equal(data.title,'Northstar Electronics | Home');
  assert.equal(data.description,'Consumer electronics, televisions, and laptops');
+ assert.deepEqual(data.homepageParagraphs,['Our stores carry computers and appliances.']);
  assert.deepEqual(data.navigation.map(x=>x.path),['/products','/about','/support']);
  assert.equal(data.pageSummaries.length,3);
  assert.equal(data.pageSummaries[0].title,'Products | Northstar Electronics');
@@ -50,4 +52,29 @@ test('authorized page import rejects duplicate names, private URLs, non-HTML and
  assert.throws(()=>prepareSavedSourceInspection([...pages,{name:'home.html',html}],'retail.example'),/same filename-derived route/);
  assert.throws(()=>prepareSavedSourceInspection(Array.from({length:7},(_,i)=>({name:'page-'+i+'.html',html})),'retail.example'),/one and six/);
  assert.throws(()=>prepareSavedSourceInspection([{name:'index.html',html:html+' '.repeat(1_000_000)}],'retail.example'),/smaller than 1 MB/);
+});
+
+test('authorized homepage copy survives preserve and redesign without importing scripts or forms',()=>{
+ const visible='Our independent neighborhood shop repairs electronics and provides personalized support.';
+ const home=page('Northstar Electronics | Home',
+  '<main><script><p>Untrusted script text should never appear in the generated website.</p></script>'+
+  '<form><p>Fake online booking form instructions should not be copied.</p></form>'+
+  '<h1>Northstar electronics service</h1><p>'+visible+'</p></main>');
+ const product=page('Products | Northstar Electronics',
+  '<main><h1>Reliable electronics</h1><script><p>Untrusted product instructions must not be copied.</p></script>'+
+  '<p>We offer trusted laptops and audio accessories for local shoppers.</p></main>');
+ const inspected=prepareSavedSourceInspection([{name:'index.html',html:home},{name:'products.html',html:product}],'northstar.example');
+ assert.deepEqual(inspected.homepageParagraphs,[visible]);
+ assert.deepEqual(inspected.pageSummaries[0].paragraphs,['We offer trusted laptops and audio accessories for local shoppers.']);
+ const generated=[{slug:'index',title:'Home',html:'<html><body><main><h1>Home</h1></main></body></html>'},
+  {slug:'products',title:'Products',html:'<html><body><main><h1>Products</h1></main></body></html>'}];
+ for(const mode of ['inspired','redesign']){
+  const result=applyDefaultSourceContent(generated,inspected,mode);
+  assert.equal(result.pages[0].html.split(visible).length-1,1);
+  assert.doesNotMatch(result.pages[0].html,/Untrusted script|Fake online booking/);
+  assert.doesNotMatch(result.pages[1].html,/Untrusted product instructions/);
+  assert.match(result.pages[0].html,/View original page/);
+  assert.deepEqual(applyDefaultSourceContent(result.pages,inspected,mode).pages,result.pages);
+ }
+ assert.deepEqual(applyDefaultSourceContent(generated,inspected,'new').pages,generated);
 });
