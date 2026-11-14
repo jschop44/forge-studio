@@ -143,10 +143,12 @@ export function applySourceDesign(pages:GeneratedPage[],dna:WebsiteDesignDna|und
    const subject=page.title+' '+heading+' '+(figure.match(/alt=["']([^"']*)["']/i)?.[1]||'');const image=matchingImage(subject,images,new Set([...used,...reservedForOfferings]));
    if(!image)return figure;used.add(image.url);heroAssigned=true;assigned++;return '<figure class="editorial-photo" data-forge-source-figure>'+sourceImage(image,'source-photo',true)+'</figure>';
   });
-  // Redesigns of retail catalogs should not look like a text-only storefront
-  // when the inspected source already publishes matching category photography.
-  // Require category wording on the generated homepage; do not guess from URLs.
-  if(!heroAssigned&&mode==='redesign'&&page.slug==='index'){
+  // Retail homepages in both Preserve Style and Full Redesign should use
+  // a genuine, semantically matched source photograph instead of a blank
+  // hero when the generated hero has no picture. Product-specific photos
+  // remain reserved for the catalog; text-heavy offer art is excluded.
+  // Require depicted category wording in the actual homepage copy.
+  if(!heroAssigned&&(preserve||mode==='redesign')&&page.slug==='index'){
    const firstHero=html.match(/<section\b[^>]*class=["'][^"']*\bsite-hero\b[^"']*["'][^>]*>[\s\S]*?<\/section>/i)?.[0];
    if(firstHero&&!/<(?:figure|img)\b/i.test(firstHero)){
     const image=observedRetailHero(html,images,new Set([...used,...reservedForOfferings]));
