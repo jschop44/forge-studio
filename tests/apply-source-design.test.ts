@@ -296,7 +296,7 @@ test('narrow source-photo galleries include only topic-matched photography in pr
  )};
  for(const mode of ['inspired','redesign']){
   const page=applySourceDesign([homepage],source,mode).pages[0].html;
-  const gallery=page.match(/<section class="source-highlights"[\\s\\S]*?<\\/section>/)?.[0]||'';
+  const gallery=page.match(/<section class="source-highlights"[\s\S]*?<\/section>/)?.[0]||'';
   assert.match(gallery,/data-forge-source-highlights/,'multiple relevant observed photos are shown');
   assert.ok((gallery.match(/data-forge-source-image/g)||[]).length>=2);
   assert.match(gallery,/wings-2.jpg/);
