@@ -41,12 +41,15 @@ test("reports repeated product photos but permits company logos across pages",()
  assert.ok(report.warnings.some(w=>w.includes("wings.jpg")));
  assert.ok(!report.warnings.some(w=>w.includes("/logo.png")));
 });
-test("does not report diverse photos or duplicate image use within a single page as cross-page repetition",()=>{
+test("reports within-page repeated photos separately from cross-page repetition",()=>{
  const first='<img src="https://images.example.com/pizza.jpg" alt="Pizza">';
  const second='<img src="https://images.example.com/wings.jpg" alt="Wings">';
  const build=(body:string)=>'<!doctype html><html><head><title>Restaurant</title></head><body><main><h1>Restaurant</h1><p>Our family restaurant serves fresh food and drinks.</p>'+body+'</main></body></html>';
  const pages=[{slug:"index",title:"Home",html:build(first+first)},{slug:"services",title:"Menu",html:build(second)}];
- assert.ok(!auditGeneratedDraft(pages).warnings.some(w=>w.includes("Repeated content image")));
+ const warnings=auditGeneratedDraft(pages).warnings;
+ assert.ok(!warnings.some(w=>w.includes("Repeated content image across")));
+ assert.ok(warnings.some(w=>w.includes("index: repeated content image 2 times on the same page")&&w.includes("pizza.jpg")));
+ assert.ok(!warnings.some(w=>w.includes("wings.jpg")));
 });
 
 
@@ -109,4 +112,18 @@ test("explicit HTTPS or owned API form actions remain reviewable but never claim
   assert.equal(result.readyForPublishing,false);
   assert.ok(result.warnings.some(warning=>warning.includes('backend and delivery remain unverified')));
  }
+});
+
+
+test("query-string photo variants on the same page are one image; repeated logo is exempt",()=>{
+ const html='<!doctype html><html><head><title>Restaurant</title></head><body>'+
+  '<nav><img class="source-brand-logo" src="/brand.png" alt="Logo">'+
+  '<img class="source-brand-logo" src="/brand.png" alt="Logo"></nav>'+
+  '<main><h1>Restaurant</h1><p>Roasted meals made for everyone.</p>'+
+  '<img src="https://cdn.example/cafe.jpg?w=1024" alt="Cafe interior">'+
+  '<img src="https://cdn.example/cafe.jpg?w=400" alt="Cafe interior"></main></body></html>';
+ const report=auditGeneratedDraft([{slug:"index",title:"Home",html}]);
+ assert.equal(report.readyForReview,true);
+ assert.ok(report.warnings.some(w=>w.includes("repeated content image 2 times on the same page")&&w.includes("cafe.jpg")));
+ assert.ok(report.warnings.every(w=>!w.includes("brand.png")));
 });
