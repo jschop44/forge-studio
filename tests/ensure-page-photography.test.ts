@@ -104,3 +104,31 @@ test('data-src alone is not a functioning static image source',()=>{
  const [result]=ensurePagePhotography([original],'Coffee shop');
  assert.ok(src(result.html),'the page receives a guaranteed static photo instead of relying on unactivated lazy data');
 });
+
+test('images in hidden or inert sections never suppress real photographed pages',()=>{
+ for(const hidden of [
+  '<template><img src="https://photos.example/gallery.jpg" alt="Template photo"></template>',
+  '<noscript><img src="https://photos.example/gallery.jpg" alt="Fallback photo"></noscript>',
+  '<div hidden><img src="https://photos.example/gallery.jpg" alt="Hidden photo"></div>',
+  '<section aria-hidden="true"><img src="https://photos.example/gallery.jpg" alt="Hidden photo"></section>',
+  '<section inert><picture><source srcset="https://photos.example/gallery.avif 900w"></picture></section>',
+  '<div style="display : none !important"><img src="https://photos.example/gallery.jpg" alt="Hidden photo"></div>',
+  '<div style="visibility: hidden"><img src="https://photos.example/gallery.jpg" alt="Hidden photo"></div>',
+  '<img src="https://photos.example/gallery.jpg" style="display:none" alt="Hidden photo">',
+  '<div><span style="display:none"><img src="https://photos.example/gallery.jpg" alt="Hidden"></span></div>'
+ ]){
+  const input=page('index',hidden+'<p>Welcome to our coffee shop.</p>');
+  const [out]=ensurePagePhotography([input],'Coffee shop');
+  assert.ok(src(out.html),'hidden images never count as visible photography: '+hidden);
+  assert.ok(out.html.includes(hidden),'source and hidden markup are preserved');
+  assert.deepEqual(ensurePagePhotography([out],'Coffee shop'),[out],'repeat pass is idempotent');
+ }
+});
+
+test('a real displayed picture source prevents unnecessary fallback photography',()=>{
+ const html='<picture><source srcset="https://photos.example/coffee.avif 1200w">'+
+  '<img src="/placeholder.gif" alt="Coffee beans"></picture>';
+ const [out]=ensurePagePhotography([page('index',html)],'Coffee shop');
+ assert.equal(src(out.html),undefined);
+ assert.ok(out.html.includes(html));
+});
