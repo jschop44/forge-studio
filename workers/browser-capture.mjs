@@ -49,6 +49,24 @@ try{
  const mainWidth=main?Math.round(main.getBoundingClientRect().width):0;
  const tracks=(heroStyle?.gridTemplateColumns||'').split(' ').filter(value=>value.endsWith('px'));
  const alignment=heading?getComputedStyle(heading).textAlign:'';
+ // Preserve Style accepts these bounded computed measurements, but browser
+ // capture previously omitted them. Values are inert pixels, not source CSS.
+ const boundedPx=(value,min,max)=>{
+  if(typeof value!=='string'||!/^\d{1,4}(?:\.\d{1,2})?px$/.test(value))return;
+  const n=Number(value.slice(0,-2));
+  return n>=min&&n<=max?Math.round(n)+'px':undefined;
+ };
+ const heroMedia=hero?.querySelector('img,video,picture img');
+ const mediaStyle=heroMedia?getComputedStyle(heroMedia):null;
+ const rhythm={
+  ...(navStyle&&boundedPx(navStyle.paddingTop,0,96)?{headerPaddingTop:boundedPx(navStyle.paddingTop,0,96)}:{}),
+  ...(navStyle&&boundedPx(navStyle.paddingBottom,0,96)?{headerPaddingBottom:boundedPx(navStyle.paddingBottom,0,96)}:{}),
+  ...(heroStyle&&boundedPx(heroStyle.columnGap,0,120)?{heroGap:boundedPx(heroStyle.columnGap,0,120)}:{}),
+  ...(heroStyle&&boundedPx(heroStyle.paddingTop,0,240)?{heroPaddingTop:boundedPx(heroStyle.paddingTop,0,240)}:{}),
+  ...(heroStyle&&boundedPx(heroStyle.paddingBottom,0,240)?{heroPaddingBottom:boundedPx(heroStyle.paddingBottom,0,240)}:{}),
+  ...(mediaStyle&&boundedPx(mediaStyle.borderTopLeftRadius,0,64)?{heroMediaRadius:boundedPx(mediaStyle.borderTopLeftRadius,0,64)}:{})
+ };
+
  const layoutTokens={
   ...(['left','center','right'].includes(alignment)?{heroTextAlign:alignment}:{}),
   ...(heroStyle?.display==='grid'&&tracks.length>0?{heroLayout:tracks.length>=2?'split':'stacked'}:heroStyle?.display==='flex'?{heroLayout:heroStyle.flexDirection.startsWith('column')?'stacked':'split'}:{}),
@@ -56,7 +74,8 @@ try{
   ...(ctaStyle?{buttonRadius:Math.min(64,Math.max(0,Number.parseFloat(ctaStyle.borderTopLeftRadius)||0))+'px'}:{}),
       ...(ctaStyle&&(ctaStyle.backgroundColor.startsWith('rgb(')||ctaStyle.backgroundColor.startsWith('rgba(')||ctaStyle.backgroundColor.startsWith('#'))?{buttonBackgroundColor:ctaStyle.backgroundColor}:{}),
       ...(ctaStyle&&(ctaStyle.color.startsWith('rgb(')||ctaStyle.color.startsWith('rgba(')||ctaStyle.color.startsWith('#'))?{buttonTextColor:ctaStyle.color}:{}),
-  ...(navStyle&&(navStyle.backgroundColor.startsWith('rgb(')||navStyle.backgroundColor.startsWith('rgba(')||navStyle.backgroundColor.startsWith('#'))?{headerBackgroundColor:navStyle.backgroundColor}:{})
+  ...(navStyle&&(navStyle.backgroundColor.startsWith('rgb(')||navStyle.backgroundColor.startsWith('rgba(')||navStyle.backgroundColor.startsWith('#'))?{headerBackgroundColor:navStyle.backgroundColor}:{}),
+  ...rhythm
  };return {backgroundColor:body.backgroundColor,textColor:body.color,fontFamily:body.fontFamily,headingFontFamily:h.fontFamily,headingFontSize:h.fontSize,...(/^\d+(?:\.\d+)?px$/.test(h.lineHeight)?{headingLineHeight:h.lineHeight}:{}),baseFontSize:body.fontSize,...(/^\d+(?:\.\d+)?px$/.test(body.lineHeight)?{lineHeight:body.lineHeight}:{}),...layoutTokens}});
  const interactions=await page.locator('a,button,form').evaluateAll(nodes=>nodes.slice(0,80).map(n=>({kind:n.tagName.toLowerCase()==='a'?'link':n.tagName.toLowerCase()==='form'?'form':'button',label:(n.getAttribute('aria-label')||n.textContent||'').trim().slice(0,100),target:n.tagName.toLowerCase()==='a'?(n.getAttribute('href')||'').slice(0,300):undefined,verified:false})));
  const navigationChecks=[];
@@ -84,6 +103,24 @@ try{
  const mainWidth=main?Math.round(main.getBoundingClientRect().width):0;
  const tracks=(heroStyle?.gridTemplateColumns||'').split(' ').filter(value=>value.endsWith('px'));
  const alignment=heading?getComputedStyle(heading).textAlign:'';
+ // Preserve Style accepts these bounded computed measurements, but browser
+ // capture previously omitted them. Values are inert pixels, not source CSS.
+ const boundedPx=(value,min,max)=>{
+  if(typeof value!=='string'||!/^\d{1,4}(?:\.\d{1,2})?px$/.test(value))return;
+  const n=Number(value.slice(0,-2));
+  return n>=min&&n<=max?Math.round(n)+'px':undefined;
+ };
+ const heroMedia=hero?.querySelector('img,video,picture img');
+ const mediaStyle=heroMedia?getComputedStyle(heroMedia):null;
+ const rhythm={
+  ...(navStyle&&boundedPx(navStyle.paddingTop,0,96)?{headerPaddingTop:boundedPx(navStyle.paddingTop,0,96)}:{}),
+  ...(navStyle&&boundedPx(navStyle.paddingBottom,0,96)?{headerPaddingBottom:boundedPx(navStyle.paddingBottom,0,96)}:{}),
+  ...(heroStyle&&boundedPx(heroStyle.columnGap,0,120)?{heroGap:boundedPx(heroStyle.columnGap,0,120)}:{}),
+  ...(heroStyle&&boundedPx(heroStyle.paddingTop,0,240)?{heroPaddingTop:boundedPx(heroStyle.paddingTop,0,240)}:{}),
+  ...(heroStyle&&boundedPx(heroStyle.paddingBottom,0,240)?{heroPaddingBottom:boundedPx(heroStyle.paddingBottom,0,240)}:{}),
+  ...(mediaStyle&&boundedPx(mediaStyle.borderTopLeftRadius,0,64)?{heroMediaRadius:boundedPx(mediaStyle.borderTopLeftRadius,0,64)}:{})
+ };
+
  const layoutTokens={
   ...(['left','center','right'].includes(alignment)?{heroTextAlign:alignment}:{}),
   ...(heroStyle?.display==='grid'&&tracks.length>0?{heroLayout:tracks.length>=2?'split':'stacked'}:heroStyle?.display==='flex'?{heroLayout:heroStyle.flexDirection.startsWith('column')?'stacked':'split'}:{}),
@@ -91,7 +128,8 @@ try{
   ...(ctaStyle?{buttonRadius:Math.min(64,Math.max(0,Number.parseFloat(ctaStyle.borderTopLeftRadius)||0))+'px'}:{}),
       ...(ctaStyle&&(ctaStyle.backgroundColor.startsWith('rgb(')||ctaStyle.backgroundColor.startsWith('rgba(')||ctaStyle.backgroundColor.startsWith('#'))?{buttonBackgroundColor:ctaStyle.backgroundColor}:{}),
       ...(ctaStyle&&(ctaStyle.color.startsWith('rgb(')||ctaStyle.color.startsWith('rgba(')||ctaStyle.color.startsWith('#'))?{buttonTextColor:ctaStyle.color}:{}),
-  ...(navStyle&&(navStyle.backgroundColor.startsWith('rgb(')||navStyle.backgroundColor.startsWith('rgba(')||navStyle.backgroundColor.startsWith('#'))?{headerBackgroundColor:navStyle.backgroundColor}:{})
+  ...(navStyle&&(navStyle.backgroundColor.startsWith('rgb(')||navStyle.backgroundColor.startsWith('rgba(')||navStyle.backgroundColor.startsWith('#'))?{headerBackgroundColor:navStyle.backgroundColor}:{}),
+  ...rhythm
  };
      const links=[...document.querySelectorAll('a')].slice(0,30).map(n=>({kind:'link',label:(n.getAttribute('aria-label')||n.textContent||'').trim().slice(0,100),target:(n.getAttribute('href')||'').slice(0,300),verified:false}));
      return {title:document.title,visualRegions:regions,designTokens:{backgroundColor:body.backgroundColor,textColor:body.color,fontFamily:body.fontFamily,headingFontFamily:h.fontFamily,headingFontSize:h.fontSize,...(/^\d+(?:\.\d+)?px$/.test(h.lineHeight)?{headingLineHeight:h.lineHeight}:{}),baseFontSize:body.fontSize,...(/^\d+(?:\.\d+)?px$/.test(body.lineHeight)?{lineHeight:body.lineHeight}:{}),...layoutTokens},interactions:links,landmarks:[...document.querySelectorAll('h1,h2')].slice(0,30).map(n=>({role:n.tagName.toLowerCase(),text:(n.textContent||'').trim().slice(0,120)}))};
