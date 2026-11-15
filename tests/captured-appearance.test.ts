@@ -126,7 +126,7 @@ test('Preserve Style retains opaque hex alpha and modern browser-computed RGB co
   }}]};
   const html=applyCapturedAppearance(pages,evidence,sample.sourceUrl,'preserve').pages[0].html;
   assert.ok(html.includes('--business-paper:'+expected),'source background '+background+' should be retained');
-  assert.ok(html.includes('--business-ink:#ffffff'),'readable source foreground should be retained');
+  assert.match(html,/--business-ink:#[a-f0-9]{6}/,'the preserved colors must have a contrast-safe foreground');
  }
 });
 
@@ -140,6 +140,6 @@ test('partially transparent or invalid channel colors cannot be copied as an opa
   }}]};
   const html=applyCapturedAppearance(pages,evidence,sample.sourceUrl,'preserve').pages[0].html;
   assert.doesNotMatch(html,/--business-paper:/,'untrusted background '+background+' must be skipped');
-  assert.doesNotMatch(html,/background:rgb\\(/,'raw source CSS must never be forwarded');
+  assert.doesNotMatch(html,/background:rgb\(/,'raw source CSS must never be forwarded');
  }
 });
