@@ -136,3 +136,30 @@ test('real source srcset reserves its photo rather than duplicating it in a gall
  const gallery=output.split('class="forge-editorial"')[1]||'';
  assert.doesNotMatch(gallery,/piano-tuning-srcset-0\.jpg/,'a real responsive image is reserved');
 });
+
+test('navigation logos never reduce the number of relevant editorial photographs',()=>{
+ const assets=Array.from({length:5},(_,i)=>({
+  url:'https://upload.wikimedia.org/wikipedia/commons/a/ab/piano-tuning-editorial-'+i+'.jpg',
+  title:'Piano tuning technician workshop '+i,
+  source:'https://commons.wikimedia.org/wiki/File:Piano_tuning_editorial_'+i+'.jpg',
+  credit:'Public domain photographer',license:'CC0'
+ }));
+ const html='<!doctype html><html><head><title>Piano Care</title></head><body>'+
+  '<nav><img class="source-brand-logo" src="https://pianocare.example/assets/logo.png" alt="Piano Care logo"></nav>'+
+  '<main><h1>Piano tuning services</h1>'+
+  '<img src="https://pianocare.example/assets/brand-mark.png" alt="Brand mark">'+
+  '<img src="https://pianocare.example/assets/workshop.jpg" alt="Piano technician at work">'+
+  '</main></body></html>';
+ const brief={businessName:'Piano Care',industry:'Piano tuning',
+  description:'Independent piano tuning and maintenance service for local customers.',
+  services:['Piano tuning'],visualAssets:assets};
+ const result=enrichGeneratedBusinessPages([{slug:'index',title:'Piano Care',html}],brief)[0].html;
+ const gallery=result.match(/<div class="forge-editorial__gallery"[\s\S]*?<\/div>/)?.[0]||'';
+ assert.equal((gallery.match(/class="forge-editorial__photo"/g)||[]).length,3,
+  'navigation logos do not count toward real photographic coverage');
+ assert.match(result,/source-brand-logo/,'source brand remains untouched');
+ assert.match(result,/brand-mark.png/,'secondary brand mark remains untouched');
+ assert.match(result,/workshop.jpg/,'existing editorial photo remains untouched');
+ assert.equal(new Set(images(result).map(photoIdentity)).size,images(result).length,
+  'editorial images do not duplicate the existing hero or brand imagery');
+});
