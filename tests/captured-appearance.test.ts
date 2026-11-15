@@ -114,3 +114,32 @@ test('a bare fragment cannot falsely report captured styling as applied',()=>{
  assert.match(out.pages[1].html,/forge-captured-appearance/);
  assert.ok(out.warnings.some(w=>/could not be applied/.test(w)));
 });
+
+test('Preserve Style retains opaque hex alpha and modern browser-computed RGB colors',()=>{
+ for(const [background,expected] of [
+  ['#abcF','#aabbcc'],['#1a2b3cFF','#1a2b3c'],
+  ['rgb(18 52 86)','#123456'],['rgb(18 52 86 / 1)','#123456'],
+  ['rgba(18, 52, 86, 1)','#123456']
+ ]){
+  const evidence={...sample,pages:[{...sample.pages[0],designTokens:{
+   ...sample.pages[0].designTokens,backgroundColor:background,textColor:'rgb(255 255 255 / 1)'
+  }}]};
+  const html=applyCapturedAppearance(pages,evidence,sample.sourceUrl,'preserve').pages[0].html;
+  assert.ok(html.includes('--business-paper:'+expected),'source background '+background+' should be retained');
+  assert.match(html,/--business-ink:#[a-f0-9]{6}/,'the preserved colors must have a contrast-safe foreground');
+ }
+});
+
+test('partially transparent or invalid channel colors cannot be copied as an opaque source background',()=>{
+ for(const background of [
+  '#abcd','#123456aa','rgb(12 34 56 / 0.7)',
+  'rgba(12,34,56,0.5)','rgb(999 34 56)'
+ ]){
+  const evidence={...sample,pages:[{...sample.pages[0],designTokens:{
+   ...sample.pages[0].designTokens,backgroundColor:background
+  }}]};
+  const html=applyCapturedAppearance(pages,evidence,sample.sourceUrl,'preserve').pages[0].html;
+  assert.doesNotMatch(html,/--business-paper:/,'untrusted background '+background+' must be skipped');
+  assert.doesNotMatch(html,/background:rgb\(/,'raw source CSS must never be forwarded');
+ }
+});

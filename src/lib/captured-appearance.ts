@@ -3,13 +3,27 @@ type HtmlPage={html:string;slug?:string};
 function safeColor(value:unknown):string|undefined{
  if(typeof value!=='string')return;
  const raw=value.trim();
- const hex=raw.match(/^#([0-9a-f]{3}|[0-9a-f]{6})$/i);
- if(hex)return '#'+(hex[1].length===3?hex[1].split('').map(c=>c+c).join(''):hex[1]).toLowerCase();
- const rgb=raw.match(/^rgba?\(\s*(\d{1,3})\s*,\s*(\d{1,3})\s*,\s*(\d{1,3})(?:\s*,\s*(0(?:\.\d+)?|1(?:\.0+)?)\s*)?\)$/i);
+ // The capture contract also accepts CSS #RGBA and #RRGGBBAA. Only opaque
+ // colors can safely be reused without knowing the source underneath them.
+ const hex=raw.match(/^#([0-9a-f]{3}|[0-9a-f]{4}|[0-9a-f]{6}|[0-9a-f]{8})$/i);
+ if(hex){
+  let digits=hex[1].toLowerCase();
+  if(digits.length===4||digits.length===8){
+   const alpha=digits.length===4?digits.slice(3):digits.slice(6);
+   if(alpha!==(digits.length===4?'f':'ff'))return;
+   digits=digits.slice(0,digits.length===4?3:6);
+  }
+  return '#'+(digits.length===3?digits.split('').map(c=>c+c).join(''):digits);
+ }
+ // Browser captures may represent modern computed colors without commas:
+ // rgb(12 34 56), rgb(12 34 56 / 1), and classic rgba(12,34,56,1).
+ const comma=raw.match(/^rgba?\(\s*(\d{1,3})\s*,\s*(\d{1,3})\s*,\s*(\d{1,3})(?:\s*,\s*(0(?:\.\d+)?|1(?:\.0+)?)\s*)?\)$/i);
+ const space=raw.match(/^rgba?\(\s*(\d{1,3})\s+(\d{1,3})\s+(\d{1,3})(?:\s*\/\s*(0(?:\.\d+)?|1(?:\.0+)?)\s*)?\)$/i);
+ const rgb=comma||space;
  if(!rgb||rgb[4]!==undefined&&Number(rgb[4])<1)return;
- const n=rgb.slice(1,4).map(Number);
- if(n.some(v=>v>255))return;
- return '#'+n.map(v=>v.toString(16).padStart(2,'0')).join('');
+ const channels=rgb.slice(1,4).map(Number);
+ if(channels.some(v=>v>255))return;
+ return '#'+channels.map(v=>v.toString(16).padStart(2,'0')).join('');
 }
 function luminance(color:string){
  const n=[1,3,5].map(i=>parseInt(color.slice(i,i+2),16)/255).map(v=>v<=.04045?v/12.92:((v+.055)/1.055)**2.4);
