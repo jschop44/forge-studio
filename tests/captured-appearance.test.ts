@@ -87,3 +87,30 @@ test('compact source H1 measurements are not inflated by a fixed 2rem minimum',(
   assert.ok(html.includes('@media(max-width:700px)'),'mobile titles still use a dedicated readable size');
  }
 });
+
+
+test('captured source CSS survives generated pages without an explicit closing head tag',()=>{
+ const variants=[
+  '<html><body><main><h1>Home</h1></main></body></html>',
+  '<body><main><h1>Home</h1></main></body>',
+  '<html><head><title>Home</title><body><main><h1>Home</h1></main></body></html>',
+ ];
+ for(const html of variants){
+  const input=[{slug:'index',html}];
+  const output=applyCapturedAppearance(input,sample,sample.sourceUrl,'preserve');
+  assert.match(output.pages[0].html,/<style id="forge-captured-appearance">/);
+  assert.match(output.pages[0].html,/--business-paper:#eff1f4/);
+  assert.equal((output.pages[0].html.match(/id="forge-captured-appearance"/g)||[]).length,1);
+  const repeated=applyCapturedAppearance(output.pages,sample,sample.sourceUrl,'preserve');
+  assert.equal((repeated.pages[0].html.match(/id="forge-captured-appearance"/g)||[]).length,1);
+ }
+});
+
+test('a bare fragment cannot falsely report captured styling as applied',()=>{
+ const bare={slug:'index',html:'<main><h1>Plain fragment</h1></main>'};
+ const withHead={slug:'about',html:'<html><head></head><body>About</body></html>'};
+ const out=applyCapturedAppearance([bare,withHead],sample,sample.sourceUrl,'inspired');
+ assert.equal(out.pages[0].html,bare.html);
+ assert.match(out.pages[1].html,/forge-captured-appearance/);
+ assert.ok(out.warnings.some(w=>/could not be applied/.test(w)));
+});
