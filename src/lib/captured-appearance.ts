@@ -86,6 +86,17 @@ function appearanceRules(tokens:unknown):string{
   '@media(max-width:700px){body main .site-hero:not(.text-led),body main .extracted-hero:has(figure){grid-template-columns:minmax(0,1fr)}body main h1{font-size:clamp(2rem,8vw,3.2rem);line-height:1.12}body main .extracted-hero figure{width:100%;max-width:100%}}'
  ].join('');
 }
+/** Keep computed appearance even when an imported/generated page has no
+ * closing head tag. The previous replacement silently discarded the style. */
+function insertCapturedStyle(html:string,rules:string):string|undefined{
+ const clean=html.replace(/<style id="forge-captured-appearance">[\s\S]*?<\/style>/g,'');
+ const tag='<style id="forge-captured-appearance">'+rules+'</style>';
+ if(/<\/head\s*>/i.test(clean))return clean.replace(/<\/head\s*>/i,tag+'</head>');
+ if(/<head\b[^>]*>/i.test(clean))return clean.replace(/<head\b[^>]*>/i,head=>head+tag);
+ if(/<html\b[^>]*>/i.test(clean))return clean.replace(/<html\b[^>]*>/i,root=>root+'<head>'+tag+'</head>');
+ if(/<body\b[^>]*>/i.test(clean))return clean.replace(/<body\b[^>]*>/i,body=>'<head>'+tag+'</head>'+body);
+ return undefined;
+}
 /** CSS-only, strictly bounded computed style reuse. Source CSS and scripts are never executed. */
 export function applyCapturedAppearance<T extends HtmlPage>(
  pages:T[],capture:unknown,expectedSource:string,mode:string,pageSources:Record<string,string>={}
@@ -119,8 +130,14 @@ export function applyCapturedAppearance<T extends HtmlPage>(
    if(!matched&&!warnings.includes(missing))warnings.push(missing);
   }
   if(!pageRules)return page;
+  const html=insertCapturedStyle(page.html,pageRules);
+  if(!html){
+   const message='Some generated pages lacked a complete HTML document; captured appearance could not be applied.';
+   if(!warnings.includes(message))warnings.push(message);
+   return page;
+  }
   applied++;
-  return {...page,html:page.html.replace(/<style id="forge-captured-appearance">[\s\S]*?<\/style>/g,'').replace(/<\/head>/i,'<style id="forge-captured-appearance">'+pageRules+'</style></head>')};
+  return {...page,html};
  });
  return applied?{pages:styled,warnings}:{pages,warnings:['No safely reusable computed colors or typography were found in the browser evidence.']};
 }
