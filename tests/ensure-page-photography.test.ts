@@ -60,3 +60,47 @@ test('photo repair does not alter document structure or source style CSS',()=>{
  assert.ok(out.html.indexOf('data-forge-auto-photo')<out.html.indexOf('</main>'));
  assert.ok(out.html.indexOf('</main>')<out.html.indexOf('<footer>'));
 });
+
+test('a transparent or blank hero placeholder does not block a real niche photograph',()=>{
+ const pages=[
+  page('index','<img src="/assets/placeholder.gif" alt="Loading illustration"><p>Meet our coffee team.</p>'),
+  page('about','<img src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///ywAAAAAAQABAAACAUwAOw==" alt="Loading"><p>Our story.</p>')
+ ];
+ const result=ensurePagePhotography(pages,'Coffee shop');
+ assert.ok(result.every(item=>src(item.html)),'each page gains a meaningful niche photograph');
+ assert.notEqual(src(result[0].html),src(result[1].html));
+ assert.deepEqual(ensurePagePhotography(result,'Coffee shop'),result,'repair does not create duplicate galleries');
+});
+
+test('repair fills verified offering photos in place of static placeholder thumbnails',()=>{
+ const assets=[{
+  url:'https://upload.wikimedia.org/wikipedia/commons/a/ab/piano-tuning-technician.jpg',
+  title:'Piano tuning technician making adjustments',credit:'Photographer',
+  source:'https://commons.wikimedia.org/wiki/File:Piano_tuning_technician.jpg',license:'CC0'
+ }];
+ const services=page('services',
+  '<article class="card service-card"><img src="/placeholder.png" data-src="/lazy-original.jpg" alt="Loading"><h2>Piano tuning</h2></article>'+
+  '<article class="card service-card"><img src="/blank.gif" alt="Loading"><h2>Accordion restoration</h2></article>'+
+  '<article class="card service-card"><img src="/photos/real.jpg" alt="Real piano"><h2>Piano lessons</h2></article>');
+ const result=ensurePagePhotography([services],'Piano tuning',assets,['Piano tuning']);
+ const html=result[0].html;
+ assert.match(html,/data-forge-verified-offering-photo="true" src="https:\/\/upload\.wikimedia\.org\/wikipedia\/commons\/a\/ab\/piano-tuning-technician\.jpg"/);
+ assert.doesNotMatch(html,/src="\/(?:placeholder\.png|blank\.gif)"/,'dead placeholder pictures are removed from cards');
+ assert.match(html,/<h2>Accordion restoration<\/h2>/,'unsupported offerings remain useful as text');
+ assert.match(html,/src="\/photos\/real\.jpg"/,'actual supplied card photographs are never replaced');
+ assert.deepEqual(ensurePagePhotography(result,'Piano tuning',assets,['Piano tuning']),result);
+});
+
+test('real responsive image sources remain intact even with a placeholder fallback',()=>{
+ const original=page('index',
+  '<picture><source srcset="https://photos.example/real.avif 1280w"><img src="/placeholder.gif" alt="Responsive photo"></picture>'+
+  '<img src="/blank.gif" srcset="https://photos.example/real2.jpg 1600w" alt="Responsive photograph">');
+ const [result]=ensurePagePhotography([original],'Coffee shop');
+ assert.equal(result.html,original.html,'real srcset or picture sources must suppress fallback injection');
+});
+
+test('data-src alone is not a functioning static image source',()=>{
+ const original=page('contact','<img data-src="/inert-lazy-photo.jpg" alt="Lazy image"><p>Visit the studio.</p>');
+ const [result]=ensurePagePhotography([original],'Coffee shop');
+ assert.ok(src(result.html),'the page receives a guaranteed static photo instead of relying on unactivated lazy data');
+});
