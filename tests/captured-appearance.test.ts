@@ -12,7 +12,7 @@ test('preserve mode applies computed source colors and typography across all pag
   assert.match(page.html,/--business-ink:#222b33/);
   assert.match(page.html,/font-family:"Avenir Next","Arial",sans-serif/);
   assert.match(page.html,/h1,h2,h3\{font-family:"Georgia",serif/);
-  assert.match(page.html,/h1\{font-size:clamp\(2rem,6vw,64px\)/);
+  assert.match(page.html,/h1\{font-size:clamp\(24px,6vw,64px\)/);
   assert.equal((page.html.match(/id="forge-captured-appearance"/g)||[]).length,1);
  }
  const repeated=applyCapturedAppearance(result.pages,sample,sample.sourceUrl,'inspired');
@@ -77,4 +77,13 @@ test('observed heading spacing is retained only when validated and bounded',()=>
  const invalid={...sample,pages:[{...sample.pages[0],designTokens:{...sample.pages[0].designTokens,headingLineHeight:'72px;}body{display:none'}}]};
  assert.deepEqual(applyCapturedAppearance(pages,invalid,sample.sourceUrl,'preserve').pages,pages);
  assert.doesNotMatch(applyCapturedAppearance(pages,sample,sample.sourceUrl,'preserve').pages[0].html,/h1\{line-height:/);
+});
+
+test('compact source H1 measurements are not inflated by a fixed 2rem minimum',()=>{
+ for(const size of [24,26,29,31]){
+  const evidence={...sample,pages:[{...sample.pages[0],designTokens:{...sample.pages[0].designTokens,headingFontSize:size+'px'}}]};
+  const html=applyCapturedAppearance(pages,evidence,sample.sourceUrl,'inspired').pages[0].html;
+  assert.ok(html.includes('h1{font-size:clamp(24px,6vw,'+size+'px)'));
+  assert.ok(html.includes('@media(max-width:700px)'),'mobile titles still use a dedicated readable size');
+ }
 });
