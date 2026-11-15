@@ -30,29 +30,59 @@ function placeholderImageTag(tag:string):boolean{
  return placeholderImageSource(attr(tag,'src'));
 }
 
+/** Inert HTML and CSS-hidden subtrees must not count as *visible* photos.
+ * Static generated sites cannot execute template/noscript content or activate
+ * hidden lazy-loader frames. Leave the original markup intact.
+ */
+function visibleMediaTags(html:string):string[]{
+ const media:string[]=[],stack:{tag:string;hidden:boolean}[]=[];
+ const ignored=new Set(['template','noscript','script','style','svg','iframe']);
+ const voids=new Set(['area','base','br','col','embed','hr','img','input','link','meta','param','source','track','wbr']);
+ for(const match of html.matchAll(/<!--[\s\S]*?-->|<\/?[a-z][^>]*>/gi)){
+  const token=match[0];
+  if(token.startsWith('<!--'))continue;
+  const closing=/^<\/([a-z][a-z0-9:-]*)\b/i.exec(token);
+  if(closing){
+   const index=stack.findLastIndex(item=>item.tag===closing[1].toLowerCase());
+   if(index>=0)stack.length=index;
+   continue;
+  }
+  const opening=/^<([a-z][a-z0-9:-]*)\b/i.exec(token);
+  if(!opening)continue;
+  const tag=opening[1].toLowerCase(),attrs=token.slice(opening[0].length,-1);
+  const style=attrs.match(/\sstyle\s*=\s*(?:"([^"]*)"|'([^']*)')/i);
+  const declaration=String(style?.[1]||style?.[2]||'').replace(/\s+/g,'').toLowerCase();
+  const hidden=Boolean(stack.at(-1)?.hidden)||ignored.has(tag)||
+   /(?:^|\s)(?:hidden|inert)(?=\s|=|\/?>|$)/i.test(attrs)||
+   /\saria-hidden\s*=\s*(?:"true"|'true'|true)(?=\s|\/?>|$)/i.test(attrs)||
+   /(?:^|;)(?:display:none|visibility:hidden)(?:!important)?(?:;|$)/.test(declaration);
+  if(!hidden&&['img','source','video'].includes(tag))media.push(token);
+  if(!voids.has(tag)&&!token.endsWith('/>'))stack.push({tag,hidden});
+ }
+ return media;
+}
 /** Logos, icons and tracking pixels are not substitutes for real page photography. */
 function hasContentPhoto(html:string):boolean{
- for(const match of html.matchAll(/<img\b[^>]*>/gi)){
-  const tag=match[0];
+ const tags=visibleMediaTags(html);
+ for(const tag of tags.filter(value=>/^<img\b/i.test(value))){
   if(!attr(tag,'src')&&!attr(tag,'srcset'))continue;
   if(/\b(?:logo|logotype|brand-mark|icon|favicon|avatar|sprite|tracking|pixel|spacer)\b/i.test(tag))continue;
   if(/\bsrc\s*=\s*["'][^"']+\.svg(?:[?#][^"']*)?["']/i.test(tag))continue;
   if(/\b(?:width|height)\s*=\s*["']?[01](?:["'\s>])/i.test(tag))continue;
   if(!placeholderImageTag(tag))return true;
  }
- for(const match of html.matchAll(/<source\b[^>]*>/gi)){
-  const srcset=attr(match[0],'srcset');
+ for(const tag of tags.filter(value=>/^<source\b/i.test(value))){
+  const srcset=attr(tag,'srcset');
   if(srcset.split(',').some(item=>{
    const src=item.trim().split(/\s+/)[0];return src&&!placeholderImageSource(src);
   }))return true;
  }
- return /<video\b[^>]*\bposter\s*=/.test(html);
+ return tags.some(value=>/^<video\b/i.test(value)&&/\s+poster\s*=/.test(value));
 }
-
 function usedPhotoIds(pages:GeneratedPage[]):Set<string>{
  const ids=new Set<string>();
  for(const page of pages){
-  for(const match of page.html.matchAll(/\s(?:src|srcset|poster)\s*=\s*["']([^"']+)["']/gi)){
+  for(const tag of visibleMediaTags(page.html))for(const match of tag.matchAll(/\s(?:src|srcset|poster)\s*=\s*["']([^"']+)["']/gi)){
    for(const value of match[1].split(',')){
     const url=value.trim().split(/\s+/)[0];
     if(/^https?:\/\//i.test(url))ids.add(photoIdentity(url));
