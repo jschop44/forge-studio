@@ -34,26 +34,33 @@ function photoCollection(brief:EditorialBrief):{general:EditorialPhoto[];offerin
 }
 function sourceImages(html:string):Set<string>{
  const result=new Set<string>();
- for(const match of html.matchAll(/<img\b[^>]*\bsrc\s*=\s*["']([^"']+)["'][^>]*>/gi)){
-  const url=match[1].trim();if(/^https?:\/\//i.test(url))result.add(photoIdentity(url));
- }
- for(const match of html.matchAll(/\b(?:srcset|poster)\s*=\s*["']([^"']+)["']/gi)){
-  for(const value of match[1].split(',')){
-   const url=value.trim().split(/\s+/)[0];if(/^https?:\/\//i.test(url))result.add(photoIdentity(url));
+ // Match actual resource attributes on media elements. A lazy-loader's
+ // data-src/data-srcset is inert in a static export, not an existing image.
+ for(const match of html.matchAll(/<(?:img|source|video)\b[^>]*>/gi)){
+  for(const attribute of match[0].matchAll(/\s(src|srcset|poster)\s*=\s*(["'])(.*?)\2/gi)){
+   const values=attribute[1].toLowerCase()==='srcset'?attribute[3].split(','):[attribute[3]];
+   for(const value of values){
+    const url=value.trim().split(/\s+/)[0];
+    if(/^https?:\/\//i.test(url))result.add(photoIdentity(url));
+   }
   }
  }
  return result;
 }
-function choosePhotos(html:string,slug:string,photos:{general:EditorialPhoto[];offerings:EditorialPhoto[]}):EditorialPhoto[]{
+function choosePhotos(html:string,slug:string,photos:{general:EditorialPhoto[];offerings:EditorialPhoto[]},usedAcrossSite:Set<string>):EditorialPhoto[]{
  const existing=sourceImages(html);
  const order=slug==='services'?[...photos.offerings,...photos.general]:[...photos.general,...photos.offerings];
  const pool=order.filter((photo,index)=>order.findIndex(value=>photoIdentity(value.url)===photoIdentity(photo.url))===index&&!existing.has(photoIdentity(photo.url)));
  if(!pool.length)return [];
  const shift=slug==='index'?0:slug==='services'?1:slug==='about'?2:3;
  const rotated=[...pool.slice(shift%pool.length),...pool.slice(0,shift%pool.length)];
- // A bento gallery gives pages 2–3 additional images, rather than one token
- // photo. One or two safe results never cause unrelated placeholders.
- return rotated.slice(0,Math.min(3,Math.max(2,4-existing.size)));
+ const target=Math.min(3,Math.max(2,4-existing.size));
+ // Give each page new artwork first; only reuse photography on other pages
+ // when the licensed/curated pool cannot cover the whole site's galleries.
+ // Within a page, never repeat the same asset, even under different crops.
+ const fresh=rotated.filter(photo=>!usedAcrossSite.has(photoIdentity(photo.url)));
+ const fallbacks=rotated.filter(photo=>usedAcrossSite.has(photoIdentity(photo.url)));
+ return [...fresh,...fallbacks].slice(0,target);
 }
 type EditorialStory={kicker:string;heading:string;support:string;link:string;href:string};
 type EditorialPage='index'|'services'|'about'|'contact';
@@ -109,11 +116,16 @@ function composeSection(brief:EditorialBrief,slug:EditorialPage,photos:Editorial
  */
 export function enrichGeneratedBusinessPages(pages:GeneratedPage[],brief:EditorialBrief):GeneratedPage[]{
  const photos=photoCollection(brief);
+ // Reserve every image already used in a generated page before decorating any
+ // other page. This prevents "extra" galleries from repeating hero/card images.
+ const usedAcrossSite=new Set<string>();
+ for(const page of pages)for(const id of sourceImages(page.html))usedAcrossSite.add(id);
  return pages.map(page=>{
   if(!['index','services','about','contact'].includes(page.slug)||!/<\/main>/i.test(page.html)||!/<\/head>/i.test(page.html))return page;
   if(page.html.includes('class="forge-editorial"'))return page;
-  const extra=choosePhotos(page.html,page.slug,photos);
+  const extra=choosePhotos(page.html,page.slug,photos,usedAcrossSite);
   if(!extra.length)return page;
+  for(const photo of extra)usedAcrossSite.add(photoIdentity(photo.url));
   const section=composeSection(brief,page.slug as EditorialPage,extra);
   let html=page.html.replace(/<\/head>/i,'<style id="forge-premium-editorial-styles">'+premiumEditorialStyles+'</style></head>');
   const insertBefore=page.slug==='index'?/<section class="section-heading"/i:page.slug==='services'?/<div class="cards"/i:page.slug==='about'?/<section class="contact-panel"/i:null;
