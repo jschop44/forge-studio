@@ -62,7 +62,10 @@ function appearanceRules(tokens:unknown):string{
   bodySize?'body{font-size:'+bodySize+'px}':'',
   lineHeight?'body{line-height:'+lineHeight+'px}':'',
   headingFont?'h1,h2,h3{font-family:'+headingFont+'}':'',
-  headingSize?'h1{font-size:clamp(2rem,6vw,'+headingSize+'px)}':'',
+  // Preserve small measured source H1 sizes on desktop; the old fixed 2rem
+  // minimum inflated 24–31px source titles to 32px and changed text wrapping.
+  // A separate phone-only rule still provides legible responsive headings.
+  headingSize?'h1{font-size:clamp(24px,6vw,'+headingSize+'px)}':'',
   headingLineHeight?'h1{line-height:'+headingLineHeight+'px}':'',
   contentWidth?'body main{max-width:'+contentWidth+'px;width:100%;margin-inline:auto}':'',
   navBg?'body>nav{background:'+navBg+';color:'+readableInk(navBg)+'}body>nav a{color:inherit}':'',
