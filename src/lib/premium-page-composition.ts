@@ -52,13 +52,13 @@ function sourceImages(html:string):Set<string>{
  * but do not count them toward the desired 2-3 business photographs. */
 function contentPhotoCount(html:string,all:Set<string>):number{
  const brand=new Set<string>();
- for(const match of html.matchAll(/<img\\b[^>]*>/gi)){
+ for(const match of html.matchAll(/<img\b[^>]*>/gi)){
   const tag=match[0];
-  if(!/\\b(?:logo|logotype|brand[-_ ]?(?:mark|logo)|favicon|avatar|sprite|icon)\\b/i.test(tag))continue;
-  for(const attr of tag.matchAll(/\\s(?:src|srcset)\\s*=\\s*(["'])(.*?)\\1/gi)){
+  if(!/\b(?:logo|logotype|brand[-_ ]?(?:mark|logo)|favicon|avatar|sprite|icon)\b/i.test(tag))continue;
+  for(const attr of tag.matchAll(/\s(?:src|srcset)\s*=\s*(["'])(.*?)\1/gi)){
    for(const item of attr[2].split(',')){
-    const url=item.trim().split(/\\s+/)[0];
-    if(/^https?:\\/\\//i.test(url))brand.add(photoIdentity(url));
+    const url=item.trim().split(/\s+/)[0];
+    if(/^https?:\/\//i.test(url))brand.add(photoIdentity(url));
    }
   }
  }
