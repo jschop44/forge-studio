@@ -75,3 +75,64 @@ test('editorial augmentation is idempotent and does not mutate original pages',(
  const updated=enrichGeneratedBusinessPages(pages,brief('Fresh produce retail'));
  assert.deepEqual(updated,pages);
 });
+
+test('editorial galleries prioritize different licensed photos across the entire four-page site',()=>{
+ const visualAssets=Array.from({length:13},(_,index)=>({
+  url:'https://upload.wikimedia.org/wikipedia/commons/a/ab/piano-tuning-gallery-'+index+'.jpg',
+  title:'Piano tuning technician service gallery '+index,credit:'Photographer',
+  source:'https://commons.wikimedia.org/wiki/File:Piano_tuning_gallery_'+index+'.jpg',license:'CC0'
+ }));
+ const pages=['index','services','about','contact'].map(slug=>({
+  slug,title:'Piano tuning',html:'<!doctype html><html><head><title>Piano tuning</title></head><body><main><h1>Piano tuning</h1>'+
+   (slug==='index'?'<img src="'+visualAssets[0].url+'" alt="Piano tuning detail">':'')+'</main></body></html>'
+ }));
+ const result=enrichGeneratedBusinessPages(pages,{
+  businessName:'Piano Care',industry:'Piano tuning',
+  description:'An independent local piano tuning and maintenance service.',
+  services:['Piano tuning'],visualAssets
+ });
+ const galleryPhotos=result.flatMap(page=>[...page.html.matchAll(/class="forge-editorial__photo"[\s\S]*?<img src="([^"]+)"/g)].map(match=>photoIdentity(match[1])));
+ assert.ok(result.every(page=>page.html.includes('class="forge-editorial"')),'every page gets an editorial gallery');
+ assert.equal(galleryPhotos.length,12,'four pages each receive three relevant photos');
+ assert.equal(new Set(galleryPhotos).size,12,'use unused licensed artwork before repeating gallery photos');
+ assert.ok(!galleryPhotos.includes(photoIdentity(visualAssets[0].url)),'an existing hero is never repeated in another page gallery');
+ assert.deepEqual(enrichGeneratedBusinessPages(result,{
+  businessName:'Piano Care',industry:'Piano tuning',description:'An independent local piano tuning and maintenance service.',
+  services:['Piano tuning'],visualAssets
+ }),result,'second pass never inserts duplicate galleries');
+});
+
+test('inert data-src and data-srcset do not suppress working editorial photography',()=>{
+ const licensed={
+  url:'https://upload.wikimedia.org/wikipedia/commons/a/ab/piano-tuning-lazy.jpg',
+  title:'Piano tuning technician adjusting instrument',credit:'Photographer',
+  source:'https://commons.wikimedia.org/wiki/File:Piano_tuning_lazy.jpg',license:'CC0'
+ };
+ const brief={businessName:'Piano Care',industry:'Piano tuning',
+  description:'Piano tuning and maintenance services for local musicians.',
+  services:['Piano tuning'],visualAssets:[licensed]};
+ for(const attribute of ['data-src','data-srcset']){
+  const page={slug:'index',title:'Piano tuning',html:
+   '<html><head></head><body><main><h1>Piano tuning</h1><img '+attribute+'="'+licensed.url+'" alt="Not activated by static export"></main></body></html>'};
+  const output=enrichGeneratedBusinessPages([page],brief)[0].html;
+  assert.match(output,/class="forge-editorial__photo"/);
+  assert.match(output,/class="forge-editorial__photo"[\s\S]*?<img src="https:\/\/upload\.wikimedia\.org\/wikipedia\/commons\/a\/ab\/piano-tuning-lazy\.jpg"/);
+ }
+});
+
+test('real source srcset reserves its photo rather than duplicating it in a gallery',()=>{
+ const assets=[0,1,2].map(index=>({
+  url:'https://upload.wikimedia.org/wikipedia/commons/a/ab/piano-tuning-srcset-'+index+'.jpg',
+  title:'Piano tuning workshop '+index,credit:'Photographer',
+  source:'https://commons.wikimedia.org/wiki/File:Piano_tuning_srcset_'+index+'.jpg',license:'CC0'
+ }));
+ const page={slug:'index',title:'Piano tuning',html:
+  '<html><head></head><body><main><h1>Piano tuning</h1><picture><source srcset="'+assets[0].url+' 1000w"><img src="/fallback.jpg"></picture></main></body></html>'};
+ const output=enrichGeneratedBusinessPages([page],{
+  businessName:'Piano Care',industry:'Piano tuning',
+  description:'Local instrument repair and tuning.',services:['Piano tuning'],visualAssets:assets
+ })[0].html;
+ assert.match(output,/class="forge-editorial__photo"/);
+ const gallery=output.split('class="forge-editorial"')[1]||'';
+ assert.doesNotMatch(gallery,/piano-tuning-srcset-0\.jpg/,'a real responsive image is reserved');
+});
