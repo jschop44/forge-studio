@@ -83,7 +83,7 @@ test('compact source H1 measurements are not inflated by a fixed 2rem minimum',(
  for(const size of [24,26,29,31]){
   const evidence={...sample,pages:[{...sample.pages[0],designTokens:{...sample.pages[0].designTokens,headingFontSize:size+'px'}}]};
   const html=applyCapturedAppearance(pages,evidence,sample.sourceUrl,'inspired').pages[0].html;
-  assert.match(html,new RegExp('h1\\\\{font-size:clamp\\\\(24px,6vw,'+size+'px\\\\)'));
-  assert.match(html,/@media\\(max-width:700px\\)/,'mobile titles still use a dedicated readable size');
+  assert.ok(html.includes('h1{font-size:clamp(24px,6vw,'+size+'px)'));
+  assert.ok(html.includes('@media(max-width:700px)'),'mobile titles still use a dedicated readable size');
  }
 });
