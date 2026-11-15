@@ -47,6 +47,23 @@ function sourceImages(html:string):Set<string>{
  }
  return result;
 }
+/** Brand marks in a navigation bar are not editorial content photography.
+ * Keep their resource IDs reserved so an image gallery never repeats a logo,
+ * but do not count them toward the desired 2-3 business photographs. */
+function contentPhotoCount(html:string,all:Set<string>):number{
+ const brand=new Set<string>();
+ for(const match of html.matchAll(/<img\b[^>]*>/gi)){
+  const tag=match[0];
+  if(!/\b(?:logo|logotype|brand[-_ ]?(?:mark|logo)|favicon|avatar|sprite|icon)\b/i.test(tag))continue;
+  for(const attr of tag.matchAll(/\s(?:src|srcset)\s*=\s*(["'])(.*?)\1/gi)){
+   for(const item of attr[2].split(',')){
+    const url=item.trim().split(/\s+/)[0];
+    if(/^https?:\/\//i.test(url))brand.add(photoIdentity(url));
+   }
+  }
+ }
+ return [...all].filter(id=>!brand.has(id)).length;
+}
 function choosePhotos(html:string,slug:string,photos:{general:EditorialPhoto[];offerings:EditorialPhoto[]},usedAcrossSite:Set<string>):EditorialPhoto[]{
  const existing=sourceImages(html);
  const order=slug==='services'?[...photos.offerings,...photos.general]:[...photos.general,...photos.offerings];
@@ -54,7 +71,7 @@ function choosePhotos(html:string,slug:string,photos:{general:EditorialPhoto[];o
  if(!pool.length)return [];
  const shift=slug==='index'?0:slug==='services'?1:slug==='about'?2:3;
  const rotated=[...pool.slice(shift%pool.length),...pool.slice(0,shift%pool.length)];
- const target=Math.min(3,Math.max(2,4-existing.size));
+ const target=Math.min(3,Math.max(2,4-contentPhotoCount(html,existing)));
  // Give each page new artwork first; only reuse photography on other pages
  // when the licensed/curated pool cannot cover the whole site's galleries.
  // Within a page, never repeat the same asset, even under different crops.
